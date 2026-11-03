@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate MilkingAnomaly --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,14 +19,18 @@ namespace RoboticMilking.Domain;
 /// </summary>
 public sealed partial class AnyMilkingAnomaly : IAny<MilkingAnomaly> {
 
-    private readonly IAny<AnomalyKind>   _kind;
-    private readonly IAny<UdderQuarter?> _quarter;
-    private readonly IAny<TimeSpan>      _elapsed;
+    private IAny<AnomalyKind>   _kind;
+    private IAny<UdderQuarter?> _quarter;
+    private IAny<TimeSpan>      _elapsed;
+
+    private AnyEnum<AnomalyKind>  _kindRecipe;
+    private AnyEnum<UdderQuarter> _quarterRecipe;
+    private AnyTimeSpan           _elapsedRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyMilkingAnomaly()
         : this(kind:    AnyValidKind(),
-               quarter: AnyValidQuarter().AsNullable(),
+               quarter: AnyValidQuarter(),
                elapsed: AnyValidElapsed()) { }
 
     private static AnyEnum<AnomalyKind> AnyValidKind() {
@@ -37,67 +45,114 @@ public sealed partial class AnyMilkingAnomaly : IAny<MilkingAnomaly> {
         return Any.TimeSpan().GreaterThanOrEqualTo(TimeSpan.Zero);
     }
 
-    private AnyMilkingAnomaly(IAny<AnomalyKind>   kind,
-                              IAny<UdderQuarter?> quarter,
-                              IAny<TimeSpan>      elapsed) {
-        _kind    = kind;
-        _quarter = quarter;
-        _elapsed = elapsed;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyMilkingAnomaly(AnyEnum<AnomalyKind>  kind,
+                              AnyEnum<UdderQuarter> quarter,
+                              AnyTimeSpan           elapsed) {
+        _kind          = kind;
+        _kindRecipe    = kind;
+        _quarter       = quarter.OrNull();
+        _quarterRecipe = quarter;
+        _elapsed       = elapsed;
+        _elapsedRecipe = elapsed;
     }
 
-    /// <summary>Pins <c>kind</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyMilkingAnomaly(AnyMilkingAnomaly from) {
+        _kind          = from._kind;
+        _kindRecipe    = from._kindRecipe;
+        _quarter       = from._quarter;
+        _quarterRecipe = from._quarterRecipe;
+        _elapsed       = from._elapsed;
+        _elapsedRecipe = from._elapsedRecipe;
+    }
+
+    /// <summary>Pins <c>kind</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingAnomaly WithKind(AnomalyKind value) {
-        return new AnyMilkingAnomaly(new FixedValue<AnomalyKind>(value), _quarter, _elapsed);
+        AnyMilkingAnomaly copy = new AnyMilkingAnomaly(this);
+
+        copy._kind = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>kind</c> from <c>AnyValidKind()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>kind</c> is drawn from — <c>AnyValidKind()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;AnomalyKind&gt;, AnyEnum&lt;AnomalyKind&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingAnomaly WithKind(Func<AnyEnum<AnomalyKind>, AnyEnum<AnomalyKind>> configure) {
-        return new AnyMilkingAnomaly(configure(AnyValidKind()), _quarter, _elapsed);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingAnomaly copy = new AnyMilkingAnomaly(this);
+
+        copy._kindRecipe = configure(_kindRecipe);
+        copy._kind       = copy._kindRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>quarter</c> to a fixed value.</summary>
+    /// <summary>Pins <c>quarter</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingAnomaly WithQuarter(UdderQuarter? value) {
-        return new AnyMilkingAnomaly(_kind, new FixedValue<UdderQuarter?>(value), _elapsed);
+        AnyMilkingAnomaly copy = new AnyMilkingAnomaly(this);
+
+        copy._quarter = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>quarter</c> from <c>AnyValidQuarter()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>quarter</c> is drawn from — <c>AnyValidQuarter()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;UdderQuarter&gt;, AnyEnum&lt;UdderQuarter&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingAnomaly WithQuarter(Func<AnyEnum<UdderQuarter>, AnyEnum<UdderQuarter>> configure) {
-        return new AnyMilkingAnomaly(_kind, configure(AnyValidQuarter()).AsNullable(), _elapsed);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingAnomaly copy = new AnyMilkingAnomaly(this);
+
+        copy._quarterRecipe = configure(_quarterRecipe);
+        copy._quarter       = copy._quarterRecipe.AsNullable();
+
+        return copy;
     }
 
-    /// <summary>Pins <c>elapsed</c> to a fixed value.</summary>
+    /// <summary>Pins <c>quarter</c> to <c>null</c>; its recipe is kept for a later refinement.</summary>
+    public AnyMilkingAnomaly WithoutQuarter() {
+        AnyMilkingAnomaly copy = new AnyMilkingAnomaly(this);
+
+        copy._quarter = Any.Fixed<UdderQuarter?>(null);
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>elapsed</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingAnomaly WithElapsed(TimeSpan value) {
-        return new AnyMilkingAnomaly(_kind, _quarter, new FixedValue<TimeSpan>(value));
+        AnyMilkingAnomaly copy = new AnyMilkingAnomaly(this);
+
+        copy._elapsed = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>elapsed</c> from <c>AnyValidElapsed()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>elapsed</c> is drawn from — <c>AnyValidElapsed()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTimeSpan, AnyTimeSpan&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingAnomaly WithElapsed(Func<AnyTimeSpan, AnyTimeSpan> configure) {
-        return new AnyMilkingAnomaly(_kind, _quarter, configure(AnyValidElapsed()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingAnomaly copy = new AnyMilkingAnomaly(this);
+
+        copy._elapsedRecipe = configure(_elapsedRecipe);
+        copy._elapsed       = copy._elapsedRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="MilkingAnomaly" />.</summary>
     public MilkingAnomaly Generate() {
-        // Cross-field rule: quarter-level kinds name a quarter, session-level kinds name none.
+        // The tie: a quarter-level kind names a quarter, a session-level kind forbids one. The quarter is drawn
+        // whatever the kind, then kept or dropped to match it (a quarter pinned against its kind is therefore dropped).
         AnomalyKind   kind    = _kind.Generate();
-        UdderQuarter? quarter = MilkingAnomaly.IsQuarterLevel(kind) ? _quarter.Generate() : null;
+        UdderQuarter? drawn   = _quarter.Generate() ?? Any.Enum<UdderQuarter>().Generate();
+        UdderQuarter? quarter = MilkingAnomaly.IsQuarterLevel(kind) ? drawn : null;
 
         return new MilkingAnomaly(kind,
                                   quarter,
                                   _elapsed.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

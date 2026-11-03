@@ -1,41 +1,57 @@
-// Written by hand, never touched by `any generate Voice --force`.
-
 using JustDummies;
 
-using MusicScore.Domain;
-
-namespace MusicScore.Tests.Expert.Arbitrary;
+namespace MusicScore.Domain;
 
 public sealed partial class AnyVoice {
 
-    /// <summary>
-    ///     A voice whose entries add up to exactly <paramref name="length" /> — the rule a measure
-    ///     enforces on each of its voices — with every entry drawn from <paramref name="entry" />.
-    /// </summary>
-    public AnyVoice Filling(Duration length, Func<AnyVoiceEntry, AnyVoiceEntry>? entry = null) {
-        AnyVoiceEntry entries = (entry ?? (e => e))(new AnyVoiceEntry());
+    /// <summary>Entries (notes and rests, never tied) whose durations add up to exactly <paramref name="length" />.</summary>
+    public AnyVoice Filling(Duration length) {
+        AnyVoice copy = new AnyVoice(this);
 
-        return new AnyVoice(_number, EntriesFilling(length, entries));
+        copy._entries = new Tiling(length);
+
+        return copy;
     }
 
-    // Cuts the length on a grid of half its own unit. Distinct cut points give positive pieces, and
-    // the pieces add up to the length by construction: nothing is drawn and then thrown away.
-    private static IAny<IReadOnlyList<VoiceEntry>> EntriesFilling(Duration length, AnyVoiceEntry entry) {
-        long gridDenominator = length.Denominator * 2;
-        int  gridUnits       = checked((int)(length.Numerator * 2));
+    /// <summary>
+    ///     Cuts a length into 1 to 6 pieces on a grid of 1, 2 or 4 subdivisions of its own denominator, so the
+    ///     pieces add up to it by construction.
+    /// </summary>
+    private sealed class Tiling : IAny<IReadOnlyList<VoiceEntry>> {
 
-        return Any.SetOf(Any.Int32().Between(1, gridUnits - 1))
-                  .WithMaxCount(Math.Min(gridUnits - 1, 7))
-                  .As(cuts => {
-                      int[]            bounds = [0, .. cuts.Order(), gridUnits];
-                      List<VoiceEntry> pieces = new();
-                      for (int index = 1; index < bounds.Length; index++) {
-                          Duration piece = new(bounds[index] - bounds[index - 1], gridDenominator);
-                          pieces.Add(entry.WithDuration(piece).Generate());
-                      }
+        private readonly Duration _length;
 
-                      return (IReadOnlyList<VoiceEntry>)pieces;
-                  });
+        public Tiling(Duration length) {
+            _length = length;
+        }
+
+        public IReadOnlyList<VoiceEntry> Generate() {
+            long subdivision = Any.OneOf(1L, 2L, 4L).Generate();
+            long units       = _length.Numerator * subdivision;
+            long denominator = _length.Denominator * subdivision;
+
+            List<long> cuts = new() { 0, units };
+            if (units > 1) {
+                long maxCuts = Math.Min(units - 1, 5);
+                foreach (int cut in Any.SetOf(Any.Int32().Between(1, (int)units - 1)).WithCountBetween(0, (int)maxCuts).Generate()) {
+                    cuts.Add(cut);
+                }
+            }
+
+            cuts.Sort();
+
+            List<VoiceEntry> entries = new();
+            for (int index = 1; index < cuts.Count; index++) {
+                AnyVoiceEntry entry = new AnyVoiceEntry().WithDuration(new Duration(cuts[index] - cuts[index - 1], denominator))
+                                                         .WithTiedToNext(false);
+                bool isRest = Any.Int32().Between(0, 3).Generate() == 0;
+
+                entries.Add((isRest ? entry.Rest() : entry).Generate());
+            }
+
+            return entries;
+        }
+
     }
 
 }

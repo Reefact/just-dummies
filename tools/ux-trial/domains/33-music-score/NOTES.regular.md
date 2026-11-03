@@ -1,59 +1,49 @@
-# Music score — regular developer notes
+# Regular notes — 33 Music score interpretation
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
+- Read the domain (`MODEL.md`, all 11 files of `Domain/`), then skimmed as a reminder: `PROJECT-README.md`, `guides/getting-started`, `packages/justdummies-cli` (whole), `packages/justdummies-xunit`, `guides/composition`, and the numbers / collections / enums pages of `generators/`.
+- Created `Tests.Regular/MusicScore.Domain.Tests.Regular.csproj` from the template.
+- `any generate Duration Pitch TimeSignature Tempo VoiceEntry Voice Measure Staff Score PerformedEvent --output Generators --entry-point any` -> `Voice` refused (see friction 2). Deleted `Generators/` and re-ran the same command with `--entry-point static:Arbitrary` -> 10 generators + 10 `*.Entry.cs`, `Arbitrary.X()`.
+- Generators completed by hand (all `TODO(any)` sentinels removed):
+  - `AnyDuration`: numerator `Between(0, 4096)`, denominator `Between(1, Duration.MaxDenominator)`.
+  - `AnyPitch`: step `Any.Char().OneOf("ABCDEFG")`, octave `Between(1, 8)` (keeps the MIDI cross-field rule true by construction; edges are explicit tests).
+  - `AnyTimeSignature`: beat value `OneOf(1, 2, 4, ... 64)`.
+  - `AnyTempo`: beat unit = unit fraction `1/1`..`1/64`.
+  - `AnyVoiceEntry`: duration restricted to subdivisions whose denominators divide 192 (see friction 6), tie default `Any.Boolean().False()`, and `Generate()` draws a note rather than a rest when a tie was asked for.
+  - `AnyMeasure`: `Generate()` now draws the meter first, then builds distinct voices that each fill it exactly (`AnyMeasure.Voices.cs`, new file; pinned `_voicesPinned` flag; dropped the lambda overload of `WithVoices`, which would have been silently ignored). Repeat times `OneOf(0, 2..8)`.
+  - `AnyStaff`: name `Alpha().WithLengthBetween(1, 40)`, measures numbered 1..n by `Generate()` (pin kept, lambda overload dropped); `AnyStaff.Custom.cs` adds `ValidName()` and `WithMeasureCount`.
+  - `AnyScore`: `Generate()` draws one structure (measure count, meters, valid non-nested repeats) shared by 1-3 distinctly named staves (`AnyScore.Staves.cs`).
+  - `AnyPerformedEvent`: bounded the string and the two doubles (JD030 / JD036 at warning level).
+- Tests (`Tests/`, assembly-level `[Reproducible]`): 162 test methods, 309 cases (1 skipped).
+  - `DurationTests` (normalisation, 1/1024 limit before/after reduction, addition incl. triplets and too-fine sums, `* int`, comparison, `DividedBy`, null/negative refusals),
+  - `PitchTests` (MIDI table incl. G9 / F##9 / A--9 edges and refusals above 127, step/alter/octave refusals, enharmonic inequality, `ToString`),
+  - `TimeSignatureTests`, `TempoTests` (bounds, NaN/infinity, beat unit, dotted-quarter seconds),
+  - `VoiceTests` (entry + voice: number range, tied rest, zero duration, exact sum incl. triplets, defensive copy),
+  - `MeasureTests` (every voice fills the meter, 6/8 vs 3/4, distinct/sorted voices, repeat times 0/2..8, unknown dynamic),
+  - `StaffTests` (name 40/41 chars, surrounding blanks, numbering 1..n),
+  - `ScoreTests` (title, duplicate names, case sensitivity, staves must agree on count / meter / barlines, nested / unclosed / orphan repeats),
+  - `PlayingOrderTests` (16 repeat layouts as literal expected orders, played length, played seconds),
+  - `InterpretationTests` (onsets, triplets, rests, velocity per dynamic, ties within a bar / across barline / across repeat, voices, staves, ordering, every refusal of a tie),
+  - `PerformedEventTests`, `GeneratorTests` (200 draws per generator, drawn measure fills its meter, drawn score plays, pinned tie lands on a note).
+- Result: green with `dotnet test --project Tests.Regular`; then 12 + 11 more full runs (fresh seeds each time) all green, 1 skipped (domain defect below). Also built once with every JD001-JD038 raised to warning: clean after bounding the 4 scaffolded draws noted in friction 7.
 
-- Created `Tests.Regular`, restored, scaffolded all nine types in one call:
-  `any generate Duration Pitch TimeSignature Tempo VoiceEntry Voice Measure Staff Score --entry-point static:Arbitrary`.
-- Wrote the bases in each `AnyValid…()` factory, deleted the `TODO_verify` lines, then reworked the
-  three generators whose invariants live between parameters (Measure, Staff, Score).
-- Added `AnyMeasure.Custom.cs` (`WithoutRepeats()`, `WithSingleVoice(...)`) and a small `Notes` helper.
-- 35 test methods / 40 cases (value objects, structural rules, played order, length/seconds,
-  interpretation: rests, ties across barlines and repeats, velocity, staff/voice ordering, seconds).
-  All green, and green on 15 consecutive runs (fresh seeds each time).
-
-## Frictions, in the order I met them
-
-1. **Relational patterns are not read.** Every `x is < 1 or > 32` guard (Pitch, TimeSignature, Voice,
-   Measure.repeatEndTimes) came out `to verify, unread guards` with a bare `Any.Int32()`, while
-   `numerator < 0`, `denominator <= 0` and `ThrowIfLessThan(number, 1)` were read. `is < a or > b` is
-   the idiomatic C# range guard today. `double.IsNaN(bpm) || bpm < 20 || bpm > 400` was not read either.
-   On this domain 16 of 25 rows needed a hand-written base.
-   The user docs do not say which guard shapes are read (only the maintainer spec §9 does).
-2. **A parameter quoted in an error message is marked as involved.** `Measure.number` is flagged
-   `unread guard at Measure.cs, line 30: foreach (Voice voice in voices)` though that throw depends on
-   voices and timeSignature only; `number` appears only in the interpolated message.
-3. **Inconsistent reading of "non-empty".** `Voice.entries` got `.NonEmpty()` (separate `if (Count == 0)`),
-   `Measure.voices` and `Staff.measures` did not (`Count == 0 || Any(x => x is null)` in one `if`).
-4. **Cross-parameter invariants cost the most** (as documented — "derive one draw from another in
-   Generate()"). Measure: voices must fill the drawn meter, so I made `_voices` nullable and derive one
-   voice of beat-long notes in `Generate()`, deleting the `WithVoices(Func<…>)` overload. Staff: measures
-   numbered 1..n, so the base is `ListOf(...).As(renumber)` — which kills the refining overload (factory
-   is now an `IAny<…>`, as the doc warns), so I hand-wrote `WithEachMeasure(Func<AnyMeasure, AnyMeasure>)`.
-   Each change is fine, but three of nine generators were rewritten rather than refined, and the next
-   `--force` will wipe them (only the `.Custom.cs` survives).
-5. **No `DifferentFrom` on a scaffolded composite.** To draw "another pitch" for a tie onto a wrong
-   pitch I wrote `Arbitrary.Pitch().WithStep(s => s.Except(anyPitch.Step))` — works, but I had to know
-   that Pitch equality is by spelling. `Arbitrary.Pitch().DifferentFrom(anyPitch)` is what I reached for.
-6. **The honest Measure base fights the Score.** The Measure base draws random repeat barlines (valid for
-   a measure) so every measure fed to a Score must pin them; hence my `WithoutRepeats()` and an `AnyBar(n)`
-   helper used in ~25 places. Not a defect, but a scaffolded generator for an aggregate part is rarely
-   usable as-is in the aggregate.
-7. My own slip, not the library's: a static `Half` field clashed with `System.Half` (CS0229).
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Regular` does not work out of the box on this SDK.** SDK 10.0.114: `MSBUILD : error MSB1001: Unknown switch. ... --project Tests.Regular`; the plain `dotnet test Tests.Regular` gives `error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later ... https://aka.ms/dotnet-test-mtp-error`. xunit.v3 4.0.2 needs the opt-in `global.json` `{ "test": { "runner": "Microsoft.Testing.Platform" } }`, which I added in the domain folder. Nothing in `getting-started` or `justdummies-xunit.en.md` says how to run the tests, and the template csproj the brief gives does not carry it. Expected the install section of the xunit page to mention it.
+2. **`--entry-point any` cannot be used for a domain with a `Voice` and a `VoiceEntry`.** `any generate ... Voice ... --entry-point any` wrote 9 types and ended `✗ Voice: --entry-point any would declare a type whose name is already taken. AnyVoiceEntry in AnyVoice.Entry.cs ... AnyVoiceEntry in AnyVoiceEntry.cs`, exit 1. The message is clear and the doc even uses this exact example, but a Voice / VoiceEntry pair is a very ordinary domain; I had to throw the whole scaffold away and redo it with `static:Arbitrary` to keep one consistent root (the nine files already written stay, so a half-`Any.X()` / half-`Arbitrary.Voice()` result was the alternative). Idea: let `any` pick a non-clashing name for the entry class (`AnyVoiceEntryEntryPoint`?) since nobody types that class name.
+3. **Almost every constructor guard here is "unread".** Recap rows: `to verify, guard, unread guards` for `Duration` (the check is after normalisation: `Denominator > MaxDenominator`), `Pitch` (`Steps.Contains`, and the MIDI cross-field), `TimeSignature` (power of two via bit trick), `Measure` (voices must fill the meter, distinct voice numbers, `repeatEndTimes != 0 && is < 2 or > 8`), `Staff`, `Score`. Expected for that domain; the TODO sentinels made me read each constructor again, which was right. Cost: ~20 sentinel lines to delete by hand, and for `Measure` / `Staff` / `Score` the recipe could not be completed by editing the factory at all (see 4).
+4. **A scaffolded generator cannot express "this parameter depends on that one" without rewriting `Generate()` and the copy constructor.** Measure voices depend on the meter; staff measures on numbering; score staves on a shared structure. The doc (section "When a guard ties two parameters") describes deriving a draw inside `Generate()`, and notes the pin then no longer reaches it. I did that, but for a sound result I also had to: add a `_voicesPinned` / `_measuresPinned` / `_stavesPinned` bool, copy it in the private copy constructor, set it in the pin, and delete the `With...(Func<AnyList<...>>)` overload (it would be silently ignored). That is 4 coordinated edits per parameter in a file the docs say `--force` overwrites. The doc says to keep custom logic in a neighbouring partial file, but the pinned flag must live in the generated file because the copy constructor is there. A documented recipe (or a scaffold option like `--derive voices`) for "pin or derive" would have saved me the thinking.
+5. **Mixed-type `With...` helper overloads of my own bit me, not the library:** `Structure.StaffOf(string name, params string[] bars)` + `StaffOf(params string[] bars)` silently bound `StaffOf("4/4", "4/4", "3/4")` to the first. Noted only because the first red test was a wrong count of measures, not a compile error. Renamed to `UnnamedStaff`.
+6. **A draw revealed a domain defect (see findings): the exact sum of valid durations can be unrepresentable.** First run of `GeneratorTests.Every_generator_draws_values_its_constructor_accepts` failed with `ArgumentOutOfRangeException : A duration finer than 1/1024 of a whole note is not notatable. (Parameter 'denominator')` at `Voice.cs:28` -> `Duration.op_Addition` -> `Duration..ctor`, seed 2018346299 (`[Reproducible(Seed = 2018346299)]` replays it with the generators as they were then). The scaffolded `AnyDuration` (any denominator <= 1024) feeding `AnyVoice` -> `AnyVoiceEntry` summed unrelated denominators. Reproduction without the library: `new Voice(1, new[] { new VoiceEntry(new Duration(1, 1000), pitch, false), new VoiceEntry(new Duration(1, 1001), pitch, false) })`. I kept that as a skipped test, and narrowed the entry durations in the generator to denominators dividing 192 (a dummy entry has no business being a 1/1001 note). The seed report and the replay attribute worked exactly as documented.
+7. **Scaffolded draws that the domain accepts but that are absurd as dummies.** At default severity nothing is printed, as documented; raising JD001-JD038 to warning showed `JD030` on the scaffolded `Any.String().NotBlank()` (staff name of `PerformedEvent`, title of `Score`: "draws 1 to 1025 characters") and `JD036` twice on `Any.Double().GreaterThanOrEqualTo(0d)` / `.Positive()` (startSeconds, durationSeconds: "one draw in ten spans the whole type"). I bounded them (`WithMaxLength(40)`, `Between(0d, 10_000d)`). Nothing wrong, but the scaffold writes a guard-derived `GreaterThanOrEqualTo(0d)` that the analyzer set then objects to; I would have liked the recap to mention that these rows will raise JD030/JD036.
+8. **Nothing else surprising.** Pins with a `null!` cast (`WithTimeSignature((TimeSignature)null!)`) reach my derived `Generate()` before the constructor, so the refusal I wanted to test came from my generator as a `NullReferenceException`, not `ArgumentNullException`; fixed in the test by pinning the voices too.
 
 ## What worked well
-
-- One `any generate` call for nine types, with the composed `new AnyDuration()` / `new AnyPitch()` already
-  wired; the recap lines naming the exact unread guard and line saved me reading constructors twice.
-- The non-compiling `TODO_verify_…` lines are the right forcing function: I read every guard once.
-- `static:Arbitrary` entry points read well next to `Any.Int32()` in arrange blocks.
-- Pin vs lambda (`WithDuration(beat)` vs `WithNumerator(n => n.Positive())`) is clear and short.
-- `Pitch?` parameter got a `Pitch?` pin, never-null base: exactly what I wanted.
-- `[Reproducible]` on `[Fact]` and on `[Theory]` just works; the failure output prints
-  `[Reproducible(Seed = 764834218)]` ready to paste. Zero analyzer noise on idiomatic code.
+- The recap table and the `TODO(any)` sentinel: every guard I had to think about was flagged at the right file and line, and the "unread guard at Duration.cs, line 24" text points to the real problem line.
+- `Arbitrary.Staff().WithMeasures(...)`, `Arbitrary.Score().WithStaves(...).WithTempo(...)`: tests state exactly the part they are about and everything else is a dummy (title, staff names, dynamics when velocity is not asserted); refusal tests such as `Arbitrary.Pitch().WithOctave(10).Generate()` read as one line with the parameter name checked.
+- `Any.Int32().OneOf(...)`, `Any.Char().OneOf("ABCDEFG")`, `Any.SetOf(...).WithCount(...)`, `Any.ListOf(...).Distinct()` covered every hand-written draw; no solver needed to fill a measure exactly (pick cut points in 1/64 units).
+- `[assembly: Reproducible]` and the seed in the failing test's output: found, replayed and understood the domain defect in two commands.
+- Compile errors on `TODO_verify_...` as the work list is annoying for a minute and then exactly right.
 
 ## Fluency: 4 / 5
-
-Fast once the bases were written and tests then stayed short. One point off because the scaffolder
-leaves the commonest C# range guard unread, so on a value-object-heavy domain most of the
-"inference" is manual, and because cross-parameter aggregates (meter-filling voices, numbered measures)
-mean rewriting `Generate()` and losing refinement overloads I then re-add by hand.
+The scaffolding, DSL and adapter flowed as they do at work and the 309 cases were mostly typing domain facts. Points lost for the test-runner setup (`global.json`, nowhere documented near the xunit page), the `Voice` / `VoiceEntry` entry-point clash that forced a full re-scaffold, and, above all, the lack of a smooth path for interdependent parameters (measure -> meter -> voices, score -> shared structure): the generated file's shape pushes me to hand-edit `Generate()`, the copy constructor and the pin together, which is the one part of the day-to-day workflow that is still heavy.

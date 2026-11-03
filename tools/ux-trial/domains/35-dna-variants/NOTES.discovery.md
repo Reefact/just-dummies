@@ -1,57 +1,49 @@
 # Discovery notes — 35 DNA variants
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-
-- Read MODEL.md and the domain, then `guides/getting-started`, `packages/justdummies-cli`,
-  `generators/strings`, `guides/composition`, `guides/core-concepts` and `packages/justdummies-xunit`.
-- Created `Tests.Discovery`, restored, and ran one command:
-  `any generate Accession NucleotideSequence Allele ReferenceSequence Variant --entry-point any`.
-- Resolved the `to verify` rows, added `[assembly: Reproducible]`, wrote 34 test cases (31 methods, one
-  4-case theory) across accession, sequence, allele, variant shape and overlap, reference verification,
-  normalisation (left/3' shift, trimming, duplication, HGVS) and the catalog. All pass, five runs in a row.
+- Pages read, in order: `docs/PROJECT-README.md`, `docs/README.md`, `guides/getting-started.en.md`, `packages/justdummies-cli.en.md` (the whole scaffolder page, because the domain is made of value objects and aggregates), then `generators/strings.en.md` (for `WithChars`, `WithoutChars`, `StringMatching`) and `packages/justdummies-xunit.en.md` (for `[assembly: Reproducible]`). I did not need `core-concepts`, `reproducibility`, `composition` or the analyzer pages.
+- `any` commands: `any generate --help`, then one run for all eight types:
+  `any generate Accession NucleotideSequence Allele ReferenceSequence Variant NormalizedVariant VariantNormalizer VariantCatalog`
+  (later, in a scratch folder, the same with `--entry-point any --output ../_entry`, only to harvest the `*.Entry.cs` files, see friction 5).
+- Generators completed by hand:
+  - `AnyAccession`: the regex guard was `to verify`; replaced by `Any.StringMatching(@"[A-Z]{2}_[0-9]{6,9}\.[0-9]{1,3}")` and retyped `AnyString` to `AnyPattern` as the comment says.
+  - `AnyNucleotideSequence`: `Any.String().WithChars("ACGTN").WithLengthBetween(1, 200)`.
+  - `AnyAllele`: `Any.String().WithChars("ACGT").WithMaxLength(30)` (the tool advised a smaller default than the 10 000 ceiling).
+  - `AnyVariant`: reference and alternate tied by "must differ"; `Generate()` draws the reference, then `_alternate.DifferentFrom(reference)`.
+  - `AnyNormalizedVariant`: `kind` must agree with the variant's shape; `Generate()` derives it from `variant.Kind` (and lets the drawn kind turn an insertion into a duplication).
+  - Hand-written, not scaffolded: `AnyVariantOn(ReferenceSequence)` (a variant that really reads a given reference) and `Support` helpers.
+- Tests (8 classes, 136 methods, 266 cases with theory rows): `AccessionTests`, `NucleotideSequenceTests`, `AlleleTests`, `ReferenceSequenceTests` (incl. `Verify`), `VariantTests` (kind, end, length change, overlap table, equality), `NormalizedVariantTests` (guards, HGVS strings, equality), `VariantNormalizerTests` (trimming, left/right shifting through a repeat, boundaries, duplication classification, equivalence), `VariantCatalogTests` (recording, canonical storage, overlaps, the 10 000 cap, `ApplyAll`).
+  Literals stay where the assertion is about them (the reference text, positions, alleles, expected HGVS); dummies are the accession, the unrelated sequence/name, the convention when both must work, the "other" accession, out-of-range numbers.
+- Result: green, 262 passed, 4 skipped (domain defects below). Re-run 15 more times with `--no-build` (fresh seeds each run): 15 / 15 green.
+- `bin/` and `obj/` deleted at the end. I added `W/global.json` (see friction 1).
 
 ## Frictions and surprises, in order
-
-1. The recap was excellent: every guard it could not read was named with file and line
-   (`value: unread guard at Accession.cs, line 11: if (!Format().IsMatch(value))`), and the file refused to
-   compile until I looked. I knew exactly what to do.
-2. Accession: the guard is a `[GeneratedRegex]`. The CLI page says a regex is never translated and shows
-   the exact three-line edit (`AnyString` -> `AnyPattern` on the factory and on the `Func<…>`). Followed it,
-   compiled first time. The pattern fits the supported subset, so `Any.StringMatching` worked unchanged.
-3. Allele: the scaffolded base was `Any.String().NonEmpty().WithMaxLength(10000)`. `NonEmpty()` comes from the
-   string base table, not from a guard — but an empty allele is valid and meaningful here (insertions,
-   deletions). It is only narrower, never invalid, but a reader of the recap could believe "NonEmpty" was
-   inferred from my constructor. The `guard` word on the row covers the max length only.
-4. NucleotideSequence/Allele alphabet: I hesitated between a pattern and `WithChars`; the strings page
-   literally names "a DNA sequence" as the `WithChars` use case. Nice.
-5. Variant: `reference.Equals(alternate)` was flagged on both alleles (good). The page's section
-   "When a guard ties two parameters" gives three forms (start+duration, derive in `Generate()`, check
-   digit) — none fits "the two must differ". I wrote a bounded redraw of the alternate inside `Generate()`
-   (equal pins still reach the constructor). I am not sure this is the idiom the authors want.
-6. HGVS tests: the accession appears in the output string. I hesitated whether to keep it drawn (then an
-   `any` value reaches the assertion) or to pin it. I pinned a literal accession with `WithAccession(...)`.
-   The docs discuss pins versus dependence well, but not this "echoed through" case.
-7. First real failure: a test needing a sequence without `N` (it deletes the whole reference, and an allele
-   cannot hold `N`). I wrote `s.WithBases(b => b.WithChars("ACGT"))`, a pure narrowing of the base
-   `WithChars("ACGTN")`. Result:
-   `ConflictingAnyConstraintException : Cannot apply WithChars("ACGT") because WithChars("ACGTN") is already defined.`
-   Clear about what, silent about what to do. The strings page says "every constraint narrows" the
-   alphabet, and a subset pool *is* a narrowing; only `WithoutAlpha()`/`WithoutNumeric()` subtract, so
-   there is no way to remove `N` from a custom pool. (I first guessed a `WithoutChars("N")`; it does not
-   exist — CS1061.) Workaround: a lambda ignoring its argument, `_ => Any.String().WithChars("ACGT")...`,
-   which the CLI page documents as replacing the base.
-8. The seed line printed by `[Reproducible]` on that failure was right there in the output. Good.
+1. **`dotnet test --project Tests.Discovery` does not work out of the box.** Command: `dotnet test --project Tests.Discovery` -> `MSBUILD : error MSB1001: Unknown switch. ... Switch: --project`. Plain `dotnet test` then gives `Testing with VSTest target is no longer supported by Microsoft.Testing.Platform`. The docs mention `dotnet test --solution` only in the contributing blurb of the README and never say a .NET 10 xUnit v3 project needs `{ "test": { "runner": "Microsoft.Testing.Platform" } }` in `global.json`. I wrote that file in the workspace root and it worked. Expected: a line in getting-started / the xunit page about running tests with xunit v3 on the .NET 10 SDK.
+2. **The README says "Install: `dotnet add package JustDummies`" and shows `Any.Reproducibly(() => ...)`; getting-started shows the entry points as `Any.OrderReference()` but never says where they come from** (it just appears in a `jd:declarations` block with an `extension(Any)` member). I only understood it by reading the CLI page (`--entry-point any`). Not a blocker, a hesitation: the getting-started page should link to the CLI's "Reaching it as `Any.Order()`" section where it first uses `Any.OrderReference()`.
+3. **First `any generate` of eight types: three of them (`Accession`, `NucleotideSequence`, `Allele`) are marked `to verify, unread guards` although the guard is the one the CLI page lists as readable** (`p.AsSpan().IndexOfAnyExcept("ACGT") >= 0` -> `.WithChars("ACGT")`). Output: `bases  string  Any.String().WithMaxLength(Allele.MaxLength)  to verify, guard, unread guards` and `bases: unread guard at Allele.cs, line 23: if (invalid >= 0) ...`. The domain writes `string upper = bases.ToUpperInvariant(); int invalid = upper.AsSpan().IndexOfAnyExcept("ACGT");` i.e. through a local, which the page says is not read ("testing a local ... computed from the parameter"). It is honest, but the message `if (invalid >= 0) ...` does not say *why* the documented `IndexOfAnyExcept` row did not apply; I only found out by comparing with my source. A one-line reason ("tests a local `invalid`, not the parameter") would have saved the guess.
+4. **The tool inferred a full 10 000-character default for `Allele`** (`Any.String().WithMaxLength(Allele.MaxLength)`), with a very good extra line advising `.WithMaxLength(100)`. I followed it (30). Good; just noting that the first scaffold alone would have drawn alleles of thousands of characters in every variant.
+5. **An entry point cannot be added afterwards.** I scaffolded without `--entry-point`, edited the files, then wanted `Any.Accession()`: `any generate Accession --entry-point any` -> `AnyAccession.cs already exists. Re-run with --force to overwrite it. Whatever you changed in it is lost.` The `Entry.cs` file is separate, so refusing the whole run is a pity. Workaround: scaffold everything again with `--output ../_entry` and move only the `*.Entry.cs` files. Expected either a flag to emit only the entry point, or the tool to write the missing `.Entry.cs` and leave the existing generator alone.
+6. **Guards the tool cannot place are many here, and all of them are ties between parameters** (`Variant`: reference != alternate; `NormalizedVariant`: kind agrees with variant shape). The CLI page is very good on that (the four forms, `DifferentFrom` in `Generate()`), I followed "Derive one draw from another inside `Generate()`". Small cost: after editing `Generate()`, the `WithAlternate(...)` pin and the `_kind` recipe do not mean what their names say any more, as the page warns. For `AnyNormalizedVariant` I could not keep `WithKind` meaningful at all; it only decides duplication vs insertion.
+7. **`Any.ReferenceSequence()` can produce an `N` and `Allele` refuses an `N`**, so a variant that "reads the reference" fails inside my own `AnyVariantOn`: `System.ArgumentException : 'N' at offset 0 is not a called base (A, C, G, T)` (seeds 200330668, -513342520). That is a modelling fact of the domain (reference alphabet is wider than the allele alphabet) and the draw revealed it in *my* generator, not in the domain. Fix: `Any.ReferenceSequence().WithSequence(s => s.WithBases(b => b.WithoutChars("N")))`. The nested lambda refinement worked first time and read well; `WithoutChars` was found on the strings page, not in any IntelliSense-like hint.
+8. **Theory + `[assembly: Reproducible]`: the seed is printed in "Standard output" of the failing case only**, which is what the docs say. Good. But the printed replay snippet is `[JustDummies.Xunit.Reproducible(Seed = -1140248024)]` with a negative seed; it compiled as is. No problem, just unexpected-looking.
+9. **Analyzers never spoke.** 0 warnings through the whole session, including on `Any.Int32().LessThan(1)`, `Any.String().WithChars("ACGT").WithLength(Allele.MaxLength + 1)` and `Any.Enum<...>()` used in several asserts' arrange blocks. I am not sure whether that means my code is clean or the analyzers did not load; I never saw one fire, so I could not tell. A "hello, analyzers are on" way to check would help a newcomer.
+10. **Skipping a theory:** `[Theory(Skip = "...")]` skips every row and reports 1 skipped, so the 4 skips stand for 5 cases. Fine, xUnit behaviour, only affects my counts.
 
 ## What worked well
-
-- `any` + entry points: `Any.Variant().WithReference(...).Generate()` read naturally from the first test.
-- Refining lambdas: `Any.Accession().WithValue(v => v.DifferentFrom(other.Value))` drew a second, distinct
-  accession for the "another accession" test with no hand-made literal.
-- `Any.Enum<NormalizationConvention>()` made "this holds under either convention" visible as a dummy.
-- No analyzer warnings, no surprises at build once the TODO lines were resolved.
+- The scaffolder page is the best page in the set: the "last column" table, the `TODO`/`to verify` mechanism that stops the build at the exact line, the `AnyValid...()` factories and the refinement lambdas (`WithSequence(s => s.WithBases(b => b.WithoutChars("N")))`) all behaved exactly as written.
+- `StringMatching` for the accession and `WithChars("ACGT")` for nucleotides made the generators read like the domain. `DifferentFrom` works on any `IAny<T>` (accessions, alleles) and removes a lot of "make sure it is not the same" code.
+- `Any.Int32().LessThan(1)` / `.Negative()` as the "any value that must be refused" is nicer than `-1`: the refusal tests say "any position before the first base" instead of looking like boundary tests of one value. Boundaries (6/9 digits, 10 000 bases, position 1) stayed literals.
+- `[assembly: Reproducible]` + `Any.*` inside plain xUnit facts: no ceremony, 15 reruns green.
+- Compile errors named the missing generator (`TODO_verify_the_generator_for_...`) at the line; the build never let me forget a guard.
+- Drawing the accession/sequence/convention made the discipline of the docs tangible: most of this domain is *about* literal sequences and positions, and I could see which handful of values were genuinely dummies.
 
 ## Fluency: 4 / 5
+I was productive within a few minutes and the scaffolder plus its page carried most of the work, including the hard part (ties between parameters). I lose a point for the test-runner setup that the docs do not mention at all (friction 1), for having to scaffold twice to get entry points (5), and for never being able to tell whether the analyzers were running (9).
 
-Scaffold-then-resolve was smooth and the documentation answered almost every question at the moment I had
-it. Lost points: no idiom for a "must differ" rule between two parameters, a custom character pool that
-cannot be narrowed, and a `NonEmpty()` default that looks inferred.
+## Domain observations (not library issues)
+- `Accession("NC_000001.11\n")` is accepted: `$` in the regex matches before a final newline (skipped test `A_trailing_line_break_does_not_make_an_accession`).
+- `VariantCatalog.ApplyAll()` applies variants from the highest position down, ties in recording order: an insertion recorded before a substitution/deletion at the same position is applied first, and the later change then hits the inserted bases (`ACGTACGT`, ins `TT` before 3 then `3:G>C` gives `ACCTGTACGT`, expected `ACTTCTACGT`; with a deletion `3:GT>-` it returns the unchanged reference). Skipped: `An_insertion_and_a_*_at_the_same_place_apply_when_the_insertion_was_recorded_first`.
+- Variants are normalised one at a time, so two adjacent changes in a repeat can swap places: in `GGCACACATTT`, "delete a T of TTT" + "insert G before 10" gives `GGCACACAGTT` or `GGCACACATGT` depending on which end of the run the deletion was written at and on the convention (skipped theory `Neighbouring_changes_in_a_repeat_are_applied_as_described`).
+- Under `LeftAligned`, a tandem duplication is classified `Insertion` (it is only `Duplication` when it is right-shifted), so the kind of one change depends on the convention.
+- `Contains` / `Remove` throw `ReferenceMismatchException` for a variant that is not on the reference instead of answering `false`.

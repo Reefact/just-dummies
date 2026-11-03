@@ -1,57 +1,47 @@
-# Vessel stowage — expert crafter notes
+# Expert notes — 31 vessel stowage
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Scaffolded `ContainerId`, `PortCode`, `SlotPosition`, `VesselProfile`, `Rotation` and `Container`
-  with `--entry-point any`, resolved every `TODO_verify_…`, then wrote a `Recipes.cs` partial layer
-  that speaks stowage: `Any.VesselProfile().Roomy()`, `Any.SlotPosition().InRoomyVessel(size).AtFootOfHold()`,
-  `Any.Container().SegregationNeutral().FitFor(slot).Travelling(from, to)`, `.Laden()`, `.StackableOn(lower)`.
-- `ContainerId` = `Any.StringMatching("[A-Z]{3}[UJZ][0-9]{6}").As(body => body + ComputeCheckDigit(body))`.
-- `AnyContainer` was rewritten by hand: three guards tie parameters (size -> tare -> gross, POL != POD,
-  reefer -> hazard). Ties are drawn in dependency order inside `Generate()`.
-- `Any.Combine(vessel, rotation, ...)` gives an empty plan; `Any.SetOf(Any.ContainerId()).WithCount(5)`
-  gives distinct box numbers; `[assembly: Reproducible]`.
-- 33 test methods (38 cases) on containers, value objects, every `StowageViolation` the plan raises,
-  stability (displacement/VCG/TCG with literal limits), `UsableSlotsFor`, `Remove`, `DischargeSequence`.
-  All pass; 15 back-to-back runs (570 cases) were green.
+Pages read, in order: `PROJECT-README.md` (front page, skimmed), `guides/getting-started.en.md`, `guides/core-concepts.en.md`, `packages/justdummies-cli.en.md` (all of it), `packages/justdummies-xunit.en.md`, `guides/composition.en.md`, `generators/README.md`, `generators/numbers.en.md`, `generators/enums-and-choices.en.md`, the JustDummies package page's analyzer-severity section. Then the domain (`MODEL.md` and every `Domain/*.cs`).
 
-## Frictions, in the order met
-1. `any generate Container` -> `✗ Container: several types answer to that name. System.ComponentModel.Container /
-   VesselStowage.Domain.Container. Name the one you mean in full.` Clear and actionable (praise, but a
-   surprise: an implicit using makes a BCL type collide with a domain name).
-2. Plain range guards are not read: `if (bay < 1 || bay > 99) throw new ArgumentOutOfRangeException(...)`
-   gives `Any.Int32()  to verify, unread guards` (`SlotPosition`, 4 `VesselProfile` ints, `row`). It is the
-   most common guard shape in this domain; 15 of 19 parameters needed hand work. `lightshipTonnes <= 0`
-   *was* read (`Positive()`), so the one-sided form works and the two-sided `||` form does not.
-3. Tied guards force a rewrite of the scaffolded file. The CLI page suggests "derive one draw from another
-   inside Generate()", but the generated shape (one `IAny<T>` field + `AnyValid…()` + `With…` per parameter)
-   cannot express "tare's base depends on the drawn size": I had to change field types to
-   `Func<…>`/nullable pins and hand-write every `With…`. `--force` would now destroy it.
-4. Narrowing a scaffolded `OneOf` base: `t => t.OneOf(2, 4, 6, 8, 82, 84, 86, 88)` on a base
-   `OneOf(2..20, 82..98)` threw
-   `ConflictingAnyConstraintException : Cannot apply OneOf(2, 4, 6, 8, 82, 84, 86, 88) because OneOf(2, 4, ..., 98) is already defined.`
-   Documented, but a subset is a pure narrowing; the message should at least suggest `Except(...)`,
-   which is what I used.
-5. "Last call wins" on a parameter makes recipes non-composable and silently lossy:
-   `InRoomyVessel(size).WithRow(r => r.DifferentFrom(x))` drops the roomy row bound, so a slot can be drawn
-   outside the vessel on some runs. I had to restate `LessThan(RoomyVessel.MinRows)`. A "refine the
-   current recipe" overload (compose with what is set, not with the base) is what recipe layers need.
-6. Joint draws between two parameters (a leg `from < to` on a rotation) cannot be expressed through `With…`;
-   tests draw the rotation first and pin both ports. Fine, but `Travelling(…)` had to be hand-written.
-7. Distinctness of aggregates: `Container` has reference equality, so "five distinct boxes" means drawing a
-   `SetOf(ContainerId)` and pinning ids one by one. Workable, slightly noisy.
-8. Scaffolded files land in the domain namespace (`VesselStowage.Domain`) inside the test assembly; unexpected
-   but harmless.
+`any` commands run (from `Tests.Expert/`, after a `dotnet restore`):
+- `any generate ContainerId PortCode Rotation SlotPosition Container VesselProfile StowageAssignment --output Generators --namespace VesselStowage.Domain.Tests.Generators --entry-point any`
+  Result: 7 generators + 7 entry points (`Any.Container()`...). 4 resolved by the base table or guards (SlotPosition bay/row, most of VesselProfile), 5 files carried `to verify` marks that stop the build until read.
+
+Generators completed by hand (the `TODO_verify_…` lines are all gone):
+- `AnyContainerId`: `Any.StringMatching("[A-Z]{3}[UJZ][0-9]{6}").As(firstTen => firstTen + ContainerId.ComputeCheckDigit(firstTen))`; retyped the recipe to `IAny<string>`, deleted the lambda overload (nothing to refine on an `.As` result).
+- `AnyPortCode`: `Any.StringMatching("[A-Z]{2}[A-Z2-9]{3}")`; retyped `AnyString` to `AnyPattern` on the four lines the docs name.
+- `AnyRotation`: `Any.SequenceOf(new AnyPortCode()).WithCountBetween(2, 8).Distinct()`.
+- `AnySlotPosition`: tier `Any.Int32().OneOf(Enumerable.Range(2, 19).Concat(Enumerable.Range(82, 17))).Even()` (the docs' own example); a hand-written `AnySlotPosition.Custom.cs` adds `Accepting(ContainerSize)` (odd/even bay).
+- `AnyContainer`: size-dependent tare/gross window moved into `Generate()` (the scaffolded `OrderedPair` is rebuilt per size), discharge port drawn with `DifferentFrom(loadingPort)`, reefer flag forced to false when a *drawn* hazard is explosives/radioactive. `AnyContainer.Custom.cs`: `GeneralCargo()`, `OfTwentyFeet()`, `OfFortyFeet()`, `Sailing(from, to)`, `Weighing(t)`, `Carrying(hazard)`.
+- `AnyVesselProfile`: added the `OrderedPair(lightshipVcg, maxVcg, strict: true)` the tool did not write, copying the pin/refine pattern it used for the decimal pair; bounded every base (JD036/JD030). `AnyVesselProfile.Custom.cs`: `Roomy()` (a vessel no limit of which a few dozen boxes can reach).
+- `AnyStowageAssignment`: `Generate()` draws the slot with `Accepting(container.Size)` unless the slot was pinned.
+
+Test helpers: `Voyage` (four distinct drawn ports in call order, `Box()` = general-cargo 20 ft box sailing first→second call), `PlanAssert.Refuses/Accepts` (checks `Check` and `Assign` agree, the violation, the message, and that nothing changed).
+
+Tests written: 208 methods, 390 cases, in 15 classes — `ContainerIdTests`, `PortCodeTests`, `RotationTests`, `SlotPositionTests`, `ContainerTests`, `VesselProfileTests`, `StowageAssignmentTests` and, for `StowagePlan`: `…AssignTests` (geometry, size, double stowing, occupied, route order, explosives), `…StackingTests` (support, weight, stack weight, full stacks), `…SequencingTests` (overstow, hatch access, both insertion orders), `…SegregationTests`, `…StabilityTests` (displacement/VCG/TCG with hand-computed figures, check order), `…RemovalTests`, `…UsableSlotsTests`, `…DischargeTests` (crane order), `…FiguresTests`.
+
+Final result: green on the first full run (`dotnet test --project Tests.Expert`), then 14 consecutive extra runs and a further batch of 60 runs (fresh seeds each time) stayed green; 0 skipped. No domain defect found: every refusal and figure matched `MODEL.md` and my hand calculation (check digits computed with an independent Python implementation of ISO 6346, VCG/TCG by hand).
+
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Expert` does not work out of the box on SDK 10.0.114.** `MSBUILD : error MSB1001: Unknown switch. … --project .`; and plain `dotnet test` gives `Microsoft.Testing.Platform.MSBuild.targets(395,5): error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. … opt-in to the new dotnet test experience`. I created `W/global.json` with `{ "test": { "runner": "Microsoft.Testing.Platform" } }`, after which `--project` works. Neither the xunit adapter page nor getting-started mentions it, though `xunit.v3` 4.0.2 + net10 is the stack they target. (docs, medium for a newcomer; I recognised the cause.)
+2. `any generate` on a fresh test project: `✗ ContainerId: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable; I restored and re-ran. (no issue)
+3. **`!(a > b)` between two parameters is not read as an order.** `VesselProfile` has `maxDisplacementTonnes <= lightshipTonnes` (scaffolded as `Any.OrderedPair(…, strict: true)`, with working pins) and `!(maxVcgMetres > lightshipVcgMetres) || double.IsInfinity(maxVcgMetres)` — same rule, negated and with a second `||` branch. The second got `to verify` on both parameters: `lightshipVcgMetres: unread guard at VesselProfile.cs, line 60: if (!(maxVcgMetres > lightshipVcgMetres) || …) ... — ties maxVcgMetres to lightshipVcgMetres`. I expected the negated form (which the docs list for a single parameter against a constant) to pair too. I hand-copied the pair/pin/refine machinery (~35 lines over seven members) from the decimal pair into the generated file. Works, but it is the largest single piece of hand editing of the session. (friction, medium; idea: read `!(a > b)`, or document the copy-the-pattern route)
+4. **A pair whose bounds depend on a third parameter has no scaffold shape.** `Container` pairs `tareTonnes <= grossMassTonnes` correctly, but the allowed window depends on `size` (a local `(minTare, maxTare)` tuple, so the guard is `unread`). The stored `_tareTonnesAndGrossMassTonnes` field is built in constructors and `With…`, before any size is drawn. I removed the field and its six assignments and rebuilt the pair inside `Generate()` after drawing the size. The "When a guard ties two parameters" section shows the three forms but none with a pin-aware pair; I found the way by reading the generated code. (docs, medium)
+5. **Telling a pinned parameter from a drawn one.** `isReefer && hazard is Explosives or Radioactive` ties two parameters. My first version drew the reefer flag first and excluded the two hazards with `_hazard.DifferentFrom(…)`; the tests that pin `WithHazard(HazardClass.Explosives)` then failed on any draw where the reefer flag came out true (6 of my 195 cases at the time, seed-dependent). The right behaviour is: a *drawn* flag follows the hazard, a *pinned* one is taken as given and the domain refuses it. The only way I found to know which is `ReferenceEquals(_isReefer, _isReeferRecipe)`, relying on how the generated file stores pins. It works but leans on an implementation detail. (docs/idea, medium: a documented idiom or helper for "was this pinned?")
+6. **JD036 versus scaffolded bases versus presets.** Raising JD036 to warning flags what `any` itself writes: `Any.Double().Positive()`, `Any.Decimal().Positive()`, `Any.Decimal()` — `AnyVesselProfile.cs(85,16): warning JD036: This floating-point dummy declares no range: one draw in ten spans the whole type`. Fixing it means bounding the base; but "a refinement never widens the base", so my `Roomy()` preset (max VCG ≥ 1000 m, max displacement ≥ 10 000 000 t…) forced me to pick wide enough bases up front (`Between(1.0, 2_000.0)` etc.). Two good rules pulling against each other; the order in which to resolve them is not documented. (friction, low)
+7. JD036's wording says "floating-point" and fires on `decimal` too (`AnyContainer.cs(63,16)` is an `AnyDecimal`). I confirmed the limit draw is real: a 3 000-draw probe of the unbounded scaffold gave `MaxDisplacementTonnes = 79198060818434854543315505086` and `MaxVcgMetres = 1.7976544001311613E+308`. Message accurate in effect, vocabulary slightly off. (defect, low)
+8. Draws catching my own mistakes (a good thing, noted for honesty): `A_box_cannot_float_above_an_empty_slot` first used tier 20 on a `Roomy()` vessel whose hold depth is only ≥ 4; on a draw with fewer than 10 tiers it failed with `Expected: NoSupportBelow / Actual: SlotOutsideVessel`. I changed the literal to tier 8, which every roomy vessel contains. I also wrote three expectations wrong against the sequencing rule (a box loaded at the very port where the box below leaves is `Overstow` per `MODEL.md`: "a box above must … discharge no later"), and fixed the tests, not the domain.
+9. No `Except` on a scaffolded generator, only `DifferentFrom` (`IAny<T>`): "a port the vessel does not call at" is `Any.PortCode().DifferentFrom(a).DifferentFrom(b).DifferentFrom(c).DifferentFrom(d)` in `Voyage.Elsewhere()`. Reads fine for four, would not for forty. (idea, low)
+10. Building a profile that violates a *tie* (max displacement ≤ lightship) cannot go through the generator: pinning both sides is refused at the second call, rightly. My `Rebuild(...)` helper in `VesselProfileTests` draws a valid roomy profile and re-passes its 11 values with the offending ones replaced — verbose but honest. (friction, low, inherent)
 
 ## What worked well
-- The `TODO_verify_…` non-compiling line: impossible to forget a guard, and the recap names the line.
-- `StringMatching(...).As(...)` for the ISO 6346 check digit: one line, honest by construction.
-- Disjoint ranges for tied pairs (lightship vs max displacement, VCG vs max VCG) kept the base valid without code.
-- Lambda refinements read as domain language once wrapped in named recipes; immutability makes
-  `static readonly` recipe fields safe.
-- `[assembly: Reproducible]` + seed message on failure: zero ceremony.
-- Conflict messages name both sides precisely.
+- The scaffold's contract is excellent: a file that does not compile where it could not vouch for a guard, with the guard quoted at its file and line, and `AnyValid…` as the one address for a base. Nothing was wrong silently; every generator I completed was checked by the compiler first.
+- The docs hit this domain squarely: the `OneOf(Range.Concat(Range)).Even()` tier example, `.As` for a check digit, `Any.OrderedPair` pins, `DifferentFrom` on any generator, "an overload is a copy of the three statements". `--entry-point any` gave `Any.Container()` at no cost.
+- `Distinct()` on a sequence of value objects with `Equals` just worked, as did `Any.StringMatching` for both identifiers.
+- `[assembly: Reproducible]` + the seed printed in the failure output (`[JustDummies] These arbitrary values were seeded with 554633800. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 554633800)]`) made every red run (all of them my own test errors) one copy-paste from a replay.
+- The dummy/literal split came out natural: slot coordinates, weights in stacking tests, port order, limits and hazard classes are literals because the test is about them; container ids, reefer flags, tares, vessel names and every limit a test does not touch are drawn — and a drawn hold depth is what told me a test's hidden assumption.
+- The analyzers stayed silent on my tests (checked with every JD rule raised to warning): only the scaffold's own bases tripped JD030/JD036.
 
 ## Fluency: 4 / 5
-The core DSL, `As`, `Combine`, sets and reproducibility are fluent and trustworthy. Points lost on the
-scaffolder: two-sided range guards unread, and no supported path for parameters tied by a guard other than
-rewriting the generated class; plus last-call-wins silently dropping recipe constraints.
+Writing the tests was fast once the generators existed, and the library never produced a wrong value or a misleading failure. The cost sat in the generators: three cross-parameter rules (the negated VCG order, the size-dependent tare/gross window, the reefer/hazard tie) needed hand edits of generated internals, with no documented pin-aware idiom, plus an environment hurdle (`dotnet test --project` on SDK 10) the docs do not mention. One point off for those; everything else was smooth.

@@ -1,39 +1,30 @@
-// Written by hand, never touched by `any generate Measure --force`.
+using JustDummies;
 
-using MusicScore.Domain;
-
-namespace MusicScore.Tests.Expert.Arbitrary;
+namespace MusicScore.Domain;
 
 public sealed partial class AnyMeasure {
 
-    /// <summary>Starts a repeated section at this measure.</summary>
-    public AnyMeasure OpeningRepeat() {
-        return WithRepeatStart(true);
+    private static IAny<IReadOnlyList<Voice>> AnyVoicesFilling(TimeSignature timeSignature) {
+        return new VoicesFilling(timeSignature.MeasureLength);
     }
 
-    /// <summary>Ends a repeated section at this measure, played <paramref name="times" /> times in all.</summary>
-    public AnyMeasure ClosingRepeat(int times) {
-        return WithRepeatEndTimes(times);
-    }
+    /// <summary>One to three voices with distinct numbers, each filling the meter's length exactly.</summary>
+    private sealed class VoicesFilling : IAny<IReadOnlyList<Voice>> {
 
-    /// <summary>A single voice holding exactly <paramref name="entries" />, in a meter they fill.</summary>
-    public AnyMeasure WithSingleVoice(TimeSignature meter, params VoiceEntry[] entries) {
-        return WithTimeSignature(meter).WithVoices([new Voice(1, entries)]);
-    }
+        private readonly Duration _length;
 
-}
+        public VoicesFilling(Duration length) {
+            _length = length;
+        }
 
-/// <summary>Voices are entities numbered within their measure: two voices are the same voice when their numbers are.</summary>
-internal sealed class VoiceNumberComparer : IEqualityComparer<Voice> {
+        public IReadOnlyList<Voice> Generate() {
+            HashSet<int> numbers = Any.SetOf(Any.Int32().Between(1, Voice.MaxVoices)).WithCountBetween(1, 3).Generate();
 
-    public static readonly VoiceNumberComparer Instance = new();
+            return numbers.OrderBy(number => number)
+                          .Select(number => new AnyVoice().WithNumber(number).Filling(_length).Generate())
+                          .ToList();
+        }
 
-    public bool Equals(Voice? x, Voice? y) {
-        return x?.Number == y?.Number;
-    }
-
-    public int GetHashCode(Voice obj) {
-        return obj.Number;
     }
 
 }

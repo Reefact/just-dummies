@@ -1,1 +1,0 @@
-[assembly: JustDummies.Xunit.Reproducible]

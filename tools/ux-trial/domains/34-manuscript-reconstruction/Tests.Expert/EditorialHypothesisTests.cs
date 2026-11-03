@@ -2,143 +2,245 @@ using JustDummies;
 
 using ManuscriptReconstruction.Domain;
 
-using static ManuscriptReconstruction.Tests.Expert.Recipes;
+using Xunit;
 
 namespace ManuscriptReconstruction.Tests.Expert;
 
 public sealed class EditorialHypothesisTests {
 
-    private static readonly WitnessSiglum    A       = Siglum("A");
-    private static readonly WitnessSiglum    B       = Siglum("B");
-    private static readonly PassageReference Locus   = Passage("1.1.1");
+    [Fact]
+    public void A_hypothesis_citing_witnesses_keeps_what_it_was_given_and_starts_proposed() {
+        // Arrange
+        Guid             id       = Guid.Parse("6f9619ff-8b86-d011-b42d-00c04fc964ff");
+        PassageReference passage  = PassageReference.Parse("3.12.4");
+        WitnessSiglum[]  cited    = [new WitnessSiglum("B"), new WitnessSiglum("A")];
 
-    /// <summary>A passage where A reads "arma virumque" and B reads "arma virum".</summary>
-    private static Tradition AnyTraditionWhereTheWitnessesDisagree() {
-        Tradition anyTradition = AnyTraditionWith(A, B);
-        anyTradition.FirstHandReads(A, Locus, "arma virumque");
-        anyTradition.FirstHandReads(B, Locus, "arma virum");
+        // Act
+        EditorialHypothesis hypothesis = new EditorialHypothesis(id, passage, "arma virumque", "Housman", cited, false, "The older hands agree.");
 
-        return anyTradition;
+        // Assert
+        Assert.Equal(id, hypothesis.Id);
+        Assert.Same(passage, hypothesis.Passage);
+        Assert.Equal("arma virumque", hypothesis.ProposedReading);
+        Assert.Equal("Housman", hypothesis.Editor);
+        Assert.Equal(cited, hypothesis.SupportingWitnesses);
+        Assert.False(hypothesis.IsConjecture);
+        Assert.Equal("The older hands agree.", hypothesis.Rationale);
+        Assert.Equal(HypothesisStatus.Proposed, hypothesis.Status);
+        Assert.Null(hypothesis.RejectionReason);
     }
 
     [Fact]
-    public void A_hypothesis_citing_a_witness_that_reads_otherwise_is_refused() {
-        // Arrange
-        Tradition anyTradition = AnyTraditionWhereTheWitnessesDisagree();
-
+    public void A_conjecture_cites_no_witness() {
         // Act
-        Action proposing = () => anyTradition.Proposes(Locus, "arma virumque", B);
+        EditorialHypothesis conjecture = Any.EditorialHypothesis().WithIsConjecture(true).Generate();
 
         // Assert
-        Assert.Throws<InvalidOperationException>(proposing);
-        Assert.Empty(anyTradition.CompetingReadingsAt(Locus));
+        Assert.True(conjecture.IsConjecture);
+        Assert.Empty(conjecture.SupportingWitnesses);
     }
 
     [Fact]
-    public void A_conjecture_needs_no_witness_and_competes_with_the_attested_readings() {
+    public void A_conjecture_citing_a_witness_is_refused() {
         // Arrange
-        Tradition           anyTradition  = AnyTraditionWhereTheWitnessesDisagree();
-        Guid                fromA         = anyTradition.Proposes(Locus, "arma virumque", A);
-        EditorialHypothesis anyConjecture = Any.EditorialHypothesis().WithPassage(Locus).WithIsConjecture(true).Generate();
+        AnyEditorialHypothesis conjectures = Any.EditorialHypothesis().WithIsConjecture(true);
 
         // Act
-        anyTradition.Propose(anyConjecture);
+        ArgumentException refusal = Assert.Throws<ArgumentException>(() => conjectures.WithSupportingWitnesses(Scene.DistinctSigla(1)).Generate());
 
         // Assert
-        Assert.Equal([fromA, anyConjecture.Id], anyTradition.CompetingReadingsAt(Locus).Select(h => h.Id));
+        Assert.Equal("supportingWitnesses", refusal.ParamName);
     }
 
     [Fact]
-    public void Accepting_a_reading_leaves_its_competitors_legitimate() {
+    public void A_reading_that_is_not_a_conjecture_cites_a_witness() {
         // Arrange
-        Tradition anyTradition = AnyTraditionWhereTheWitnessesDisagree();
-        Guid      fromA        = anyTradition.Proposes(Locus, "arma virumque", A);
-        Guid      fromB        = anyTradition.Proposes(Locus, "arma virum", B);
+        AnyEditorialHypothesis attested = Any.EditorialHypothesis().WithIsConjecture(false);
 
         // Act
-        anyTradition.Accept(fromA);
+        ArgumentException refusal = Assert.Throws<ArgumentException>(() => attested.WithSupportingWitnesses(Array.Empty<WitnessSiglum>()).Generate());
 
         // Assert
-        Assert.Equal(fromA, anyTradition.AcceptedHypothesisAt(Locus)?.Id);
-        EditorialHypothesis competitor = Assert.Single(anyTradition.CompetingReadingsAt(Locus), h => h.Id == fromB);
-        Assert.Equal(HypothesisStatus.Proposed, competitor.Status);
+        Assert.Equal("supportingWitnesses", refusal.ParamName);
     }
 
     [Fact]
-    public void A_second_reading_cannot_be_accepted_while_another_stands_at_the_passage() {
-        // Arrange
-        Tradition anyTradition = AnyTraditionWhereTheWitnessesDisagree();
-        Guid      fromA        = anyTradition.Proposes(Locus, "arma virumque", A);
-        Guid      fromB        = anyTradition.Proposes(Locus, "arma virum", B);
-        anyTradition.Accept(fromA);
+    public void A_witness_cannot_be_cited_twice() {
+        // Arrange: the same siglum made twice, so that the value is what is compared.
+        string          anySiglumText = Any.WitnessSiglum().Generate().Value;
+        WitnessSiglum[] cited         = [new WitnessSiglum(anySiglumText), new WitnessSiglum(anySiglumText)];
 
         // Act
-        Action acceptingTheOther = () => anyTradition.Accept(fromB);
+        ArgumentException refusal = Assert.Throws<ArgumentException>(
+            () => Any.EditorialHypothesis().WithIsConjecture(false).WithSupportingWitnesses(cited).Generate());
 
         // Assert
-        Assert.Throws<InvalidOperationException>(acceptingTheOther);
-        Assert.Equal(fromA, anyTradition.AcceptedHypothesisAt(Locus)?.Id);
+        Assert.Equal("supportingWitnesses", refusal.ParamName);
     }
 
     [Fact]
-    public void Withdrawing_the_accepted_reading_lets_the_editor_accept_its_competitor() {
+    public void A_missing_witness_cannot_be_cited() {
         // Arrange
-        Tradition anyTradition = AnyTraditionWhereTheWitnessesDisagree();
-        Guid      fromA        = anyTradition.Proposes(Locus, "arma virumque", A);
-        Guid      fromB        = anyTradition.Proposes(Locus, "arma virum", B);
-        anyTradition.Accept(fromA);
+        WitnessSiglum[] cited = [Any.WitnessSiglum().Generate(), null!];
 
         // Act
-        anyTradition.Withdraw(fromA);
-        anyTradition.Accept(fromB);
+        ArgumentException refusal = Assert.Throws<ArgumentException>(
+            () => Any.EditorialHypothesis().WithIsConjecture(false).WithSupportingWitnesses(cited).Generate());
 
         // Assert
-        Assert.Equal(fromB, anyTradition.AcceptedHypothesisAt(Locus)?.Id);
+        Assert.Equal("supportingWitnesses", refusal.ParamName);
     }
 
     [Fact]
-    public void A_rejected_hypothesis_no_longer_competes_and_keeps_its_reason() {
+    public void A_hypothesis_is_not_changed_by_the_collection_it_was_built_from() {
         // Arrange
-        Tradition           anyTradition = AnyTraditionWhereTheWitnessesDisagree();
-        Guid                fromA        = anyTradition.Proposes(Locus, "arma virumque", A);
-        Guid                fromB        = anyTradition.Proposes(Locus, "arma virum", B);
-        EditorialHypothesis hypothesisB  = anyTradition.Hypotheses.Single(h => h.Id == fromB);
+        List<WitnessSiglum> cited = [.. Scene.DistinctSigla(2)];
+        EditorialHypothesis hypothesis = Any.EditorialHypothesis().WithIsConjecture(false).WithSupportingWitnesses(cited).Generate();
 
         // Act
-        hypothesisB.Reject("haplography in B");
+        cited.Clear();
 
         // Assert
-        Assert.Equal([fromA], anyTradition.CompetingReadingsAt(Locus).Select(h => h.Id));
-        Assert.Equal("haplography in B", hypothesisB.RejectionReason);
+        Assert.Equal(2, hypothesis.SupportingWitnesses.Count);
     }
 
     [Fact]
-    public void An_accepted_hypothesis_must_be_withdrawn_before_it_can_be_rejected() {
+    public void A_hypothesis_needs_a_real_identifier() {
         // Arrange
-        Tradition anyTradition = AnyTraditionWhereTheWitnessesDisagree();
-        Guid      fromA        = anyTradition.Proposes(Locus, "arma virumque", A);
-        anyTradition.Accept(fromA);
-        string anyReason = Any.String().Printable().NotBlank().WithMaxLength(200).Generate();
+        AnyEditorialHypothesis hypotheses = Any.EditorialHypothesis();
 
         // Act
-        Action rejecting = () => anyTradition.Hypotheses.Single(h => h.Id == fromA).Reject(anyReason);
+        ArgumentException refusal = Assert.Throws<ArgumentException>(() => hypotheses.WithId(Guid.Empty).Generate());
 
         // Assert
-        Assert.Throws<InvalidOperationException>(rejecting);
-        Assert.Equal(HypothesisStatus.Accepted, anyTradition.AcceptedHypothesisAt(Locus)?.Status);
+        Assert.Equal("id", refusal.ParamName);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    [InlineData("\t")]
+    public void A_blank_editor_is_refused(string editor) {
+        Assert.Throws<ArgumentException>(() => Any.EditorialHypothesis().WithEditor(editor).Generate());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    [InlineData("\r\n")]
+    public void A_blank_rationale_is_refused(string rationale) {
+        Assert.Throws<ArgumentException>(() => Any.EditorialHypothesis().WithRationale(rationale).Generate());
     }
 
     [Fact]
-    public void Accepting_an_unknown_hypothesis_is_refused() {
-        // Arrange
-        Tradition anyTradition = AnyTraditionWhereTheWitnessesDisagree();
-        Guid      anyUnknownId = Any.Guid().NonEmpty().Generate();
-
+    public void A_rationale_of_two_thousand_characters_is_accepted() {
         // Act
-        Action accepting = () => anyTradition.Accept(anyUnknownId);
+        EditorialHypothesis hypothesis = Any.EditorialHypothesis().WithRationale(r => r.Alpha().WithLength(EditorialHypothesis.MaxRationaleLength)).Generate();
 
         // Assert
-        Assert.Throws<KeyNotFoundException>(accepting);
+        Assert.Equal(2000, hypothesis.Rationale.Length);
+    }
+
+    [Fact]
+    public void A_rationale_of_two_thousand_and_one_characters_is_refused() {
+        // Arrange
+        string tooLong = new string('r', 2001);
+
+        // Act
+        ArgumentOutOfRangeException refusal = Assert.Throws<ArgumentOutOfRangeException>(() => Any.EditorialHypothesis().WithRationale(tooLong).Generate());
+
+        // Assert
+        Assert.Equal("rationale", refusal.ParamName);
+    }
+
+    [Theory]
+    [InlineData("  arma   virumque ", "arma virumque")]
+    [InlineData("arma\tvirumque", "arma virumque")]
+    public void The_proposed_reading_is_normalised_like_a_variants(string written, string expected) {
+        // Act
+        EditorialHypothesis hypothesis = Any.EditorialHypothesis().WithProposedReading(written).Generate();
+
+        // Assert
+        Assert.Equal(expected, hypothesis.ProposedReading);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void An_empty_proposed_reading_holds_the_passage_to_be_an_interpolation(string written) {
+        // Act
+        EditorialHypothesis hypothesis = Any.EditorialHypothesis().WithProposedReading(written).Generate();
+
+        // Assert
+        Assert.Equal(string.Empty, hypothesis.ProposedReading);
+    }
+
+    [Fact]
+    public void A_missing_passage_proposed_reading_or_witness_list_is_refused() {
+        // Arrange
+        Guid             anyId        = Any.Guid().NonEmpty().Generate();
+        PassageReference anyPassage   = Any.PassageReference().Generate();
+        string           anyEditor    = Any.String().NotBlank().Generate();
+        string           anyRationale = Any.String().NotBlank().WithMaxLength(100).Generate();
+        WitnessSiglum[]  anyCited     = Scene.DistinctSigla(1);
+
+        // Assert
+        Assert.Throws<ArgumentNullException>(() => new EditorialHypothesis(anyId, null!, "arma", anyEditor, anyCited, false, anyRationale));
+        Assert.Throws<ArgumentNullException>(() => new EditorialHypothesis(anyId, anyPassage, null!, anyEditor, anyCited, false, anyRationale));
+        Assert.Throws<ArgumentNullException>(() => new EditorialHypothesis(anyId, anyPassage, "arma", anyEditor, null!, false, anyRationale));
+    }
+
+    [Fact]
+    public void A_proposed_hypothesis_can_be_rejected_with_a_reason() {
+        // Arrange
+        EditorialHypothesis hypothesis = Any.EditorialHypothesis().Generate();
+
+        // Act
+        hypothesis.Reject("The reading is a later gloss.");
+
+        // Assert
+        Assert.Equal(HypothesisStatus.Rejected, hypothesis.Status);
+        Assert.Equal("The reading is a later gloss.", hypothesis.RejectionReason);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void A_rejection_needs_a_reason(string reason) {
+        // Arrange
+        EditorialHypothesis hypothesis = Any.EditorialHypothesis().Generate();
+
+        // Act
+        Assert.Throws<ArgumentException>(() => hypothesis.Reject(reason));
+
+        // Assert
+        Assert.Equal(HypothesisStatus.Proposed, hypothesis.Status);
+        Assert.Null(hypothesis.RejectionReason);
+    }
+
+    [Fact]
+    public void A_missing_reason_does_not_reject() {
+        // Arrange
+        EditorialHypothesis hypothesis = Any.EditorialHypothesis().Generate();
+
+        // Act
+        Assert.ThrowsAny<ArgumentException>(() => hypothesis.Reject(null!));
+
+        // Assert
+        Assert.Equal(HypothesisStatus.Proposed, hypothesis.Status);
+    }
+
+    [Fact]
+    public void A_rejected_hypothesis_cannot_be_rejected_again_and_keeps_its_first_reason() {
+        // Arrange
+        EditorialHypothesis hypothesis = Any.EditorialHypothesis().Generate();
+        hypothesis.Reject("first reason");
+
+        // Act
+        Assert.Throws<InvalidOperationException>(() => hypothesis.Reject("second reason"));
+
+        // Assert
+        Assert.Equal("first reason", hypothesis.RejectionReason);
     }
 
 }

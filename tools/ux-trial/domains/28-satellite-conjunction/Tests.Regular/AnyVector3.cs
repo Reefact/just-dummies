@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
-// `any generate SatelliteConjunction.Domain.Vector3 --force` overwrites it. This type is partial, so members you add in a
+// `any generate Vector3 --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,9 +19,13 @@ namespace SatelliteConjunction.Domain;
 /// </summary>
 public sealed partial class AnyVector3 : IAny<Vector3> {
 
-    private readonly IAny<double> _x;
-    private readonly IAny<double> _y;
-    private readonly IAny<double> _z;
+    private IAny<double> _x;
+    private IAny<double> _y;
+    private IAny<double> _z;
+
+    private AnyDouble _xRecipe;
+    private AnyDouble _yRecipe;
+    private AnyDouble _zRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyVector3()
@@ -37,42 +45,92 @@ public sealed partial class AnyVector3 : IAny<Vector3> {
         return Any.Double();
     }
 
-    private AnyVector3(IAny<double> x,
-                       IAny<double> y,
-                       IAny<double> z) {
-        _x = x;
-        _y = y;
-        _z = z;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyVector3(AnyDouble x,
+                       AnyDouble y,
+                       AnyDouble z) {
+        _x       = x;
+        _xRecipe = x;
+        _y       = y;
+        _yRecipe = y;
+        _z       = z;
+        _zRecipe = z;
     }
 
-    /// <summary>Pins <c>x</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyVector3(AnyVector3 from) {
+        _x       = from._x;
+        _xRecipe = from._xRecipe;
+        _y       = from._y;
+        _yRecipe = from._yRecipe;
+        _z       = from._z;
+        _zRecipe = from._zRecipe;
+    }
+
+    /// <summary>Pins <c>x</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVector3 WithX(double value) {
-        return new AnyVector3(new FixedValue<double>(value), _y, _z);
+        AnyVector3 copy = new AnyVector3(this);
+
+        copy._x = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>x</c> from <c>AnyValidX()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>x</c> is drawn from — <c>AnyValidX()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVector3 WithX(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyVector3(configure(AnyValidX()), _y, _z);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVector3 copy = new AnyVector3(this);
+
+        copy._xRecipe = configure(_xRecipe);
+        copy._x       = copy._xRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>y</c> to a fixed value.</summary>
+    /// <summary>Pins <c>y</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVector3 WithY(double value) {
-        return new AnyVector3(_x, new FixedValue<double>(value), _z);
+        AnyVector3 copy = new AnyVector3(this);
+
+        copy._y = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>y</c> from <c>AnyValidY()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>y</c> is drawn from — <c>AnyValidY()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVector3 WithY(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyVector3(_x, configure(AnyValidY()), _z);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVector3 copy = new AnyVector3(this);
+
+        copy._yRecipe = configure(_yRecipe);
+        copy._y       = copy._yRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>z</c> to a fixed value.</summary>
+    /// <summary>Pins <c>z</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVector3 WithZ(double value) {
-        return new AnyVector3(_x, _y, new FixedValue<double>(value));
+        AnyVector3 copy = new AnyVector3(this);
+
+        copy._z = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>z</c> from <c>AnyValidZ()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>z</c> is drawn from — <c>AnyValidZ()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVector3 WithZ(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyVector3(_x, _y, configure(AnyValidZ()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVector3 copy = new AnyVector3(this);
+
+        copy._zRecipe = configure(_zRecipe);
+        copy._z       = copy._zRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Vector3" />.</summary>
@@ -80,20 +138,6 @@ public sealed partial class AnyVector3 : IAny<Vector3> {
         return new Vector3(_x.Generate(),
                            _y.Generate(),
                            _z.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

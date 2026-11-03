@@ -15,12 +15,19 @@ namespace RoboticMilking.Domain;
 /// </summary>
 public sealed partial class AnyMilkFlowReading : IAny<MilkFlowReading> {
 
-    private readonly IAny<UdderQuarter> _quarter;
-    private readonly IAny<TimeSpan>     _elapsed;
-    private readonly IAny<decimal>      _flowKgPerMinute;
-    private readonly IAny<decimal>      _conductivityMsPerCm;
-    private readonly IAny<decimal>      _temperatureCelsius;
-    private readonly IAny<bool>         _bloodDetected;
+    private IAny<UdderQuarter> _quarter;
+    private IAny<TimeSpan>     _elapsed;
+    private IAny<decimal>      _flowKgPerMinute;
+    private IAny<decimal>      _conductivityMsPerCm;
+    private IAny<decimal>      _temperatureCelsius;
+    private IAny<bool>         _bloodDetected;
+
+    private AnyEnum<UdderQuarter> _quarterRecipe;
+    private AnyTimeSpan           _elapsedRecipe;
+    private AnyDecimal            _flowKgPerMinuteRecipe;
+    private AnyDecimal            _conductivityMsPerCmRecipe;
+    private AnyDecimal            _temperatureCelsiusRecipe;
+    private AnyBoolean            _bloodDetectedRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyMilkFlowReading()
@@ -40,7 +47,7 @@ public sealed partial class AnyMilkFlowReading : IAny<MilkFlowReading> {
     }
 
     private static AnyDecimal AnyValidFlowKgPerMinute() {
-        return Any.Decimal().Between(0m, 8m);
+        return Any.Decimal().Between(0m, MilkFlowReading.MaxFlowKgPerMinute);
     }
 
     private static AnyDecimal AnyValidConductivityMsPerCm() {
@@ -55,78 +62,173 @@ public sealed partial class AnyMilkFlowReading : IAny<MilkFlowReading> {
         return Any.Boolean();
     }
 
-    private AnyMilkFlowReading(IAny<UdderQuarter> quarter,
-                               IAny<TimeSpan>     elapsed,
-                               IAny<decimal>      flowKgPerMinute,
-                               IAny<decimal>      conductivityMsPerCm,
-                               IAny<decimal>      temperatureCelsius,
-                               IAny<bool>         bloodDetected) {
-        _quarter             = quarter;
-        _elapsed             = elapsed;
-        _flowKgPerMinute     = flowKgPerMinute;
-        _conductivityMsPerCm = conductivityMsPerCm;
-        _temperatureCelsius  = temperatureCelsius;
-        _bloodDetected       = bloodDetected;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyMilkFlowReading(AnyEnum<UdderQuarter> quarter,
+                               AnyTimeSpan           elapsed,
+                               AnyDecimal            flowKgPerMinute,
+                               AnyDecimal            conductivityMsPerCm,
+                               AnyDecimal            temperatureCelsius,
+                               AnyBoolean            bloodDetected) {
+        _quarter                   = quarter;
+        _quarterRecipe             = quarter;
+        _elapsed                   = elapsed;
+        _elapsedRecipe             = elapsed;
+        _flowKgPerMinute           = flowKgPerMinute;
+        _flowKgPerMinuteRecipe     = flowKgPerMinute;
+        _conductivityMsPerCm       = conductivityMsPerCm;
+        _conductivityMsPerCmRecipe = conductivityMsPerCm;
+        _temperatureCelsius        = temperatureCelsius;
+        _temperatureCelsiusRecipe  = temperatureCelsius;
+        _bloodDetected             = bloodDetected;
+        _bloodDetectedRecipe       = bloodDetected;
     }
 
-    /// <summary>Pins <c>quarter</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyMilkFlowReading(AnyMilkFlowReading from) {
+        _quarter                   = from._quarter;
+        _quarterRecipe             = from._quarterRecipe;
+        _elapsed                   = from._elapsed;
+        _elapsedRecipe             = from._elapsedRecipe;
+        _flowKgPerMinute           = from._flowKgPerMinute;
+        _flowKgPerMinuteRecipe     = from._flowKgPerMinuteRecipe;
+        _conductivityMsPerCm       = from._conductivityMsPerCm;
+        _conductivityMsPerCmRecipe = from._conductivityMsPerCmRecipe;
+        _temperatureCelsius        = from._temperatureCelsius;
+        _temperatureCelsiusRecipe  = from._temperatureCelsiusRecipe;
+        _bloodDetected             = from._bloodDetected;
+        _bloodDetectedRecipe       = from._bloodDetectedRecipe;
+    }
+
+    /// <summary>Pins <c>quarter</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkFlowReading WithQuarter(UdderQuarter value) {
-        return new AnyMilkFlowReading(new FixedValue<UdderQuarter>(value), _elapsed, _flowKgPerMinute, _conductivityMsPerCm, _temperatureCelsius, _bloodDetected);
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._quarter = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>quarter</c> from <c>AnyValidQuarter()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>quarter</c> is drawn from — <c>AnyValidQuarter()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;UdderQuarter&gt;, AnyEnum&lt;UdderQuarter&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkFlowReading WithQuarter(Func<AnyEnum<UdderQuarter>, AnyEnum<UdderQuarter>> configure) {
-        return new AnyMilkFlowReading(configure(AnyValidQuarter()), _elapsed, _flowKgPerMinute, _conductivityMsPerCm, _temperatureCelsius, _bloodDetected);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._quarterRecipe = configure(_quarterRecipe);
+        copy._quarter       = copy._quarterRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>elapsed</c> to a fixed value.</summary>
+    /// <summary>Pins <c>elapsed</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkFlowReading WithElapsed(TimeSpan value) {
-        return new AnyMilkFlowReading(_quarter, new FixedValue<TimeSpan>(value), _flowKgPerMinute, _conductivityMsPerCm, _temperatureCelsius, _bloodDetected);
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._elapsed = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>elapsed</c> from <c>AnyValidElapsed()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>elapsed</c> is drawn from — <c>AnyValidElapsed()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTimeSpan, AnyTimeSpan&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkFlowReading WithElapsed(Func<AnyTimeSpan, AnyTimeSpan> configure) {
-        return new AnyMilkFlowReading(_quarter, configure(AnyValidElapsed()), _flowKgPerMinute, _conductivityMsPerCm, _temperatureCelsius, _bloodDetected);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._elapsedRecipe = configure(_elapsedRecipe);
+        copy._elapsed       = copy._elapsedRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>flowKgPerMinute</c> to a fixed value.</summary>
+    /// <summary>Pins <c>flowKgPerMinute</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkFlowReading WithFlowKgPerMinute(decimal value) {
-        return new AnyMilkFlowReading(_quarter, _elapsed, new FixedValue<decimal>(value), _conductivityMsPerCm, _temperatureCelsius, _bloodDetected);
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._flowKgPerMinute = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>flowKgPerMinute</c> from <c>AnyValidFlowKgPerMinute()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>flowKgPerMinute</c> is drawn from — <c>AnyValidFlowKgPerMinute()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkFlowReading WithFlowKgPerMinute(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyMilkFlowReading(_quarter, _elapsed, configure(AnyValidFlowKgPerMinute()), _conductivityMsPerCm, _temperatureCelsius, _bloodDetected);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._flowKgPerMinuteRecipe = configure(_flowKgPerMinuteRecipe);
+        copy._flowKgPerMinute       = copy._flowKgPerMinuteRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>conductivityMsPerCm</c> to a fixed value.</summary>
+    /// <summary>Pins <c>conductivityMsPerCm</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkFlowReading WithConductivityMsPerCm(decimal value) {
-        return new AnyMilkFlowReading(_quarter, _elapsed, _flowKgPerMinute, new FixedValue<decimal>(value), _temperatureCelsius, _bloodDetected);
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._conductivityMsPerCm = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>conductivityMsPerCm</c> from <c>AnyValidConductivityMsPerCm()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>conductivityMsPerCm</c> is drawn from — <c>AnyValidConductivityMsPerCm()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkFlowReading WithConductivityMsPerCm(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyMilkFlowReading(_quarter, _elapsed, _flowKgPerMinute, configure(AnyValidConductivityMsPerCm()), _temperatureCelsius, _bloodDetected);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._conductivityMsPerCmRecipe = configure(_conductivityMsPerCmRecipe);
+        copy._conductivityMsPerCm       = copy._conductivityMsPerCmRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>temperatureCelsius</c> to a fixed value.</summary>
+    /// <summary>Pins <c>temperatureCelsius</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkFlowReading WithTemperatureCelsius(decimal value) {
-        return new AnyMilkFlowReading(_quarter, _elapsed, _flowKgPerMinute, _conductivityMsPerCm, new FixedValue<decimal>(value), _bloodDetected);
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._temperatureCelsius = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>temperatureCelsius</c> from <c>AnyValidTemperatureCelsius()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>temperatureCelsius</c> is drawn from — <c>AnyValidTemperatureCelsius()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkFlowReading WithTemperatureCelsius(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyMilkFlowReading(_quarter, _elapsed, _flowKgPerMinute, _conductivityMsPerCm, configure(AnyValidTemperatureCelsius()), _bloodDetected);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._temperatureCelsiusRecipe = configure(_temperatureCelsiusRecipe);
+        copy._temperatureCelsius       = copy._temperatureCelsiusRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>bloodDetected</c> to a fixed value.</summary>
+    /// <summary>Pins <c>bloodDetected</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkFlowReading WithBloodDetected(bool value) {
-        return new AnyMilkFlowReading(_quarter, _elapsed, _flowKgPerMinute, _conductivityMsPerCm, _temperatureCelsius, new FixedValue<bool>(value));
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._bloodDetected = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>bloodDetected</c> from <c>AnyValidBloodDetected()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>bloodDetected</c> is drawn from — <c>AnyValidBloodDetected()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyBoolean, AnyBoolean&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkFlowReading WithBloodDetected(Func<AnyBoolean, AnyBoolean> configure) {
-        return new AnyMilkFlowReading(_quarter, _elapsed, _flowKgPerMinute, _conductivityMsPerCm, _temperatureCelsius, configure(AnyValidBloodDetected()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkFlowReading copy = new AnyMilkFlowReading(this);
+
+        copy._bloodDetectedRecipe = configure(_bloodDetectedRecipe);
+        copy._bloodDetected       = copy._bloodDetectedRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="MilkFlowReading" />.</summary>
@@ -137,20 +239,6 @@ public sealed partial class AnyMilkFlowReading : IAny<MilkFlowReading> {
                                    _conductivityMsPerCm.Generate(),
                                    _temperatureCelsius.Generate(),
                                    _bloodDetected.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

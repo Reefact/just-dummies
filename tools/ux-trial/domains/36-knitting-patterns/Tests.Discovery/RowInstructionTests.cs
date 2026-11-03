@@ -1,5 +1,4 @@
 using JustDummies;
-using JustDummies.Xunit;
 
 using KnittingPatterns.Domain;
 
@@ -7,75 +6,139 @@ using Xunit;
 
 namespace KnittingPatterns.Tests.Discovery;
 
-[Reproducible]
 public sealed class RowInstructionTests {
 
-    [Fact]
-    public void A_row_sums_what_its_runs_and_repeats_consume_and_produce() {
-        // Arrange
-        // "k2, *yo, k2tog; rep from * 8 times, kfb, k1"
-        IRowElement[] elements = [
+    private static readonly IAny<IReadOnlyList<IRowElement>> AnyElements = Any.ListOf(new AnyIRowElement()).WithCountBetween(1, 4);
+
+    /// <summary>Row 5 (RS): k2, *yo, k2tog; rep from * 8 times, k2 (20 sts)</summary>
+    private static IReadOnlyList<IRowElement> LaceRowElements() {
+        return new IRowElement[] {
             new StitchRun(StitchKind.Knit, 2),
-            new StitchRepeat([new StitchRun(StitchKind.YarnOver, 1), new StitchRun(StitchKind.KnitTwoTogether, 1)], 8),
-            new StitchRun(StitchKind.KnitFrontAndBack, 1),
-            new StitchRun(StitchKind.Knit, 1),
-        ];
-        RowInstruction row = Any.RowInstruction().WithElements(elements).Generate();
-
-        // Act
-        int consumes = row.Consumes;
-        int produces = row.Produces;
-
-        // Assert
-        Assert.Equal(20, consumes);
-        Assert.Equal(21, produces);
+            new StitchRepeat(new[] { new StitchRun(StitchKind.YarnOver, 1), new StitchRun(StitchKind.KnitTwoTogether, 1) }, 8),
+            new StitchRun(StitchKind.Knit, 2)
+        };
     }
 
     [Fact]
-    public void A_printed_count_that_disagrees_with_the_instructions_is_refused() {
-        // Arrange
+    public void A_row_adds_up_what_its_elements_consume_and_produce() {
+        FabricSide anySide = Any.Enum<FabricSide>().Generate();
+
+        RowInstruction row = new RowInstruction(5, anySide, LaceRowElements(), 20);
+
+        Assert.Equal(20, row.Consumes);
+        Assert.Equal(20, row.Produces);
+        Assert.Equal(5, row.RowNumber);
+        Assert.Equal(20, row.ExpectedStitchCount);
+    }
+
+    [Fact]
+    public void A_row_of_increases_produces_more_stitches_than_it_consumes() {
+        FabricSide anySide = Any.Enum<FabricSide>().Generate();
+
+        RowInstruction row = new RowInstruction(1, anySide, new IRowElement[] { new StitchRun(StitchKind.KnitFrontAndBack, 5) }, 10);
+
+        Assert.Equal(5, row.Consumes);
+        Assert.Equal(10, row.Produces);
+    }
+
+    [Fact]
+    public void A_row_expands_its_elements_one_after_the_other() {
+        FabricSide anySide = Any.Enum<FabricSide>().Generate();
+        RowInstruction row = new RowInstruction(1, anySide, new IRowElement[] {
+            new StitchRun(StitchKind.Knit, 2),
+            new StitchRepeat(new[] { new StitchRun(StitchKind.YarnOver, 1), new StitchRun(StitchKind.KnitTwoTogether, 1) }, 2),
+            new StitchRun(StitchKind.Purl, 1)
+        }, null);
+
+        Assert.Equal(new[] {
+            StitchKind.Knit, StitchKind.Knit,
+            StitchKind.YarnOver, StitchKind.KnitTwoTogether,
+            StitchKind.YarnOver, StitchKind.KnitTwoTogether,
+            StitchKind.Purl
+        }, row.Expand());
+    }
+
+    [Fact]
+    public void A_row_does_not_have_to_print_its_stitch_count() {
         int        anyRowNumber = Any.Int32().Positive().Generate();
         FabricSide anySide      = Any.Enum<FabricSide>().Generate();
-        // "k2tog 10 times" leaves 10 stitches, the pattern prints 11.
-        IRowElement[] elements = [new StitchRun(StitchKind.KnitTwoTogether, 10)];
 
-        // Act
-        ArgumentException error = Assert.Throws<ArgumentException>(() => new RowInstruction(anyRowNumber, anySide, elements, 11));
+        RowInstruction row = new RowInstruction(anyRowNumber, anySide, AnyElements.Generate(), null);
 
-        // Assert
+        Assert.Null(row.ExpectedStitchCount);
+    }
+
+    [Fact]
+    public void A_row_refuses_a_printed_count_that_differs_from_what_its_elements_produce() {
+        FabricSide anySide = Any.Enum<FabricSide>().Generate();
+
+        ArgumentException error = Assert.Throws<ArgumentException>(() => new RowInstruction(5, anySide, LaceRowElements(), 19));
+
+        Assert.Equal("expectedStitchCount", error.ParamName);
+        Assert.Contains("Row 5 states 19 stitches but its instructions produce 20", error.Message);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-3)]
+    public void A_row_refuses_a_printed_count_below_one(int printed) {
+        int        anyRowNumber = Any.Int32().Positive().Generate();
+        FabricSide anySide      = Any.Enum<FabricSide>().Generate();
+
+        ArgumentOutOfRangeException error = Assert.Throws<ArgumentOutOfRangeException>(() => new RowInstruction(anyRowNumber, anySide, AnyElements.Generate(), printed));
+
         Assert.Equal("expectedStitchCount", error.ParamName);
     }
 
-    [Fact]
-    public void A_printed_count_that_agrees_with_the_instructions_is_kept() {
-        // Arrange
-        int        anyRowNumber = Any.Int32().Positive().Generate();
-        FabricSide anySide      = Any.Enum<FabricSide>().Generate();
-        IRowElement[] elements = [new StitchRun(StitchKind.KnitTwoTogether, 10)];
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void A_row_is_numbered_from_one(int rowNumber) {
+        FabricSide anySide = Any.Enum<FabricSide>().Generate();
 
-        // Act
-        RowInstruction row = new(anyRowNumber, anySide, elements, 10);
+        ArgumentOutOfRangeException error = Assert.Throws<ArgumentOutOfRangeException>(() => new RowInstruction(rowNumber, anySide, AnyElements.Generate(), null));
 
-        // Assert
-        Assert.Equal(10, row.ExpectedStitchCount);
+        Assert.Equal("rowNumber", error.ParamName);
     }
 
     [Fact]
-    public void A_row_expands_its_elements_in_the_order_they_are_written() {
-        // Arrange
-        // "ssk, *k1; rep from * 2 times, k2tog" — a repeat of one stitch, as a pattern may write it.
-        IRowElement[] elements = [
-            new StitchRun(StitchKind.SlipSlipKnit, 1),
-            new StitchRepeat([new StitchRun(StitchKind.Knit, 1)], 2),
-            new StitchRun(StitchKind.KnitTwoTogether, 1),
-        ];
-        RowInstruction row = Any.RowInstruction().WithElements(elements).Generate();
+    public void A_row_refuses_a_side_the_enum_does_not_declare() {
+        int anyRowNumber = Any.Int32().Positive().Generate();
 
-        // Act
-        StitchKind[] operations = row.Expand().ToArray();
+        ArgumentOutOfRangeException error = Assert.Throws<ArgumentOutOfRangeException>(() => new RowInstruction(anyRowNumber, (FabricSide)2, AnyElements.Generate(), null));
 
-        // Assert
-        Assert.Equal(new[] { StitchKind.SlipSlipKnit, StitchKind.Knit, StitchKind.Knit, StitchKind.KnitTwoTogether }, operations);
+        Assert.Equal("side", error.ParamName);
+    }
+
+    [Fact]
+    public void A_row_without_elements_is_refused() {
+        int        anyRowNumber = Any.Int32().Positive().Generate();
+        FabricSide anySide      = Any.Enum<FabricSide>().Generate();
+
+        Assert.Throws<ArgumentNullException>(() => new RowInstruction(anyRowNumber, anySide, null!, null));
+        Assert.Throws<ArgumentException>(() => new RowInstruction(anyRowNumber, anySide, Array.Empty<IRowElement>(), null));
+    }
+
+    [Fact]
+    public void A_row_cannot_hold_a_null_element() {
+        int         anyRowNumber = Any.Int32().Positive().Generate();
+        FabricSide  anySide      = Any.Enum<FabricSide>().Generate();
+        IRowElement anyElement   = new AnyIRowElement().Generate();
+
+        Assert.Throws<ArgumentException>(() => new RowInstruction(anyRowNumber, anySide, new IRowElement?[] { anyElement, null }!, null));
+    }
+
+    [Fact]
+    public void A_row_keeps_its_own_copy_of_the_elements() {
+        int              anyRowNumber = Any.Int32().Positive().Generate();
+        FabricSide       anySide      = Any.Enum<FabricSide>().Generate();
+        List<IRowElement> elements     = new List<IRowElement> { new StitchRun(StitchKind.Knit, 4) };
+        RowInstruction   row          = new RowInstruction(anyRowNumber, anySide, elements, null);
+
+        elements.Add(new StitchRun(StitchKind.Purl, 4));
+
+        Assert.Equal(4, row.Consumes);
+        Assert.Single(row.Elements);
     }
 
 }

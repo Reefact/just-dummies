@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate StitchRepeat --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 using System.Collections.Generic;
@@ -16,8 +20,11 @@ namespace KnittingPatterns.Domain;
 /// </summary>
 public sealed partial class AnyStitchRepeat : IAny<StitchRepeat> {
 
-    private readonly IAny<IReadOnlyList<StitchRun>> _runs;
-    private readonly IAny<int>                      _times;
+    private IAny<IReadOnlyList<StitchRun>> _runs;
+    private IAny<int>                      _times;
+
+    private AnyList<StitchRun> _runsRecipe;
+    private AnyInt32           _timesRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyStitchRepeat()
@@ -25,59 +32,81 @@ public sealed partial class AnyStitchRepeat : IAny<StitchRepeat> {
                times: AnyValidTimes()) { }
 
     private static AnyList<StitchRun> AnyValidRuns() {
-        // A repeat expands to at most StitchRepeat.MaxOperations: up to 4 runs of up to 10 stitches,
-        // worked at most 250 times, stays within 10 000 by construction.
-        return Any.ListOf(new AnyStitchRun().WithCount(c => c.LessThanOrEqualTo(10))).WithCountBetween(1, 4);
+        // A repeat expands to at most 10 000 operations: up to 5 runs of up to 100 stitches stay under 500 per pass,
+        // and AnyValidTimes() draws at most 20 passes, so the product cannot cross the limit.
+        return Any.ListOf(new AnyStitchRun().WithCount(c => c.LessThanOrEqualTo(100))).WithCountBetween(1, 5);
     }
 
     private static AnyInt32 AnyValidTimes() {
-        return Any.Int32().Between(2, 250);
+        // See AnyValidRuns(): 500 operations per pass x 20 passes = 10 000, the limit.
+        return Any.Int32().Between(2, 20);
     }
 
-    private AnyStitchRepeat(IAny<IReadOnlyList<StitchRun>> runs,
-                            IAny<int>                      times) {
-        _runs  = runs;
-        _times = times;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyStitchRepeat(AnyList<StitchRun> runs,
+                            AnyInt32           times) {
+        _runs        = runs;
+        _runsRecipe  = runs;
+        _times       = times;
+        _timesRecipe = times;
     }
 
-    /// <summary>Pins <c>runs</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyStitchRepeat(AnyStitchRepeat from) {
+        _runs        = from._runs;
+        _runsRecipe  = from._runsRecipe;
+        _times       = from._times;
+        _timesRecipe = from._timesRecipe;
+    }
+
+    /// <summary>Pins <c>runs</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyStitchRepeat WithRuns(IReadOnlyList<StitchRun> value) {
-        return new AnyStitchRepeat(new FixedValue<IReadOnlyList<StitchRun>>(value), _times);
+        AnyStitchRepeat copy = new AnyStitchRepeat(this);
+
+        copy._runs = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>runs</c> from <c>AnyValidRuns()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>runs</c> is drawn from — <c>AnyValidRuns()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;StitchRun&gt;, AnyList&lt;StitchRun&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyStitchRepeat WithRuns(Func<AnyList<StitchRun>, AnyList<StitchRun>> configure) {
-        return new AnyStitchRepeat(configure(AnyValidRuns()), _times);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyStitchRepeat copy = new AnyStitchRepeat(this);
+
+        copy._runsRecipe = configure(_runsRecipe);
+        copy._runs       = copy._runsRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>times</c> to a fixed value.</summary>
+    /// <summary>Pins <c>times</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyStitchRepeat WithTimes(int value) {
-        return new AnyStitchRepeat(_runs, new FixedValue<int>(value));
+        AnyStitchRepeat copy = new AnyStitchRepeat(this);
+
+        copy._times = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>times</c> from <c>AnyValidTimes()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>times</c> is drawn from — <c>AnyValidTimes()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyStitchRepeat WithTimes(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyStitchRepeat(_runs, configure(AnyValidTimes()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyStitchRepeat copy = new AnyStitchRepeat(this);
+
+        copy._timesRecipe = configure(_timesRecipe);
+        copy._times       = copy._timesRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="StitchRepeat" />.</summary>
     public StitchRepeat Generate() {
         return new StitchRepeat(_runs.Generate(),
                                 _times.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

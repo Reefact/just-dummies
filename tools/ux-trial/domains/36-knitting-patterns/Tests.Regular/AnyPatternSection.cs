@@ -1,6 +1,6 @@
-// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
-// `any generate PatternSection --force` overwrites it. This type is partial, so members you add in a
-// neighbouring file survive.
+// Scaffolded by `any`, then rewritten by hand: the section's rows are consecutive and alternate sides, a rule
+// between the rows that no per-parameter recipe expresses. `rows` is therefore drawn as a run (first row, first
+// side, count, a template for each row) instead of as a free list. `any generate --force` would lose this.
 
 using System;
 using System.Collections.Generic;
@@ -9,70 +9,111 @@ using JustDummies;
 
 namespace KnittingPatterns.Domain;
 
-/// <summary>
-///     A generator of arbitrary <see cref="PatternSection" /> values. It draws from the ambient random
-///     context, so a reproducibility scope pins every draw it makes; outside a test,
-///     <c>Any.UseSeed(...)</c> opens one.
-/// </summary>
+/// <summary>A generator of arbitrary <see cref="PatternSection" /> values: consecutive rows on alternating sides.</summary>
 public sealed partial class AnyPatternSection : IAny<PatternSection> {
 
-    private readonly IAny<string>                        _name;
-    private readonly IAny<IReadOnlyList<RowInstruction>> _rows;
+    private IAny<string>                        _name;
+    private AnyString                           _nameRecipe;
+    private IAny<IReadOnlyList<RowInstruction>>? _pinnedRows;
+    private IAny<int>                           _firstRow;
+    private IAny<FabricSide>                    _firstSide;
+    private IAny<int>                           _rowCount;
+    private AnyRowInstruction                   _row;
 
-    /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
-    public AnyPatternSection()
-        : this(name: AnyValidName(),
-               rows: AnyValidRows()) { }
-
-    private static AnyString AnyValidName() {
-        return Any.String().NotBlank().WithMaxLength(PatternSection.MaxNameLength);
+    public AnyPatternSection() {
+        _nameRecipe = Any.String().NotBlank().WithMaxLength(PatternSection.MaxNameLength);
+        _name       = _nameRecipe;
+        _firstRow   = Any.Int32().Between(1, 50);
+        _firstSide  = Any.Enum<FabricSide>();
+        _rowCount   = Any.Int32().Between(1, 6);
+        _row        = new AnyRowInstruction();
     }
 
-    private static IAny<IReadOnlyList<RowInstruction>> AnyValidRows() {
-        // Rows are consecutive and alternate sides: draw where the section starts, how many rows it
-        // holds and the side of its first row, then lay them out.
-        return AnyConsecutiveRowsFrom(Any.Int32().Between(1, 200), Any.Enum<FabricSide>());
+    private AnyPatternSection(AnyPatternSection from) {
+        _name       = from._name;
+        _nameRecipe = from._nameRecipe;
+        _pinnedRows = from._pinnedRows;
+        _firstRow   = from._firstRow;
+        _firstSide  = from._firstSide;
+        _rowCount   = from._rowCount;
+        _row        = from._row;
     }
 
-    private AnyPatternSection(IAny<string>                        name,
-                              IAny<IReadOnlyList<RowInstruction>> rows) {
-        _name = name;
-        _rows = rows;
-    }
-
-    /// <summary>Pins <c>name</c> to a fixed value.</summary>
     public AnyPatternSection WithName(string value) {
-        return new AnyPatternSection(new FixedValue<string>(value), _rows);
+        AnyPatternSection copy = new AnyPatternSection(this);
+
+        copy._name = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>name</c> from <c>AnyValidName()</c>, refined by <paramref name="configure" />.</summary>
     public AnyPatternSection WithName(Func<AnyString, AnyString> configure) {
-        return new AnyPatternSection(configure(AnyValidName()), _rows);
+        AnyPatternSection copy = new AnyPatternSection(this);
+
+        copy._nameRecipe = configure(_nameRecipe);
+        copy._name       = copy._nameRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>rows</c> to a fixed value.</summary>
+    /// <summary>Pins the rows as they are, whatever their numbers and sides.</summary>
     public AnyPatternSection WithRows(IReadOnlyList<RowInstruction> value) {
-        return new AnyPatternSection(_name, new FixedValue<IReadOnlyList<RowInstruction>>(value));
+        AnyPatternSection copy = new AnyPatternSection(this);
+
+        copy._pinnedRows = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Produces one arbitrary <see cref="PatternSection" />.</summary>
+    public AnyPatternSection WithFirstRow(int value) {
+        AnyPatternSection copy = new AnyPatternSection(this);
+
+        copy._firstRow = Any.Fixed(value);
+
+        return copy;
+    }
+
+    public AnyPatternSection WithFirstSide(FabricSide value) {
+        AnyPatternSection copy = new AnyPatternSection(this);
+
+        copy._firstSide = Any.Fixed(value);
+
+        return copy;
+    }
+
+    public AnyPatternSection WithRowCount(int value) {
+        AnyPatternSection copy = new AnyPatternSection(this);
+
+        copy._rowCount = Any.Fixed(value);
+
+        return copy;
+    }
+
+    /// <summary>Refines the template every row of the run is drawn from (its number and side are set by the run).</summary>
+    public AnyPatternSection WithRow(Func<AnyRowInstruction, AnyRowInstruction> configure) {
+        AnyPatternSection copy = new AnyPatternSection(this);
+
+        copy._row = configure(_row);
+
+        return copy;
+    }
+
     public PatternSection Generate() {
-        return new PatternSection(_name.Generate(),
-                                  _rows.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
+        if (_pinnedRows is not null) {
+            return new PatternSection(_name.Generate(), _pinnedRows.Generate());
         }
 
-        public TValue Generate() {
-            return _value;
+        int        firstRow  = _firstRow.Generate();
+        FabricSide firstSide = _firstSide.Generate();
+        int        count     = _rowCount.Generate();
+
+        List<RowInstruction> rows = new List<RowInstruction>();
+        for (int i = 0; i < count; i++) {
+            FabricSide side = i % 2 == 0 ? firstSide : (firstSide == FabricSide.RightSide ? FabricSide.WrongSide : FabricSide.RightSide);
+            rows.Add(_row.WithRowNumber(firstRow + i).WithSide(side).Generate());
         }
 
+        return new PatternSection(_name.Generate(), rows);
     }
 
 }

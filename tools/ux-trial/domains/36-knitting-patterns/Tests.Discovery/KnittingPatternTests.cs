@@ -1,5 +1,4 @@
 using JustDummies;
-using JustDummies.Xunit;
 
 using KnittingPatterns.Domain;
 
@@ -7,146 +6,225 @@ using Xunit;
 
 namespace KnittingPatterns.Tests.Discovery;
 
-[Reproducible]
 public sealed class KnittingPatternTests {
 
     private static RowInstruction Row(int number, FabricSide side, params IRowElement[] elements) {
         return Any.RowInstruction().WithRowNumber(number).WithSide(side).WithElements(elements).Generate();
     }
 
+    private static RowInstruction Neutral(int number, FabricSide side, int stitches) {
+        return Any.RowInstruction().WithRowNumber(number).WithSide(side).WithStitchNeutralElements(stitches).Generate();
+    }
+
     private static PatternSection Section(string name, params RowInstruction[] rows) {
         return Any.PatternSection().WithName(name).WithRows(rows).Generate();
     }
 
-    [Fact]
-    public void A_pattern_expands_every_row_of_every_section_in_order() {
-        // Arrange
-        // Cast on 20. Ribbing, rows 1-2: *k2, p2; rep 5 times. Lace, row 3 (RS): k2, *yo, k2tog; rep 8 times, k2. Row 4 (WS): p20.
-        PatternSection ribbing = Section("Ribbing",
-                                         Row(1, FabricSide.RightSide, new StitchRepeat([new StitchRun(StitchKind.Knit, 2), new StitchRun(StitchKind.Purl, 2)], 5)),
-                                         Row(2, FabricSide.WrongSide, new StitchRepeat([new StitchRun(StitchKind.Knit, 2), new StitchRun(StitchKind.Purl, 2)], 5)));
-        PatternSection lace = Section("Lace",
-                                      Row(3, FabricSide.RightSide,
-                                          new StitchRun(StitchKind.Knit, 2),
-                                          new StitchRepeat([new StitchRun(StitchKind.YarnOver, 1), new StitchRun(StitchKind.KnitTwoTogether, 1)], 8),
-                                          new StitchRun(StitchKind.Knit, 2)),
-                                      Row(4, FabricSide.WrongSide, new StitchRun(StitchKind.Purl, 20)));
-        KnittingPattern pattern = Any.KnittingPattern().WithCastOnCount(20).WithSections([ribbing, lace]).Generate();
+    /// <summary>Cast on 20. Ribbing rows 1-2, Lace rows 3-4, Decrease rows 5-6, 20 stitches down to 10.</summary>
+    private static KnittingPattern ScarfPattern(Gauge gauge) {
+        IRowElement ribbing = new StitchRepeat(new[] { new StitchRun(StitchKind.Knit, 2), new StitchRun(StitchKind.Purl, 2) }, 5);
+        IRowElement lace    = new StitchRepeat(new[] { new StitchRun(StitchKind.YarnOver, 1), new StitchRun(StitchKind.KnitTwoTogether, 1) }, 8);
 
-        // Act
-        IReadOnlyList<ExpandedRow> rows = pattern.Expand();
-
-        // Assert
-        Assert.Equal(new[] { "Ribbing", "Ribbing", "Lace", "Lace" }, rows.Select(r => r.SectionName));
-        Assert.Equal(new[] { 1, 2, 3, 4 }, rows.Select(r => r.RowNumber));
-        Assert.All(rows, r => Assert.Equal(20, r.StitchesAfter));
-        Assert.Equal(20, rows[2].Operations.Count);
+        return new KnittingPattern("Scarf", gauge, 20, new[] {
+            Section("Ribbing", Row(1, FabricSide.RightSide, ribbing), Row(2, FabricSide.WrongSide, ribbing)),
+            Section("Lace", Row(3, FabricSide.RightSide, new StitchRun(StitchKind.Knit, 2), lace, new StitchRun(StitchKind.Knit, 2)),
+                            Row(4, FabricSide.WrongSide, new StitchRun(StitchKind.Purl, 20))),
+            Section("Decrease", Row(5, FabricSide.RightSide, new StitchRun(StitchKind.KnitTwoTogether, 10)),
+                                Row(6, FabricSide.WrongSide, new StitchRun(StitchKind.Purl, 10)))
+        });
     }
 
     [Fact]
-    public void Crown_decreases_bring_the_stitch_count_down_row_after_row() {
-        // Arrange
-        // Cast on 24. Row 1 (RS): *k2tog; rep 12 times (12 sts). Row 2 (WS): p12. Row 3 (RS): *cdd; rep 4 times (4 sts).
-        PatternSection crown = Section("Crown decreases",
-                                       Row(1, FabricSide.RightSide, new StitchRepeat([new StitchRun(StitchKind.KnitTwoTogether, 1)], 12)),
-                                       Row(2, FabricSide.WrongSide, new StitchRun(StitchKind.Purl, 12)),
-                                       Row(3, FabricSide.RightSide, new StitchRepeat([new StitchRun(StitchKind.CentralDoubleDecrease, 1)], 4)));
-        KnittingPattern pattern = Any.KnittingPattern().WithCastOnCount(24).WithSections([crown]).Generate();
+    public void A_pattern_expands_every_row_of_every_section_keeping_the_stitch_count_in_step() {
+        KnittingPattern pattern = ScarfPattern(Any.Gauge().Generate());
 
-        // Act
         IReadOnlyList<ExpandedRow> rows = pattern.Expand();
 
-        // Assert
-        Assert.Equal(new[] { 12, 12, 4 }, rows.Select(r => r.StitchesAfter));
-        Assert.Equal(new[] { 12, 0, 4 }, rows.Select(r => r.Decreases));
+        Assert.Equal(6, rows.Count);
+        Assert.Equal(new[] { "Ribbing", "Ribbing", "Lace", "Lace", "Decrease", "Decrease" }, rows.Select(r => r.SectionName));
+        Assert.Equal(new[] { 1, 2, 3, 4, 5, 6 }, rows.Select(r => r.RowNumber));
+        Assert.Equal(new[] { 20, 20, 20, 20, 20, 10 }, rows.Select(r => r.StitchesBefore));
+        Assert.Equal(new[] { 20, 20, 20, 20, 10, 10 }, rows.Select(r => r.StitchesAfter));
+        Assert.Equal(8, rows[2].Increases);
+        Assert.Equal(8, rows[2].Decreases);
+        Assert.Equal(10, rows[4].Decreases);
     }
 
     [Fact]
-    public void Expanding_reports_the_first_row_that_does_not_fit_the_needle() {
-        // Arrange
-        // Row 1 increases 10 sts to 20, row 2 is written for the 10 sts of the cast-on.
-        PatternSection body = Section("Body",
-                                      Row(1, FabricSide.RightSide, new StitchRun(StitchKind.KnitFrontAndBack, 10)),
-                                      Row(2, FabricSide.WrongSide, new StitchRun(StitchKind.Purl, 10)));
-        KnittingPattern pattern = Any.KnittingPattern().WithCastOnCount(10).WithSections([body]).Generate();
+    public void Expanding_twice_starts_from_a_fresh_fabric_each_time() {
+        KnittingPattern pattern = ScarfPattern(Any.Gauge().Generate());
 
-        // Act
+        IReadOnlyList<ExpandedRow> first  = pattern.Expand();
+        IReadOnlyList<ExpandedRow> second = pattern.Expand();
+
+        Assert.Equal(first.Select(r => r.StitchesAfter), second.Select(r => r.StitchesAfter));
+    }
+
+    [Fact]
+    public void The_finished_width_is_the_width_of_the_stitches_left_by_the_last_row() {
+        // 10 stitches left, at 25 stitches per 10 cm.
+        KnittingPattern pattern = ScarfPattern(new Gauge(25m, 30m));
+
+        Assert.Equal(4m, pattern.FinishedWidthCm());
+    }
+
+    [Fact]
+    public void The_row_count_is_the_last_row_of_the_last_section() {
+        KnittingPattern pattern = ScarfPattern(Any.Gauge().Generate());
+
+        Assert.Equal(6, pattern.RowCount);
+        Assert.Equal(3, pattern.Sections.Count);
+    }
+
+    [Fact]
+    public void A_pattern_whose_second_row_needs_other_stitches_than_the_first_left_cannot_be_expanded() {
+        Gauge anyGauge = Any.Gauge().Generate();
+        KnittingPattern pattern = new KnittingPattern("Hat", anyGauge, 20, new[] {
+            Section("Body", Neutral(1, FabricSide.RightSide, 20), Neutral(2, FabricSide.WrongSide, 19))
+        });
+
         StitchCountMismatchException error = Assert.Throws<StitchCountMismatchException>(() => pattern.Expand());
 
-        // Assert
         Assert.Equal(2, error.RowNumber);
         Assert.Equal(20, error.LiveStitches);
-        Assert.Equal(10, error.RequiredStitches);
+        Assert.Equal(19, error.RequiredStitches);
     }
 
     [Fact]
-    public void The_finished_width_is_measured_on_the_last_row() {
-        // Arrange
-        // Cast on 40, row 1 (RS): *k2tog; rep 20 times leaves 20 sts, at 20 sts per 10 cm.
-        Gauge          gauge = Any.Gauge().WithStitchesPer10Cm(20m).Generate();
-        PatternSection body  = Section("Body", Row(1, FabricSide.RightSide, new StitchRepeat([new StitchRun(StitchKind.KnitTwoTogether, 1)], 20)));
-        KnittingPattern pattern = Any.KnittingPattern().WithGauge(gauge).WithCastOnCount(40).WithSections([body]).Generate();
+    public void A_first_row_that_does_not_consume_the_cast_on_cannot_be_expanded() {
+        Gauge anyGauge = Any.Gauge().Generate();
+        KnittingPattern pattern = new KnittingPattern("Hat", anyGauge, 20, new[] {
+            Section("Body", Neutral(1, FabricSide.RightSide, 18))
+        });
 
-        // Act
-        decimal width = pattern.FinishedWidthCm();
+        StitchCountMismatchException error = Assert.Throws<StitchCountMismatchException>(() => pattern.Expand());
 
-        // Assert
-        Assert.Equal(10m, width);
+        Assert.Equal(1, error.RowNumber);
+        Assert.Equal(20, error.LiveStitches);
     }
 
     [Fact]
-    public void A_pattern_whose_first_section_does_not_start_at_row_1_is_refused() {
-        // Arrange
-        string anyTitle   = Any.String().NotBlank().Generate();
-        Gauge  anyGauge   = Any.Gauge().Generate();
-        int    anyCastOn  = Any.Int32().Between(1, KnittingPattern.MaxCastOn).Generate();
-        PatternSection anySectionFromRow3 = Any.PatternSection()
-                                               .WithRows([Any.RowInstruction().WithRowNumber(3).Generate()])
-                                               .Generate();
+    public void A_pattern_starting_on_the_wrong_side_is_accepted_but_cannot_be_expanded() {
+        // Nothing at construction looks at which side row 1 is written for; the fabric does when the pattern is worked.
+        Gauge anyGauge = Any.Gauge().Generate();
+        KnittingPattern pattern = new KnittingPattern("Hat", anyGauge, 12, new[] {
+            Section("Body", Neutral(1, FabricSide.WrongSide, 12))
+        });
 
-        // Act
-        ArgumentException error = Assert.Throws<ArgumentException>(() => new KnittingPattern(anyTitle, anyGauge, anyCastOn, [anySectionFromRow3]));
+        Assert.Throws<InvalidOperationException>(() => pattern.Expand());
+    }
 
-        // Assert
+    [Fact]
+    public void A_title_is_trimmed() {
+        KnittingPattern pattern = Any.KnittingPattern().WithTitle("  Cabled hat ").Generate();
+
+        Assert.Equal("Cabled hat", pattern.Title);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void A_pattern_needs_a_title_with_something_in_it(string blank) {
+        KnittingPattern anyPattern = Any.KnittingPattern().Generate();
+
+        Assert.Throws<ArgumentException>(() => new KnittingPattern(blank, anyPattern.Gauge, anyPattern.CastOnCount, anyPattern.Sections));
+        Assert.Throws<ArgumentNullException>(() => new KnittingPattern(null!, anyPattern.Gauge, anyPattern.CastOnCount, anyPattern.Sections));
+    }
+
+    [Fact]
+    public void A_pattern_needs_a_gauge() {
+        KnittingPattern anyPattern = Any.KnittingPattern().Generate();
+
+        Assert.Throws<ArgumentNullException>(() => new KnittingPattern(anyPattern.Title, null!, anyPattern.CastOnCount, anyPattern.Sections));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2000)]
+    public void A_cast_on_may_be_one_stitch_or_two_thousand(int castOn) {
+        KnittingPattern pattern = Any.KnittingPattern().WithCastOnCount(castOn).Generate();
+
+        Assert.Equal(castOn, pattern.CastOnCount);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(2001)]
+    public void A_cast_on_outside_1_to_2000_is_refused(int castOn) {
+        KnittingPattern anyPattern = Any.KnittingPattern().Generate();
+
+        ArgumentOutOfRangeException error = Assert.Throws<ArgumentOutOfRangeException>(() => new KnittingPattern(anyPattern.Title, anyPattern.Gauge, castOn, anyPattern.Sections));
+
+        Assert.Equal("castOnCount", error.ParamName);
+    }
+
+    [Fact]
+    public void A_pattern_needs_sections() {
+        KnittingPattern anyPattern = Any.KnittingPattern().Generate();
+
+        Assert.Throws<ArgumentNullException>(() => new KnittingPattern(anyPattern.Title, anyPattern.Gauge, anyPattern.CastOnCount, null!));
+        Assert.Throws<ArgumentException>(() => new KnittingPattern(anyPattern.Title, anyPattern.Gauge, anyPattern.CastOnCount, Array.Empty<PatternSection>()));
+    }
+
+    [Fact]
+    public void A_pattern_cannot_hold_a_null_section() {
+        KnittingPattern anyPattern = Any.KnittingPattern().Generate();
+
+        Assert.Throws<ArgumentException>(() => new KnittingPattern(anyPattern.Title, anyPattern.Gauge, anyPattern.CastOnCount, new PatternSection?[] { anyPattern.Sections[0], null }!));
+    }
+
+    [Fact]
+    public void The_first_section_starts_at_row_one() {
+        KnittingPattern anyPattern = Any.KnittingPattern().Generate();
+
+        ArgumentException error = Assert.Throws<ArgumentException>(() => new KnittingPattern(anyPattern.Title, anyPattern.Gauge, anyPattern.CastOnCount, new[] {
+            Section("Body", Neutral(2, FabricSide.WrongSide, 10))
+        }));
+
         Assert.Equal("sections", error.ParamName);
-        Assert.Contains("row 3", error.Message);
+        Assert.Contains("starts at row 2, not row 1", error.Message);
+    }
+
+    [Theory]
+    [InlineData(4)]   // a gap after row 2
+    [InlineData(2)]   // overlaps row 2
+    public void Sections_follow_each_other_without_a_gap_or_an_overlap(int secondSectionStart) {
+        KnittingPattern anyPattern = Any.KnittingPattern().Generate();
+        FabricSide      side       = secondSectionStart % 2 == 1 ? FabricSide.RightSide : FabricSide.WrongSide;
+
+        ArgumentException error = Assert.Throws<ArgumentException>(() => new KnittingPattern(anyPattern.Title, anyPattern.Gauge, anyPattern.CastOnCount, new[] {
+            Section("Ribbing", Neutral(1, FabricSide.RightSide, 10), Neutral(2, FabricSide.WrongSide, 10)),
+            Section("Body", Neutral(secondSectionStart, side, 10))
+        }));
+
+        Assert.Contains($"Section 'Body' starts at row {secondSectionStart}; row 3 was expected.", error.Message);
+    }
+
+    [Theory]
+    [InlineData("Body", "Body")]
+    [InlineData("Body", "BODY")]
+    public void Section_names_are_unique_whatever_their_case(string first, string second) {
+        KnittingPattern anyPattern = Any.KnittingPattern().Generate();
+
+        ArgumentException error = Assert.Throws<ArgumentException>(() => new KnittingPattern(anyPattern.Title, anyPattern.Gauge, anyPattern.CastOnCount, new[] {
+            Section(first, Neutral(1, FabricSide.RightSide, 10)),
+            Section(second, Neutral(2, FabricSide.WrongSide, 10))
+        }));
+
+        Assert.Contains($"Two sections are named '{second}'", error.Message);
     }
 
     [Fact]
-    public void Two_sections_named_alike_whatever_the_case_are_refused() {
-        // Arrange
-        PatternSection first  = Section("Body", Any.RowInstruction().WithRowNumber(1).WithSide(FabricSide.RightSide).Generate());
-        PatternSection second = Section("BODY", Any.RowInstruction().WithRowNumber(2).WithSide(FabricSide.WrongSide).Generate());
+    public void A_pattern_keeps_its_own_copy_of_the_sections() {
+        KnittingPattern    anyPattern = Any.KnittingPattern().Generate();
+        List<PatternSection> sections = new List<PatternSection> { Section("Body", Neutral(1, FabricSide.RightSide, 10)) };
+        KnittingPattern    pattern    = new KnittingPattern(anyPattern.Title, anyPattern.Gauge, anyPattern.CastOnCount, sections);
 
-        // Act
-        ArgumentException error = Assert.Throws<ArgumentException>(() => Any.KnittingPattern().WithSections([first, second]).Generate());
+        sections.Add(Section("Border", Neutral(2, FabricSide.WrongSide, 10)));
 
-        // Assert
-        Assert.Equal("sections", error.ParamName);
-        Assert.Contains("BODY", error.Message);
-    }
-
-    [Fact]
-    public void A_gap_between_two_sections_is_refused() {
-        // Arrange
-        PatternSection ribbing = Section("Ribbing", Any.RowInstruction().WithRowNumber(1).WithSide(FabricSide.RightSide).Generate());
-        PatternSection body    = Section("Body", Any.RowInstruction().WithRowNumber(3).WithSide(FabricSide.RightSide).Generate());
-
-        // Act
-        ArgumentException error = Assert.Throws<ArgumentException>(() => Any.KnittingPattern().WithSections([ribbing, body]).Generate());
-
-        // Assert
-        Assert.Contains("row 2 was expected", error.Message);
-    }
-
-    [Fact]
-    public void A_pattern_title_is_kept_without_its_surrounding_spaces() {
-        // Arrange
-        // Act
-        KnittingPattern pattern = Any.KnittingPattern().WithTitle("  Seafoam scarf ").Generate();
-
-        // Assert
-        Assert.Equal("Seafoam scarf", pattern.Title);
+        Assert.Single(pattern.Sections);
+        Assert.Equal(1, pattern.RowCount);
     }
 
 }

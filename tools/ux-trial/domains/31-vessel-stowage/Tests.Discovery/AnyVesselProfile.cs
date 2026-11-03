@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate VesselProfile --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,17 +19,32 @@ namespace VesselStowage.Domain;
 /// </summary>
 public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
 
-    private readonly IAny<string>  _name;
-    private readonly IAny<int>     _bayCount;
-    private readonly IAny<int>     _rowCount;
-    private readonly IAny<int>     _holdTiers;
-    private readonly IAny<int>     _deckTiers;
-    private readonly IAny<decimal> _maxStackWeightTonnes;
-    private readonly IAny<decimal> _lightshipTonnes;
-    private readonly IAny<double>  _lightshipVcgMetres;
-    private readonly IAny<decimal> _maxDisplacementTonnes;
-    private readonly IAny<double>  _maxVcgMetres;
-    private readonly IAny<double>  _maxTcgMetres;
+    private IAny<string>            _name;
+    private IAny<int>               _bayCount;
+    private IAny<int>               _rowCount;
+    private IAny<int>               _holdTiers;
+    private IAny<int>               _deckTiers;
+    private IAny<decimal>           _maxStackWeightTonnes;
+    private AnyOrderedPair<decimal> _lightshipTonnesAndMaxDisplacementTonnes;
+    private AnyOrderedPair<double>  _lightshipVcgMetresAndMaxVcgMetres;
+    private IAny<double>            _maxTcgMetres;
+
+    private AnyString  _nameRecipe;
+    private AnyInt32   _bayCountRecipe;
+    private AnyInt32   _rowCountRecipe;
+    private AnyInt32   _holdTiersRecipe;
+    private AnyInt32   _deckTiersRecipe;
+    private AnyDecimal _maxStackWeightTonnesRecipe;
+    private AnyDecimal _lightshipTonnesRecipe;
+    private AnyDouble  _lightshipVcgMetresRecipe;
+    private AnyDecimal _maxDisplacementTonnesRecipe;
+    private AnyDouble  _maxVcgMetresRecipe;
+    private AnyDouble  _maxTcgMetresRecipe;
+
+    private decimal? _lightshipTonnesPin;
+    private decimal? _maxDisplacementTonnesPin;
+    private double?  _lightshipVcgMetresPin;
+    private double?  _maxVcgMetresPin;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyVesselProfile()
@@ -42,19 +61,19 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
                maxTcgMetres:          AnyValidMaxTcgMetres()) { }
 
     private static AnyString AnyValidName() {
-        return Any.String().NotBlank();
+        return Any.String().NotBlank().WithLengthBetween(1, 30);
     }
 
     private static AnyInt32 AnyValidBayCount() {
-        return Any.Int32().Between(1, 99);
+        return Any.Int32().Positive().LessThanOrEqualTo(99);
     }
 
     private static AnyInt32 AnyValidRowCount() {
-        return Any.Int32().Between(1, 21);
+        return Any.Int32().Positive().LessThanOrEqualTo(21);
     }
 
     private static AnyInt32 AnyValidHoldTiers() {
-        return Any.Int32().Between(1, 10);
+        return Any.Int32().Positive().LessThanOrEqualTo(10);
     }
 
     private static AnyInt32 AnyValidDeckTiers() {
@@ -62,195 +81,375 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
     }
 
     private static AnyDecimal AnyValidMaxStackWeightTonnes() {
-        return Any.Decimal().Positive();
+        return Any.Decimal().Between(60m, 200m).WithScale(1);
     }
 
     private static AnyDecimal AnyValidLightshipTonnes() {
-        // The maximum displacement must exceed the lightship: the two ranges are kept apart so that
-        // any pair drawn from them holds that rule by construction.
-        return Any.Decimal().Between(2_000m, 50_000m).WithScale(1);
+        return Any.Decimal().Between(5_000m, 60_000m).WithScale(0);
     }
 
     private static AnyDouble AnyValidLightshipVcgMetres() {
-        // The maximum VCG must sit above the lightship VCG: the two ranges are kept apart for the same reason.
-        return Any.Double().Between(5.0, 15.0);
+        return Any.Double().Between(5.0, 20.0);
     }
 
     private static AnyDecimal AnyValidMaxDisplacementTonnes() {
-        // Above every lightship AnyValidLightshipTonnes() can draw.
-        return Any.Decimal().Between(50_001m, 250_000m).WithScale(1);
+        return Any.Decimal().Between(10_000m, 200_000m).WithScale(0);
     }
 
     private static AnyDouble AnyValidMaxVcgMetres() {
-        // Above every lightship VCG AnyValidLightshipVcgMetres() can draw.
-        return Any.Double().Between(15.5, 30.0);
+        return Any.Double().Between(10.0, 40.0);
     }
 
     private static AnyDouble AnyValidMaxTcgMetres() {
-        return Any.Double().Positive();
+        return Any.Double().Between(0.5, 5.0);
     }
 
-    private AnyVesselProfile(IAny<string>  name,
-                             IAny<int>     bayCount,
-                             IAny<int>     rowCount,
-                             IAny<int>     holdTiers,
-                             IAny<int>     deckTiers,
-                             IAny<decimal> maxStackWeightTonnes,
-                             IAny<decimal> lightshipTonnes,
-                             IAny<double>  lightshipVcgMetres,
-                             IAny<decimal> maxDisplacementTonnes,
-                             IAny<double>  maxVcgMetres,
-                             IAny<double>  maxTcgMetres) {
-        _name                  = name;
-        _bayCount              = bayCount;
-        _rowCount              = rowCount;
-        _holdTiers             = holdTiers;
-        _deckTiers             = deckTiers;
-        _maxStackWeightTonnes  = maxStackWeightTonnes;
-        _lightshipTonnes       = lightshipTonnes;
-        _lightshipVcgMetres    = lightshipVcgMetres;
-        _maxDisplacementTonnes = maxDisplacementTonnes;
-        _maxVcgMetres          = maxVcgMetres;
-        _maxTcgMetres          = maxTcgMetres;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyVesselProfile(AnyString  name,
+                             AnyInt32   bayCount,
+                             AnyInt32   rowCount,
+                             AnyInt32   holdTiers,
+                             AnyInt32   deckTiers,
+                             AnyDecimal maxStackWeightTonnes,
+                             AnyDecimal lightshipTonnes,
+                             AnyDouble  lightshipVcgMetres,
+                             AnyDecimal maxDisplacementTonnes,
+                             AnyDouble  maxVcgMetres,
+                             AnyDouble  maxTcgMetres) {
+        _name                                    = name;
+        _nameRecipe                              = name;
+        _bayCount                                = bayCount;
+        _bayCountRecipe                          = bayCount;
+        _rowCount                                = rowCount;
+        _rowCountRecipe                          = rowCount;
+        _holdTiers                               = holdTiers;
+        _holdTiersRecipe                         = holdTiers;
+        _deckTiers                               = deckTiers;
+        _deckTiersRecipe                         = deckTiers;
+        _maxStackWeightTonnes                    = maxStackWeightTonnes;
+        _maxStackWeightTonnesRecipe              = maxStackWeightTonnes;
+        _lightshipTonnesRecipe                   = lightshipTonnes;
+        _lightshipVcgMetresRecipe                = lightshipVcgMetres;
+        _maxDisplacementTonnesRecipe             = maxDisplacementTonnes;
+        _maxVcgMetresRecipe                      = maxVcgMetres;
+        _maxTcgMetres                            = maxTcgMetres;
+        _maxTcgMetresRecipe                      = maxTcgMetres;
+        _lightshipTonnesAndMaxDisplacementTonnes = LightshipTonnesAndMaxDisplacementTonnes();
+        _lightshipVcgMetresAndMaxVcgMetres       = LightshipVcgMetresAndMaxVcgMetres();
     }
 
-    /// <summary>Pins <c>name</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyVesselProfile(AnyVesselProfile from) {
+        _name                                    = from._name;
+        _nameRecipe                              = from._nameRecipe;
+        _bayCount                                = from._bayCount;
+        _bayCountRecipe                          = from._bayCountRecipe;
+        _rowCount                                = from._rowCount;
+        _rowCountRecipe                          = from._rowCountRecipe;
+        _holdTiers                               = from._holdTiers;
+        _holdTiersRecipe                         = from._holdTiersRecipe;
+        _deckTiers                               = from._deckTiers;
+        _deckTiersRecipe                         = from._deckTiersRecipe;
+        _maxStackWeightTonnes                    = from._maxStackWeightTonnes;
+        _maxStackWeightTonnesRecipe              = from._maxStackWeightTonnesRecipe;
+        _lightshipTonnesAndMaxDisplacementTonnes = from._lightshipTonnesAndMaxDisplacementTonnes;
+        _lightshipTonnesRecipe                   = from._lightshipTonnesRecipe;
+        _lightshipTonnesPin                      = from._lightshipTonnesPin;
+        _lightshipVcgMetresPin                   = from._lightshipVcgMetresPin;
+        _lightshipVcgMetresAndMaxVcgMetres       = from._lightshipVcgMetresAndMaxVcgMetres;
+        _lightshipVcgMetresRecipe                = from._lightshipVcgMetresRecipe;
+        _maxDisplacementTonnesRecipe             = from._maxDisplacementTonnesRecipe;
+        _maxDisplacementTonnesPin                = from._maxDisplacementTonnesPin;
+        _maxVcgMetresPin                         = from._maxVcgMetresPin;
+        _maxVcgMetresRecipe                      = from._maxVcgMetresRecipe;
+        _maxTcgMetres                            = from._maxTcgMetres;
+        _maxTcgMetresRecipe                      = from._maxTcgMetresRecipe;
+    }
+
+    /// <summary>Draws <c>lightshipTonnes</c> and <c>maxDisplacementTonnes</c> together, <c>lightshipTonnes</c> always before <c>maxDisplacementTonnes</c> as the constructor requires, each from its current recipe and pin.</summary>
+    private AnyOrderedPair<decimal> LightshipTonnesAndMaxDisplacementTonnes() {
+        AnyOrderedPair<decimal> pair = Any.OrderedPair(_lightshipTonnesRecipe, _maxDisplacementTonnesRecipe, strict: true);
+
+        if (_lightshipTonnesPin is { } lightshipTonnes) { pair = pair.WithFirst(lightshipTonnes); }
+        if (_maxDisplacementTonnesPin is { } maxDisplacementTonnes) { pair = pair.WithSecond(maxDisplacementTonnes); }
+
+        return pair;
+    }
+
+    /// <summary>Draws <c>lightshipVcgMetres</c> and <c>maxVcgMetres</c> together, <c>lightshipVcgMetres</c> always below <c>maxVcgMetres</c> as the constructor requires, each from its current recipe and pin.</summary>
+    private AnyOrderedPair<double> LightshipVcgMetresAndMaxVcgMetres() {
+        AnyOrderedPair<double> pair = Any.OrderedPair(_lightshipVcgMetresRecipe, _maxVcgMetresRecipe, strict: true);
+
+        if (_lightshipVcgMetresPin is { } lightshipVcgMetres) { pair = pair.WithFirst(lightshipVcgMetres); }
+        if (_maxVcgMetresPin is { } maxVcgMetres) { pair = pair.WithSecond(maxVcgMetres); }
+
+        return pair;
+    }
+
+    /// <summary>Pins <c>name</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithName(string value) {
-        return new AnyVesselProfile(new FixedValue<string>(value), _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._name = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>name</c> from <c>AnyValidName()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>name</c> is drawn from — <c>AnyValidName()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithName(Func<AnyString, AnyString> configure) {
-        return new AnyVesselProfile(configure(AnyValidName()), _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._nameRecipe = configure(_nameRecipe);
+        copy._name       = copy._nameRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>bayCount</c> to a fixed value.</summary>
+    /// <summary>Pins <c>bayCount</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithBayCount(int value) {
-        return new AnyVesselProfile(_name, new FixedValue<int>(value), _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._bayCount = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>bayCount</c> from <c>AnyValidBayCount()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>bayCount</c> is drawn from — <c>AnyValidBayCount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithBayCount(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyVesselProfile(_name, configure(AnyValidBayCount()), _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._bayCountRecipe = configure(_bayCountRecipe);
+        copy._bayCount       = copy._bayCountRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>rowCount</c> to a fixed value.</summary>
+    /// <summary>Pins <c>rowCount</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithRowCount(int value) {
-        return new AnyVesselProfile(_name, _bayCount, new FixedValue<int>(value), _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._rowCount = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>rowCount</c> from <c>AnyValidRowCount()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>rowCount</c> is drawn from — <c>AnyValidRowCount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithRowCount(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyVesselProfile(_name, _bayCount, configure(AnyValidRowCount()), _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._rowCountRecipe = configure(_rowCountRecipe);
+        copy._rowCount       = copy._rowCountRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>holdTiers</c> to a fixed value.</summary>
+    /// <summary>Pins <c>holdTiers</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithHoldTiers(int value) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, new FixedValue<int>(value), _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._holdTiers = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>holdTiers</c> from <c>AnyValidHoldTiers()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>holdTiers</c> is drawn from — <c>AnyValidHoldTiers()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithHoldTiers(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, configure(AnyValidHoldTiers()), _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._holdTiersRecipe = configure(_holdTiersRecipe);
+        copy._holdTiers       = copy._holdTiersRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>deckTiers</c> to a fixed value.</summary>
+    /// <summary>Pins <c>deckTiers</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithDeckTiers(int value) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, new FixedValue<int>(value), _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._deckTiers = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>deckTiers</c> from <c>AnyValidDeckTiers()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>deckTiers</c> is drawn from — <c>AnyValidDeckTiers()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithDeckTiers(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, configure(AnyValidDeckTiers()), _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._deckTiersRecipe = configure(_deckTiersRecipe);
+        copy._deckTiers       = copy._deckTiersRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>maxStackWeightTonnes</c> to a fixed value.</summary>
+    /// <summary>Pins <c>maxStackWeightTonnes</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithMaxStackWeightTonnes(decimal value) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, new FixedValue<decimal>(value), _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._maxStackWeightTonnes = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>maxStackWeightTonnes</c> from <c>AnyValidMaxStackWeightTonnes()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>maxStackWeightTonnes</c> is drawn from — <c>AnyValidMaxStackWeightTonnes()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithMaxStackWeightTonnes(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, configure(AnyValidMaxStackWeightTonnes()), _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._maxStackWeightTonnesRecipe = configure(_maxStackWeightTonnesRecipe);
+        copy._maxStackWeightTonnes       = copy._maxStackWeightTonnesRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>lightshipTonnes</c> to a fixed value.</summary>
+    /// <summary>Pins <c>lightshipTonnes</c> to a fixed value, which bounds <c>maxDisplacementTonnes</c>; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithLightshipTonnes(decimal value) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, new FixedValue<decimal>(value), _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._lightshipTonnesPin                      = value;
+        copy._lightshipTonnesAndMaxDisplacementTonnes = copy.LightshipTonnesAndMaxDisplacementTonnes();
+
+        return copy;
     }
 
-    /// <summary>Draws <c>lightshipTonnes</c> from <c>AnyValidLightshipTonnes()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>lightshipTonnes</c> is drawn from — <c>AnyValidLightshipTonnes()</c>, then each earlier refinement — through <paramref name="configure" />, in order with <c>maxDisplacementTonnes</c>.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithLightshipTonnes(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, configure(AnyValidLightshipTonnes()), _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._lightshipTonnesRecipe                   = configure(_lightshipTonnesRecipe);
+        copy._lightshipTonnesPin                      = null;
+        copy._lightshipTonnesAndMaxDisplacementTonnes = copy.LightshipTonnesAndMaxDisplacementTonnes();
+
+        return copy;
     }
 
-    /// <summary>Pins <c>lightshipVcgMetres</c> to a fixed value.</summary>
+    /// <summary>Pins <c>lightshipVcgMetres</c> to a fixed value, which bounds <c>maxVcgMetres</c>; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithLightshipVcgMetres(double value) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, new FixedValue<double>(value), _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._lightshipVcgMetresPin                = value;
+        copy._lightshipVcgMetresAndMaxVcgMetres    = copy.LightshipVcgMetresAndMaxVcgMetres();
+
+        return copy;
     }
 
-    /// <summary>Draws <c>lightshipVcgMetres</c> from <c>AnyValidLightshipVcgMetres()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>lightshipVcgMetres</c> is drawn from, in order with <c>maxVcgMetres</c>.</summary>
     public AnyVesselProfile WithLightshipVcgMetres(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, configure(AnyValidLightshipVcgMetres()), _maxDisplacementTonnes, _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._lightshipVcgMetresRecipe             = configure(_lightshipVcgMetresRecipe);
+        copy._lightshipVcgMetresPin                = null;
+        copy._lightshipVcgMetresAndMaxVcgMetres    = copy.LightshipVcgMetresAndMaxVcgMetres();
+
+        return copy;
     }
 
-    /// <summary>Pins <c>maxDisplacementTonnes</c> to a fixed value.</summary>
+    /// <summary>Pins <c>maxDisplacementTonnes</c> to a fixed value, which bounds <c>lightshipTonnes</c>; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithMaxDisplacementTonnes(decimal value) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, new FixedValue<decimal>(value), _maxVcgMetres, _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._maxDisplacementTonnesPin                = value;
+        copy._lightshipTonnesAndMaxDisplacementTonnes = copy.LightshipTonnesAndMaxDisplacementTonnes();
+
+        return copy;
     }
 
-    /// <summary>Draws <c>maxDisplacementTonnes</c> from <c>AnyValidMaxDisplacementTonnes()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>maxDisplacementTonnes</c> is drawn from — <c>AnyValidMaxDisplacementTonnes()</c>, then each earlier refinement — through <paramref name="configure" />, in order with <c>lightshipTonnes</c>.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithMaxDisplacementTonnes(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, configure(AnyValidMaxDisplacementTonnes()), _maxVcgMetres, _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._maxDisplacementTonnesRecipe             = configure(_maxDisplacementTonnesRecipe);
+        copy._maxDisplacementTonnesPin                = null;
+        copy._lightshipTonnesAndMaxDisplacementTonnes = copy.LightshipTonnesAndMaxDisplacementTonnes();
+
+        return copy;
     }
 
-    /// <summary>Pins <c>maxVcgMetres</c> to a fixed value.</summary>
+    /// <summary>Pins <c>maxVcgMetres</c> to a fixed value, which bounds <c>lightshipVcgMetres</c>; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithMaxVcgMetres(double value) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, new FixedValue<double>(value), _maxTcgMetres);
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._maxVcgMetresPin                      = value;
+        copy._lightshipVcgMetresAndMaxVcgMetres    = copy.LightshipVcgMetresAndMaxVcgMetres();
+
+        return copy;
     }
 
-    /// <summary>Draws <c>maxVcgMetres</c> from <c>AnyValidMaxVcgMetres()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>maxVcgMetres</c> is drawn from, in order with <c>lightshipVcgMetres</c>.</summary>
     public AnyVesselProfile WithMaxVcgMetres(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, configure(AnyValidMaxVcgMetres()), _maxTcgMetres);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._maxVcgMetresRecipe                   = configure(_maxVcgMetresRecipe);
+        copy._maxVcgMetresPin                      = null;
+        copy._lightshipVcgMetresAndMaxVcgMetres    = copy.LightshipVcgMetresAndMaxVcgMetres();
+
+        return copy;
     }
 
-    /// <summary>Pins <c>maxTcgMetres</c> to a fixed value.</summary>
+    /// <summary>Pins <c>maxTcgMetres</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVesselProfile WithMaxTcgMetres(double value) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, new FixedValue<double>(value));
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._maxTcgMetres = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>maxTcgMetres</c> from <c>AnyValidMaxTcgMetres()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>maxTcgMetres</c> is drawn from — <c>AnyValidMaxTcgMetres()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVesselProfile WithMaxTcgMetres(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyVesselProfile(_name, _bayCount, _rowCount, _holdTiers, _deckTiers, _maxStackWeightTonnes, _lightshipTonnes, _lightshipVcgMetres, _maxDisplacementTonnes, _maxVcgMetres, configure(AnyValidMaxTcgMetres()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVesselProfile copy = new AnyVesselProfile(this);
+
+        copy._maxTcgMetresRecipe = configure(_maxTcgMetresRecipe);
+        copy._maxTcgMetres       = copy._maxTcgMetresRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="VesselProfile" />.</summary>
     public VesselProfile Generate() {
+        (decimal lightshipTonnes, decimal maxDisplacementTonnes) = _lightshipTonnesAndMaxDisplacementTonnes.Generate();
+        (double lightshipVcgMetres, double maxVcgMetres)         = _lightshipVcgMetresAndMaxVcgMetres.Generate();
+
         return new VesselProfile(_name.Generate(),
                                  _bayCount.Generate(),
                                  _rowCount.Generate(),
                                  _holdTiers.Generate(),
                                  _deckTiers.Generate(),
                                  _maxStackWeightTonnes.Generate(),
-                                 _lightshipTonnes.Generate(),
-                                 _lightshipVcgMetres.Generate(),
-                                 _maxDisplacementTonnes.Generate(),
-                                 _maxVcgMetres.Generate(),
+                                 lightshipTonnes,
+                                 lightshipVcgMetres,
+                                 maxDisplacementTonnes,
+                                 maxVcgMetres,
                                  _maxTcgMetres.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

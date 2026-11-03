@@ -1,51 +1,45 @@
-# Orbital microbiology — notes from a regular developer
+# Regular notes — 21 orbital microbiology
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Created `Tests.Regular`, restored, then ran one command:
-  `any generate Culture CultureId ExperimentalConditions Species GrowthRate Concentration Observation --entry-point static:Arbitrary`.
-- Filled the 18 `TODO_verify` bases by hand (ranges from the guards, `Any.StringMatching` for the id and the binomial name,
-  disjoint min/opt/max temperature bands so `min < opt < max` holds by construction, OD's 10 % floor as the uncertainty base,
-  and the 10 mL centrifuge cap as the volume base).
-- Wrote 36 test methods (42 cases) in four files plus a `Lab` helper of shared refinements: value objects, conditions
-  (microgravity boosts of +20 % rate and +30 % capacity), observations and predictions, and the `Culture` aggregate (inoculation
-  rules, lag, drift, growth in orbit against the centrifuge, stationary phase, die-off, competition, assimilation, prediction, termination).
-- `[assembly: Reproducible]`. All 42 pass; I reran the suite 15 times with no failures.
+- Pages read, in order: `MODEL.md`, `docs/PROJECT-README.md` and `docs/README.md` (skimmed), `guides/getting-started`, `packages/justdummies-cli` (the whole page: it is the one I actually work from), `packages/justdummies-xunit`, `generators/numbers`, then `guides/composition` (for `OrderedPair` + `Then`, `Fixed`, `DifferentFrom`), the `Patterns` section of `generators/strings` and the `DateTimeOffset` section of `generators/dates-and-times`.
+- Domain: 11 files, 6 value objects (`CultureId`, `GrowthRate`, `Concentration`, `Species`, `ExperimentalConditions`, `Observation`), `EstimatedState`, `Prediction`, `MicrobialPopulation`, aggregate `Culture`.
+- Project: `Tests.Regular/OrbitalMicrobiology.Tests.Regular.csproj` from the template, plus a `global.json` in the domain folder (see friction 1).
+- Scaffolding, one command for the ten types, run from `Tests.Regular`:
+  `any generate CultureId GrowthRate Concentration Species ExperimentalConditions Observation EstimatedState Prediction MicrobialPopulation Culture --output Generators --entry-point any`
+  Result: 10 generators + 10 `*.Entry.cs`; 5 of them did not compile (`CultureId` 1 to verify, `Species` 7, `ExperimentalConditions` 2, `Observation` 2, `Culture` 1), 13 `CS0103 TODO_verify_the_generator_for_...` errors in total.
+- Generators completed by hand (`Tests.Regular/Generators/`):
+  - `AnyCultureId`: `Any.StringMatching("CH(0[1-9]|1[0-2])-C[0-9]{4}")`, retyped `AnyString` -> `AnyPattern` (4 places, as the TODO says).
+  - `AnySpecies`: name `Any.StringMatching("[A-Z][a-z]{2,11} [a-z]{3,14}")`; `maxGrowthRate` refined with `.WithPerHour(r => r.GreaterThan(0d))`; `lagHours` `Between(0, Species.MaxLagHours)`; `yield` `Between(Species.MinYieldCellsPerGram, Species.MaxYieldCellsPerGram)`. The three cardinal temperatures (min < opt < max) are drawn together as a triple (`Any.OrderedPair(..., strict: true).Then(...)`, the composition page's recipe), the six per-temperature `With...` methods were deleted and replaced by one `WithCardinalTemperatures(min, opt, max)` pin (needed a new field in the generated file, copied in the copy constructor).
+  - `AnyExperimentalConditions`: removed the two sentinels; the centrifuge rule (>= 0.5 g => <= 10 mL) is written in `Generate()`: draw both, and if the pair is invalid redraw the volume from `_volumeMillilitresRecipe.LessThanOrEqualTo(10)`.
+  - `AnyObservation`: removed the sentinels; `relativeUncertainty` base becomes `Between(Observation.MinIndirectRelativeUncertainty, 1d)` so that it is valid whichever method is drawn.
+  - `AnyCulture`: `startedAtUtc` is `Any.DateTimeOffset().Between(2000-01-01, 2100-01-01)` (the default offset is already +00:00).
+- Tests (`Tests.Regular/Tests/`, `[assembly: Reproducible]`): 174 test methods, 329 test cases (57 theories). `CultureIdTests`, `GrowthRateTests`, `ConcentrationTests`, `SpeciesTests`, `ExperimentalConditionsTests`, `ObservationTests`, `EstimatedStateTests`, `PredictionTests`, `MicrobialPopulationTests`, `CultureTests`, plus `Samples.cs` (named arrangements: a species that grows best at 30 C, a sibling species of another name, the 1 g / 30 C / 10 g/L / 5 mL chamber).
+  Boundaries of every range (closed/open ends, NaN, infinities), the centrifuge rule on both sides of 0.5 g and 10 mL, the optical-density rule (0.0999 refused, 0.1 accepted, other methods unaffected), `TemperatureFactor`, effective rate and capacity worked by hand (1 g, 0 g, 0.5 g, cap at 5 h-1), `RelativeGrowthAgainst`, equality, `IsConfirmedBy` (inside/outside one combined sigma, +/-0.5 h window, other species), `MicrobialPopulation` phases; for `Culture`: construction (UTC), inoculation (capacity edge, twice, same name other instance, 4 then a 5th species, after time zero, microgravity capacity), interactions (range, direction, self, absent species), advancing (exponential growth within 6.5-6.9 generations after 10 h, lag, stationarity, never above capacity, uncertainty drift 0.05 + 0.02 t and saturation, die-off e^-1 outside cardinals, extinction, competition/facilitation/undeclared bystander), `Record` (inverse-variance blend, window, other culture, absent species), `Estimate`, `Predict` (no side effect, equals what `Advance` produces, uncertainty), `GenerationsOf`, `Terminate`.
+- Result: green. First complete run: 326 cases, 323 passed, 3 skipped, 0 failed. Final suite: 329 cases, 326 passed, 3 skipped. Then 14 more runs with fresh seeds (`dotnet test --project Tests.Regular --no-build`): all green, no flakiness. 3 tests are `Skip` with a domain defect (below). Zero build warnings, zero JD diagnostics (I raised JD001-JD038 to warning once to check).
 
-## Frictions and surprises, in the order I met them
-1. **The usual double guard is not read at all.** `if (!double.IsFinite(x) || x < 0 || x > Max) throw …` came back as
-   `Any.Double()  to verify, unread guards` for every one of the 13 double parameters. That is the guard every numeric
-   value object I write uses. So for this domain the scaffolder inferred nothing numeric: 18 of 22 parameters were
-   `to verify`. The `ThrowIfOutside(v, -20, 80, …)` helper and `maxGrowthRate.PerHour <= 0` (on a composed parameter) were not read either.
-   I would rather have a partly inferred `Between(0, Max)` plus the `to verify` mark than a bare `Any.Double()`.
-2. **"First unread guard" hid the guard that mattered.** For `optimalTemperatureCelsius` the recap and the TODO quote
-   `ThrowIfOutside(...)` (line 38) and never mention the cross-parameter `min < opt < max` check on line 40. If I had only read
-   the quoted line, I would have written `Between(-20, 80)` three times and got flaky tests.
-3. Switching to `Any.StringMatching` meant retyping the factory and the refining overload (`AnyString` -> `AnyPattern`).
-   That is documented, and a script handled it, but by hand it is two edits per parameter.
-4. `Arbitrary.Culture().WithConditions(Lab.FedConditions())` (passing a generator) gave
-   `error CS1503: Argument 1: cannot convert from 'AnyExperimentalConditions' to 'ExperimentalConditions'`.
-   The docs explain why (no `With…` takes a generator; a reusable refinement is a `Func<AnyX, AnyX>`). After I turned my helpers into
-   `Func`s, `WithConditions(Lab.Fed)` reads well. But passing a generator was the first thing I tried, and the compiler error does not point you to the `Func` form.
-5. Each `AnyValid…()` is private, so a test that calls a constructor directly and needs "any valid temperature" has nowhere
-   to get it from. I drew a whole `ExperimentalConditions` and read `.TemperatureCelsius` from it, which is a small hack.
-6. A cross-parameter rule shows up in tests: to pin a 5 % uncertainty on an observation I also had to keep the method away from
-   OpticalDensity (`WithMethod(m => m.Except(ObservationMethod.OpticalDensity))`). This is honest and reads fine. You just have to remember it.
-7. A "twin" of a drawn value with one parameter changed (same conditions at 0 g instead of 1 g) has no generator form, so I
-   called the domain constructor with three properties from the drawn value. That is acceptable.
+## Frictions and surprises, in order
+1. `dotnet test --project Tests.Regular` (the command of the brief) does not run with the template csproj on the .NET 10 SDK. Exact output:
+   `MSBUILD : error MSB1001: Unknown switch. ... --project Tests.Regular ... Switch: --project`. Dropping `--project` gives
+   `Microsoft.Testing.Platform.MSBuild.targets(395,5): error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. If you use dotnet test, you should opt-in to the new dotnet test experience.`
+   Expected: the xUnit adapter page to tell me. It says nothing about the SDK. Fix: a `global.json` beside the project with `{ "test": { "runner": "Microsoft.Testing.Platform" } }`. I put it in the domain folder (not in `Domain/`). After that `dotnet test --project Tests.Regular` works. Docs gap: `justdummies-xunit` mentions the `xunit.v3` 4.0.2 floor but not this opt-in.
+2. `any` reports `Species` as 7 of 7 `to verify` because the guards are in a private `static void ThrowIfOutside(value, min, max, name)` helper called six times. The docs say a `void` helper "is marked as before" (to verify), so it is documented, but for a domain written like this (a very common style) the scaffold of every numeric parameter is a bare `Any.Double()` plus a sentinel, and I had to copy the bounds by hand. The messages are fine (`first unread guard at Species.cs, line 37: ThrowIfOutside(...);, and 1 more`) but "and 1 more" does not say that the second one is the ordering rule between three parameters, which is the interesting one. Idea: read a `void` helper whose body is a plain range check on its first parameter against its next two arguments (the recipe of the `ThrowIfNegative` family).
+3. Three ordered values (min < optimum < max): the scaffolded shape (one field + one recipe per constructor parameter, one `With<Param>` pin/refine pair per parameter) fights this rule. The composition page gave me the recipe immediately (`Any.OrderedPair(..., strict: true).Then(...)`, it is literally min/optimum/max), but there is no place for it in the generated class: I had to add a field, copy it in the copy constructor, delete six now-dead `With...TemperatureCelsius` methods (otherwise a pin silently does nothing) and add a `WithCardinalTemperatures`. `any generate Species --force` would destroy all of that. The `partial` escape hatch does not help here because the copy constructor is in the generated file. Idea: a documented way to declare a tied group of parameters (or `--force` that keeps hand edits of `Generate()`), or at least a page that says "for a triple, do this".
+4. A guard with `&&` across two parameters (`gravityG >= 0.5 && volumeMillilitres > 10`) is marked on both parameters ("ties gravityG to volumeMillilitres"), correct and clear. But there is no good generic way to keep both pins valid: any rewrite of `Generate()` has to decide which pin wins when they conflict. I settled on "draw both; if the pair is invalid, redraw the volume from the recipe", which preserves any pin of a valid combination. It took thought each time; the docs' "pin both, or write the tie in `Generate()`" is accurate but leaves the trade-off to me.
+5. `Observation`: optical density cannot claim < 10 % (a rule between `method` and `relativeUncertainty`). Any `Generate()` surgery either overrides a user pin silently or throws; I gave up and made the valid base `Between(0.1, 1)`. Consequence: no drawn observation is ever more certain than 10 %, which is a narrower domain than the constructor accepts for direct methods. Tests that need 5 % pin both uncertainty and a direct method. Noted because nothing in the file or the docs tells the next reader that the base is deliberately narrower.
+6. Scaffolded one-sided doubles: `elapsedHours`, `madeAtHours` are `Any.Double().GreaterThanOrEqualTo(0d)`. Docs explain that one draw in ten may reach `double.MaxValue`. That is right for finding bugs, but it means `Any.Prediction()` and `Any.EstimatedState()` sometimes carry 1.7e308 hours. Nothing failed, but when I wrote the tests I had to remember to pin hours whenever a test relates two times. Not a defect, a cost.
+7. The type of a replaced recipe: `Any.StringMatching(...)` returns `AnyPattern`, so the retype of 4 places (field, ctor, factory, `Func<>`) is mechanical and the TODO text lists them. Worked on the first attempt for `AnyCultureId` and `AnySpecies`. I did a global `AnyString` -> `AnyPattern` replacement, which is only safe because the file has a single string parameter; with a second string parameter it would have been wrong.
+8. `Any.ListOf(Any.Species()).WithCount(5).Distinct()`: relies on `Species.Equals` (by name). It works and the docs say so, but this is exactly the kind of thing I would not have trusted without the "compares the elements with their own equality" sentence in the CLI page.
+9. Skipped tests and seeds: the brief asks for `Skip = "domain defect: ..., seed ..."`. For the three defects the seed is irrelevant (any seed reproduces them since the failing input is a literal I wrote), but the failure output still prints one, so I recorded it. Fine, just odd to write.
+10. Nothing in the `JD` analyzers fired on my code. I checked once by raising all 38 to warning because Info never prints in `dotnet build` (the docs say so). Having to do that to learn whether I used the library correctly is a small cost: a one-line `dotnet build -p:...` or `any`-side hint would make it discoverable.
 
-## What worked really well
-- The TODO lines that stop the build, with the exact guard line quoted: nothing slipped through silently.
-- Nested refinements read like the domain: `Lab.Mesophile().WithMaxGrowthRate(r => r.WithPerHour(p => p.LessThanOrEqualTo(4)))`
-  and `WithCultureId(id => id.WithValue(v => v.DifferentFrom(culture.Id.Value)))`. Bounds added in a lambda combine
-  with the base without any trouble.
-- `Any.ListOf(Arbitrary.Species()).WithCount(5).Distinct()` respected `Species.Equals`, which gave me five distinct species in one line.
-- `Any.DateTimeOffset()` defaults to `+00:00`, so the UTC guard was already honoured. `WithOffset(2h)` gave me the
-  non-UTC case in one call.
-- `static:Arbitrary` entry points, and the `[Reproducible]` seed line printed on a failing test (checked by breaking an assertion on purpose).
-- The draws exposed one wrong dependency: the "+20 % in microgravity" ratio is only exact while μmax × 1.2 stays under the 5 h⁻¹ cap,
-  so the test has to declare `≤ 4`. This is the "the test not caring is not the code not caring" point in practice.
+## What worked well
+- One `any generate` for ten types with `--entry-point any`: `Any.Culture().WithConditions(conditions)`, `Any.Observation().WithMethod(...).WithRelativeUncertainty(...)` read exactly like the tests intend. The `Samples` helpers are three lines each.
+- The "TODO is not a failure" design really works: 13 `CS0103` errors at the exact lines, each pointing to the guard, and none of them was wrong. Nested generators (`Observation` -> `Species` -> `GrowthRate`) composed on their own.
+- Refinement lambdas: `WithMaxGrowthRate(...)`, `WithCellsPerMillilitre(c => c.Positive())`, `WithCultureId(id => id.WithValue(v => v.DifferentFrom(...)))`, `WithBinomialName(n => n.DifferentFrom(...))` all compose, and a contradiction would have been refused at the line.
+- `Any.OrderedPair(...).Then(...)` for three ordered values and `Distinct()` on a list of domain objects both worked first time from the docs.
+- `[assembly: Reproducible]` is a one-liner; failing runs print the seed in the standard output, which I used for the Skip messages. Fourteen repeated runs on fresh seeds stayed green, including 57 theories and the numeric simulations.
+- Constants are referenced by the scaffolded recipes (`Between(0d, GrowthRate.MaxPerHour)`), so the generators follow the domain.
 
 ## Fluency: 4 / 5
-Once the bases were written, the tests were quick to write and short, and I trust them. I took a point off because the scaffold inferred
-nothing from this domain's (very ordinary) numeric guards: about 20 minutes of filling in bases that the tool could have
-pre-filled, plus one cross-parameter guard that only shows up if you open the constructor.
+Day to day it is fast: scaffold, build, follow the 13 `CS0103` errors, and the dummies read well in the tests. The points off are for the domain's style, which is full of cross-parameter rules (three ordered temperatures, centrifuge volume, optical-density uncertainty) and a validation helper the tool cannot read: that is where I left the happy path, hand-edited the generated `Generate()`, deleted dead `With...` methods, and still have a `--force` that would erase all of it. Plus the one environmental item (the `dotnet test --project` / MTP opt-in) that the docs do not mention.

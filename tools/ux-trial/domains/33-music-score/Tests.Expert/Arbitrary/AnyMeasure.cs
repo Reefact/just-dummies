@@ -1,14 +1,17 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Measure --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 using System.Collections.Generic;
 
 using JustDummies;
-using MusicScore.Domain;
 
-namespace MusicScore.Tests.Expert.Arbitrary;
+namespace MusicScore.Domain;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Measure" /> values. It draws from the ambient random
@@ -17,19 +20,24 @@ namespace MusicScore.Tests.Expert.Arbitrary;
 /// </summary>
 public sealed partial class AnyMeasure : IAny<Measure> {
 
-    private readonly IAny<int>                  _number;
-    private readonly IAny<TimeSignature>        _timeSignature;
-    private readonly IAny<Dynamic>              _dynamic;
-    private readonly Func<TimeSignature, IAny<IReadOnlyList<Voice>>> _voices;
-    private readonly IAny<bool>                 _repeatStart;
-    private readonly IAny<int>                  _repeatEndTimes;
+    private IAny<int>                  _number;
+    private IAny<TimeSignature>        _timeSignature;
+    private IAny<Dynamic>              _dynamic;
+    private IAny<IReadOnlyList<Voice>>? _voices; // null: voices that fill the drawn time signature, see AnyMeasure.Custom.cs
+    private IAny<bool>                 _repeatStart;
+    private IAny<int>                  _repeatEndTimes;
+
+    private AnyInt32         _numberRecipe;
+    private AnyTimeSignature _timeSignatureRecipe;
+    private AnyEnum<Dynamic> _dynamicRecipe;
+    private AnyBoolean       _repeatStartRecipe;
+    private AnyInt32         _repeatEndTimesRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyMeasure()
         : this(number:         AnyValidNumber(),
                timeSignature:  AnyValidTimeSignature(),
                dynamic:        AnyValidDynamic(),
-               voices:         meter => AnyValidVoices(meter),
                repeatStart:    AnyValidRepeatStart(),
                repeatEndTimes: AnyValidRepeatEndTimes()) { }
 
@@ -45,122 +53,183 @@ public sealed partial class AnyMeasure : IAny<Measure> {
         return Any.Enum<Dynamic>();
     }
 
-    private static AnyList<Voice> AnyValidVoices(TimeSignature meter) {
-        // Every voice fills exactly the meter's length, and no two voices share a number.
-        return Any.ListOf(new AnyVoice().Filling(meter.MeasureLength))
-                  .WithCountBetween(1, Voice.MaxVoices)
-                  .Distinct(VoiceNumberComparer.Instance);
-    }
-
     private static AnyBoolean AnyValidRepeatStart() {
-        // Repeat barlines shape the played order of a whole score: a test that wants one writes it.
+        // A drawn measure carries no repeat barline: whether and where the music repeats changes the
+        // played order, so a test that is about it says so (WithRepeatStart, WithRepeatEndTimes).
         return Any.Boolean().False();
     }
 
     private static AnyInt32 AnyValidRepeatEndTimes() {
-        // No end repeat by default, for the same reason as the start repeat.
+        // 0 is "no end repeat"; see AnyValidRepeatStart. A test about repeats pins 2..Measure.MaxRepeatTimes.
         return Any.Int32().Zero();
     }
 
-    private AnyMeasure(IAny<int>                  number,
-                       IAny<TimeSignature>        timeSignature,
-                       IAny<Dynamic>              dynamic,
-                       Func<TimeSignature, IAny<IReadOnlyList<Voice>>> voices,
-                       IAny<bool>                 repeatStart,
-                       IAny<int>                  repeatEndTimes) {
-        _number         = number;
-        _timeSignature  = timeSignature;
-        _dynamic        = dynamic;
-        _voices         = voices;
-        _repeatStart    = repeatStart;
-        _repeatEndTimes = repeatEndTimes;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyMeasure(AnyInt32         number,
+                       AnyTimeSignature timeSignature,
+                       AnyEnum<Dynamic> dynamic,
+                       AnyBoolean       repeatStart,
+                       AnyInt32         repeatEndTimes) {
+        _number               = number;
+        _numberRecipe         = number;
+        _timeSignature        = timeSignature;
+        _timeSignatureRecipe  = timeSignature;
+        _dynamic              = dynamic;
+        _dynamicRecipe        = dynamic;
+        _repeatStart          = repeatStart;
+        _repeatStartRecipe    = repeatStart;
+        _repeatEndTimes       = repeatEndTimes;
+        _repeatEndTimesRecipe = repeatEndTimes;
     }
 
-    /// <summary>Pins <c>number</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyMeasure(AnyMeasure from) {
+        _number               = from._number;
+        _numberRecipe         = from._numberRecipe;
+        _timeSignature        = from._timeSignature;
+        _timeSignatureRecipe  = from._timeSignatureRecipe;
+        _dynamic              = from._dynamic;
+        _dynamicRecipe        = from._dynamicRecipe;
+        _voices               = from._voices;
+        _repeatStart          = from._repeatStart;
+        _repeatStartRecipe    = from._repeatStartRecipe;
+        _repeatEndTimes       = from._repeatEndTimes;
+        _repeatEndTimesRecipe = from._repeatEndTimesRecipe;
+    }
+
+    /// <summary>Pins <c>number</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMeasure WithNumber(int value) {
-        return new AnyMeasure(new FixedValue<int>(value), _timeSignature, _dynamic, _voices, _repeatStart, _repeatEndTimes);
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._number = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>number</c> from <c>AnyValidNumber()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>number</c> is drawn from — <c>AnyValidNumber()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMeasure WithNumber(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyMeasure(configure(AnyValidNumber()), _timeSignature, _dynamic, _voices, _repeatStart, _repeatEndTimes);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._numberRecipe = configure(_numberRecipe);
+        copy._number       = copy._numberRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>timeSignature</c> to a fixed value.</summary>
+    /// <summary>Pins <c>timeSignature</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMeasure WithTimeSignature(TimeSignature value) {
-        return new AnyMeasure(_number, new FixedValue<TimeSignature>(value), _dynamic, _voices, _repeatStart, _repeatEndTimes);
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._timeSignature = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>timeSignature</c> from <c>AnyValidTimeSignature()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>timeSignature</c> is drawn from — <c>AnyValidTimeSignature()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTimeSignature, AnyTimeSignature&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMeasure WithTimeSignature(Func<AnyTimeSignature, AnyTimeSignature> configure) {
-        return new AnyMeasure(_number, configure(AnyValidTimeSignature()), _dynamic, _voices, _repeatStart, _repeatEndTimes);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._timeSignatureRecipe = configure(_timeSignatureRecipe);
+        copy._timeSignature       = copy._timeSignatureRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>dynamic</c> to a fixed value.</summary>
+    /// <summary>Pins <c>dynamic</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMeasure WithDynamic(Dynamic value) {
-        return new AnyMeasure(_number, _timeSignature, new FixedValue<Dynamic>(value), _voices, _repeatStart, _repeatEndTimes);
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._dynamic = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>dynamic</c> from <c>AnyValidDynamic()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>dynamic</c> is drawn from — <c>AnyValidDynamic()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;Dynamic&gt;, AnyEnum&lt;Dynamic&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMeasure WithDynamic(Func<AnyEnum<Dynamic>, AnyEnum<Dynamic>> configure) {
-        return new AnyMeasure(_number, _timeSignature, configure(AnyValidDynamic()), _voices, _repeatStart, _repeatEndTimes);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._dynamicRecipe = configure(_dynamicRecipe);
+        copy._dynamic       = copy._dynamicRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>voices</c> to a fixed value.</summary>
+    /// <summary>Pins <c>voices</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type. Left alone, the voices fill the drawn time signature exactly.</summary>
     public AnyMeasure WithVoices(IReadOnlyList<Voice> value) {
-        return new AnyMeasure(_number, _timeSignature, _dynamic, _ => new FixedValue<IReadOnlyList<Voice>>(value), _repeatStart, _repeatEndTimes);
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._voices = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>voices</c> from <c>AnyValidVoices()</c>, refined by <paramref name="configure" />.</summary>
-    public AnyMeasure WithVoices(Func<AnyList<Voice>, AnyList<Voice>> configure) {
-        return new AnyMeasure(_number, _timeSignature, _dynamic, meter => configure(AnyValidVoices(meter)), _repeatStart, _repeatEndTimes);
-    }
-
-    /// <summary>Pins <c>repeatStart</c> to a fixed value.</summary>
+    /// <summary>Pins <c>repeatStart</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMeasure WithRepeatStart(bool value) {
-        return new AnyMeasure(_number, _timeSignature, _dynamic, _voices, new FixedValue<bool>(value), _repeatEndTimes);
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._repeatStart = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>repeatStart</c> from <c>AnyValidRepeatStart()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>repeatStart</c> is drawn from — <c>AnyValidRepeatStart()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyBoolean, AnyBoolean&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMeasure WithRepeatStart(Func<AnyBoolean, AnyBoolean> configure) {
-        return new AnyMeasure(_number, _timeSignature, _dynamic, _voices, configure(AnyValidRepeatStart()), _repeatEndTimes);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._repeatStartRecipe = configure(_repeatStartRecipe);
+        copy._repeatStart       = copy._repeatStartRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>repeatEndTimes</c> to a fixed value.</summary>
+    /// <summary>Pins <c>repeatEndTimes</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMeasure WithRepeatEndTimes(int value) {
-        return new AnyMeasure(_number, _timeSignature, _dynamic, _voices, _repeatStart, new FixedValue<int>(value));
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._repeatEndTimes = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>repeatEndTimes</c> from <c>AnyValidRepeatEndTimes()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>repeatEndTimes</c> is drawn from — <c>AnyValidRepeatEndTimes()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMeasure WithRepeatEndTimes(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyMeasure(_number, _timeSignature, _dynamic, _voices, _repeatStart, configure(AnyValidRepeatEndTimes()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMeasure copy = new AnyMeasure(this);
+
+        copy._repeatEndTimesRecipe = configure(_repeatEndTimesRecipe);
+        copy._repeatEndTimes       = copy._repeatEndTimesRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Measure" />.</summary>
     public Measure Generate() {
-        // The voices depend on the meter: draw it first, then fill it.
-        TimeSignature meter = _timeSignature.Generate();
+        int           number        = _number.Generate();
+        TimeSignature timeSignature = _timeSignature.Generate();
+        Dynamic       dynamic       = _dynamic.Generate();
 
-        return new Measure(_number.Generate(),
-                           meter,
-                           _dynamic.Generate(),
-                           _voices(meter).Generate(),
+        IReadOnlyList<Voice> voices = (_voices ?? AnyVoicesFilling(timeSignature)).Generate();
+
+        return new Measure(number,
+                           timeSignature,
+                           dynamic,
+                           voices,
                            _repeatStart.Generate(),
                            _repeatEndTimes.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

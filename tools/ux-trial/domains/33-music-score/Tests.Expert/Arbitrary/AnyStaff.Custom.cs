@@ -1,21 +1,24 @@
-// Written by hand, never touched by `any generate Staff --force`.
+using JustDummies;
 
-using MusicScore.Domain;
-
-namespace MusicScore.Tests.Expert.Arbitrary;
+namespace MusicScore.Domain;
 
 public sealed partial class AnyStaff {
 
-    /// <summary>
-    ///     One arbitrary measure per shape, numbered 1..n in the order given. A shape states only
-    ///     what the test needs of that measure: a repeat barline, a meter, its voices.
-    /// </summary>
-    public AnyStaff WithMeasures(params Func<AnyMeasure, AnyMeasure>[] shapes) {
-        return new AnyStaff(_name, new Drawn<IReadOnlyList<Measure>>(() => MeasuresShapedBy(shapes)));
-    }
+    /// <summary>Measures numbered 1..n, n drawn by <c>count</c>, each in a meter of its own and without repeat barlines.</summary>
+    private sealed class NumberedMeasures : IAny<IReadOnlyList<Measure>> {
 
-    private static IReadOnlyList<Measure> MeasuresShapedBy(IEnumerable<Func<AnyMeasure, AnyMeasure>> shapes) {
-        return shapes.Select((shape, index) => shape(new AnyMeasure()).WithNumber(index + 1).Generate()).ToArray();
+        private readonly IAny<int> _count;
+
+        public NumberedMeasures(IAny<int> count) {
+            _count = count;
+        }
+
+        public IReadOnlyList<Measure> Generate() {
+            int count = _count.Generate();
+
+            return Enumerable.Range(1, count).Select(number => new AnyMeasure().WithNumber(number).Generate()).ToList();
+        }
+
     }
 
 }

@@ -1,5 +1,5 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
-// `any generate RailwayInterlocking.Domain.Point --force` overwrites it. This type is partial, so members you add in a
+// `any generate Point --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
 
 using System;
@@ -15,9 +15,13 @@ namespace RailwayInterlocking.Domain;
 /// </summary>
 public sealed partial class AnyPoint : IAny<Point> {
 
-    private readonly IAny<string>        _name;
-    private readonly IAny<SectionId>     _section;
-    private readonly IAny<PointPosition> _initialPosition;
+    private IAny<string>        _name;
+    private IAny<SectionId>     _section;
+    private IAny<PointPosition> _initialPosition;
+
+    private AnyString              _nameRecipe;
+    private AnySectionId           _sectionRecipe;
+    private AnyEnum<PointPosition> _initialPositionRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyPoint()
@@ -37,42 +41,92 @@ public sealed partial class AnyPoint : IAny<Point> {
         return Any.Enum<PointPosition>();
     }
 
-    private AnyPoint(IAny<string>        name,
-                     IAny<SectionId>     section,
-                     IAny<PointPosition> initialPosition) {
-        _name            = name;
-        _section         = section;
-        _initialPosition = initialPosition;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyPoint(AnyString              name,
+                     AnySectionId           section,
+                     AnyEnum<PointPosition> initialPosition) {
+        _name                  = name;
+        _nameRecipe            = name;
+        _section               = section;
+        _sectionRecipe         = section;
+        _initialPosition       = initialPosition;
+        _initialPositionRecipe = initialPosition;
     }
 
-    /// <summary>Pins <c>name</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyPoint(AnyPoint from) {
+        _name                  = from._name;
+        _nameRecipe            = from._nameRecipe;
+        _section               = from._section;
+        _sectionRecipe         = from._sectionRecipe;
+        _initialPosition       = from._initialPosition;
+        _initialPositionRecipe = from._initialPositionRecipe;
+    }
+
+    /// <summary>Pins <c>name</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyPoint WithName(string value) {
-        return new AnyPoint(new FixedValue<string>(value), _section, _initialPosition);
+        AnyPoint copy = new AnyPoint(this);
+
+        copy._name = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>name</c> from <c>AnyValidName()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>name</c> is drawn from — <c>AnyValidName()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyPoint WithName(Func<AnyString, AnyString> configure) {
-        return new AnyPoint(configure(AnyValidName()), _section, _initialPosition);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPoint copy = new AnyPoint(this);
+
+        copy._nameRecipe = configure(_nameRecipe);
+        copy._name       = copy._nameRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>section</c> to a fixed value.</summary>
+    /// <summary>Pins <c>section</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyPoint WithSection(SectionId value) {
-        return new AnyPoint(_name, new FixedValue<SectionId>(value), _initialPosition);
+        AnyPoint copy = new AnyPoint(this);
+
+        copy._section = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>section</c> from <c>AnyValidSection()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>section</c> is drawn from — <c>AnyValidSection()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnySectionId, AnySectionId&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyPoint WithSection(Func<AnySectionId, AnySectionId> configure) {
-        return new AnyPoint(_name, configure(AnyValidSection()), _initialPosition);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPoint copy = new AnyPoint(this);
+
+        copy._sectionRecipe = configure(_sectionRecipe);
+        copy._section       = copy._sectionRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>initialPosition</c> to a fixed value.</summary>
+    /// <summary>Pins <c>initialPosition</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyPoint WithInitialPosition(PointPosition value) {
-        return new AnyPoint(_name, _section, new FixedValue<PointPosition>(value));
+        AnyPoint copy = new AnyPoint(this);
+
+        copy._initialPosition = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>initialPosition</c> from <c>AnyValidInitialPosition()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>initialPosition</c> is drawn from — <c>AnyValidInitialPosition()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;PointPosition&gt;, AnyEnum&lt;PointPosition&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyPoint WithInitialPosition(Func<AnyEnum<PointPosition>, AnyEnum<PointPosition>> configure) {
-        return new AnyPoint(_name, _section, configure(AnyValidInitialPosition()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPoint copy = new AnyPoint(this);
+
+        copy._initialPositionRecipe = configure(_initialPositionRecipe);
+        copy._initialPosition       = copy._initialPositionRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Point" />.</summary>
@@ -80,20 +134,6 @@ public sealed partial class AnyPoint : IAny<Point> {
         return new Point(_name.Generate(),
                          _section.Generate(),
                          _initialPosition.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

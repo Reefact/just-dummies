@@ -15,8 +15,11 @@ namespace RailwayInterlocking.Domain;
 /// </summary>
 public sealed partial class AnyPointSetting : IAny<PointSetting> {
 
-    private readonly IAny<string>        _pointName;
-    private readonly IAny<PointPosition> _required;
+    private IAny<string>        _pointName;
+    private IAny<PointPosition> _required;
+
+    private AnyString              _pointNameRecipe;
+    private AnyEnum<PointPosition> _requiredRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyPointSetting()
@@ -31,50 +34,71 @@ public sealed partial class AnyPointSetting : IAny<PointSetting> {
         return Any.Enum<PointPosition>();
     }
 
-    private AnyPointSetting(IAny<string>        pointName,
-                            IAny<PointPosition> required) {
-        _pointName = pointName;
-        _required  = required;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyPointSetting(AnyString              pointName,
+                            AnyEnum<PointPosition> required) {
+        _pointName       = pointName;
+        _pointNameRecipe = pointName;
+        _required        = required;
+        _requiredRecipe  = required;
     }
 
-    /// <summary>Pins <c>pointName</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyPointSetting(AnyPointSetting from) {
+        _pointName       = from._pointName;
+        _pointNameRecipe = from._pointNameRecipe;
+        _required        = from._required;
+        _requiredRecipe  = from._requiredRecipe;
+    }
+
+    /// <summary>Pins <c>pointName</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyPointSetting WithPointName(string value) {
-        return new AnyPointSetting(new FixedValue<string>(value), _required);
+        AnyPointSetting copy = new AnyPointSetting(this);
+
+        copy._pointName = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>pointName</c> from <c>AnyValidPointName()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>pointName</c> is drawn from — <c>AnyValidPointName()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyPointSetting WithPointName(Func<AnyString, AnyString> configure) {
-        return new AnyPointSetting(configure(AnyValidPointName()), _required);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPointSetting copy = new AnyPointSetting(this);
+
+        copy._pointNameRecipe = configure(_pointNameRecipe);
+        copy._pointName       = copy._pointNameRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>required</c> to a fixed value.</summary>
+    /// <summary>Pins <c>required</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyPointSetting WithRequired(PointPosition value) {
-        return new AnyPointSetting(_pointName, new FixedValue<PointPosition>(value));
+        AnyPointSetting copy = new AnyPointSetting(this);
+
+        copy._required = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>required</c> from <c>AnyValidRequired()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>required</c> is drawn from — <c>AnyValidRequired()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;PointPosition&gt;, AnyEnum&lt;PointPosition&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyPointSetting WithRequired(Func<AnyEnum<PointPosition>, AnyEnum<PointPosition>> configure) {
-        return new AnyPointSetting(_pointName, configure(AnyValidRequired()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPointSetting copy = new AnyPointSetting(this);
+
+        copy._requiredRecipe = configure(_requiredRecipe);
+        copy._required       = copy._requiredRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="PointSetting" />.</summary>
     public PointSetting Generate() {
         return new PointSetting(_pointName.Generate(),
                                 _required.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

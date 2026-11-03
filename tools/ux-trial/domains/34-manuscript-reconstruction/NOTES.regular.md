@@ -1,67 +1,44 @@
-# Manuscript reconstruction: notes from the regular developer
+# Regular notes — 34 manuscript reconstruction
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-
-- Created `Tests.Regular`, restored, then scaffolded everything in one call:
-  `any generate WitnessSiglum PassageReference Witness Variant Lacuna CopyRelation EditorialHypothesis --entry-point static:Arbitrary --output ./Arbitrary`,
-  plus `Tradition` afterwards.
-- Resolved the 14 `to verify` markers in the `AnyValid…()` factories (no other generated line touched
-  except retyping where the builder kind changed), added `[assembly: Reproducible]`, a small
-  `Traditions` helper (`WithWitnesses`, `Reads`, `Proposes`) and 35 tests: value objects (parse,
-  ordering, normalisation, omission/correction rules, lacuna coverage, dating) and the `Tradition`
-  aggregate (lacunae vs readings, hands and corrections, final reading, alignment with provenance,
-  propose/accept/withdraw/reject, competing readings, shared errors, stemma: dating, cycle, single
-  exemplar, ancestors).
-- `dotnet test --project Tests.Regular`: 35/35 green, and green on 15 consecutive re-runs (fresh seeds).
+- Read MODEL.md and all of `Domain/`, then skimmed the docs as a reminder: `PROJECT-README.md`, `guides/getting-started`, `packages/justdummies-cli` (the "what the last column means", "When a guard ties two parameters" and "Adjusting a parameter" parts), `packages/justdummies-xunit`, and the `composition` (OrderedPair, DifferentFrom, Then) and `collections` (Distinct) sections.
+- Created `Tests.Regular/ManuscriptReconstruction.Tests.Regular.csproj` from the template, `dotnet restore`, then
+  `any generate WitnessSiglum PassageReference Variant Lacuna CopyRelation AttestedReading Witness EditorialHypothesis Tradition --entry-point any --output Generators --force`
+  (a first run without `--output`/`--entry-point` had dropped files in the project root; I deleted those).
+- Completed by hand: `AnyWitnessSiglum` (regex guard -> `Any.StringMatching("[A-Z][A-Za-z0-9.]{0,11}")`, retyped `AnyString` -> `AnyPattern`),
+  `AnyVariant` (text `NotBlank`, hand `Between(1, 9)`, and `Generate()` derives text from kind and repairs hand for a correction),
+  `AnyLacuna` (order `from`/`to` inside `Generate()`), `AnyCopyRelation` (`_copy.DifferentFrom(exemplar)`),
+  `AnyAttestedReading` (`NonEmpty().Distinct()`), `AnyEditorialHypothesis` (witnesses `NonEmpty().Distinct()`, conjecture decides whether they are cited).
+  `AnyWitness` was scaffolded with an `Any.OrderedPair` for the dating, nothing to do. `AnyPassageReference`, `AnyTradition` untouched.
+- Wrote 13 test classes in `Tests.Regular/Tests/`: WitnessSigliumTests, PassageReferenceTests, VariantTests, LacunaTests, CopyRelationTests, AttestedReadingTests, WitnessTests, EditorialHypothesisTests, TraditionRecordingTests (witnesses, lacunae, variants), TraditionReadingsTests (FinalReadingOf, Align), TraditionHypothesesTests (Propose/Accept/Withdraw/Competing), TraditionSharedErrorsTests, TraditionStemmaTests (DeclareCopy/AncestorsOf), plus `Fixtures.cs` and `[assembly: Reproducible]`.
+- Result: 293 cases from about 190 methods (Facts and Theories), 292 pass, 1 skipped on a domain defect (WitnessSiglum accepts "A\n"). After fixing one test of mine (below), 15 consecutive runs stayed green (fresh seeds each).
 
 ## Frictions and surprises, in order
+1. `dotnet test --project Tests.Regular` fails out of the box on the .NET 10 SDK:
+   `MSBUILD : error MSB1001: Unknown switch ... --project Tests.Regular`, and plain `dotnet test Tests.Regular` gives
+   `Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK ... opt-in to the new dotnet test experience`.
+   Expected the documented command to work. A `global.json` with `{ "test": { "runner": "Microsoft.Testing.Platform" } }` at W fixed it. No page of the user docs mentions it (the xunit page only says "xunit.v3 4.0.2 or later"); a consumer on SDK 10 hits it on the first run.
+2. `any generate X` before `dotnet restore`: `✗ WitnessSiglum: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear message, one extra step.
+3. `any` without `--output` writes into the project root next to the csproj; I wanted `Generators/`. I re-ran with `--output Generators --force` and deleted the stray files by hand. Also the generated type lives in the domain's namespace (`ManuscriptReconstruction.Domain`) by default, so the test project defines types in the domain's namespace; fine, but I would have expected the recap to suggest `--namespace` for a test project.
+4. The generated files contain no implicit `using JustDummies;` for my own helper code: `Any` was unknown in `Fixtures.cs` (`CS0103`), and `DifferentFrom` on `AnyPassageReference` gave `CS1061 ... could not be found (are you missing a using directive...)`. Both are fixed with `using JustDummies;`; the second error does not say which namespace holds the extension, so it took a moment.
+5. The `value` regex guard of `WitnessSiglum` (`SiglumPattern().IsMatch`, a `[GeneratedRegex]`) is marked `to verify, unread guards` and the scaffolded base is `Any.String().NonEmpty().WithMaxLength(12)`. Documented and the retyping (AnyString -> AnyPattern on four lines) was mechanical, but I did it with a small script; by hand it is the most error-prone edit of the whole session. Tool could have offered the pattern when the regex is a string literal inside the same class (it quotes the pattern in the comment already).
+6. Ties between parameters are the real work, as documented: Variant (kind/text/hand: three `to verify`), Lacuna (`from.CompareTo(to) > 0`), CopyRelation (`exemplar.Equals(copy)`), EditorialHypothesis (conjecture/witnesses). `Witness` got an automatic `OrderedPair` (nice), but the recap table says only `guard` for `datedFrom`/`datedTo`; nothing says they are now drawn together, I found out by reading `Generate()`.
+   For `Lacuna`, `from.CompareTo(to)` is not read as an order, although it is the same shape as `start > end` — I had to write the swap myself.
+7. Hand-written ties silently override pins. In `AnyVariant.Generate()` I repair `hand` when `kind == Correction && hand == 1`, and in `AnyLacuna.Generate()` I swap the two passages. Consequence: `Any.Variant().WithKind(Correction).WithHand(1).Generate()` does not throw, it returns a correction by hand 2..9, and `Any.Lacuna().WithFrom(later).WithTo(earlier)` returns an ordered lacuna. My first two refusal tests failed with `Assert.Throws() Failure: No exception was thrown`; I rewrote them to call the constructors directly. The scaffolded `AnyWitness` does it the right way (pins tracked: `_datedFromPin`, and two pins in the wrong order are refused with `ConflictingAnyConstraintException`), but that machinery is not something a user can ask `any` for on a tie the tool does not read. The docs ("Derive one draw from another inside Generate()") do warn about pins that stop reaching the draw, but not about this silent-repair variant.
+8. The one failure in repeated runs (2 of the first 13) was mine, and a good illustration of the "draw is never flaky" rule: `TraditionRecordingTests.A_reading_of_a_known_witness_is_recorded` recorded `Any.Variant().WithWitness(w).Generate()`, which is a `Correction` one draw in four, and the tradition rightly refuses a correction with no earlier hand (`InvalidOperationException ... needs an earlier hand's reading to correct`). The test was not about corrections, so the value was not a dummy in that context; fixed with `.WithKind(k => k.Except(VariantKind.Correction)).WithHand(Variant.FirstHand)`. The printed seed (`[JustDummies] These arbitrary values were seeded with ...`) made it replayable, but `Reproducible(Seed = ...)` replay is only useful if you do not fix the test first; fine.
+   A day-to-day annoyance: the scaffolded `AnyVariant` yields a valid `Variant` but not a valid `Variant to record in a given tradition`; I needed a `Fixtures.Reading(...)` helper that picks the kind from the hand.
+9. `xUnit1025` warning (duplicate InlineData `0.0` and `-0.0`): mine, not the library's. No JustDummies analyzer diagnostic appeared in the build output at all (JD030 is Info and silent by default, as documented).
+10. Domain defect found by a literal test, not by a draw: `new WitnessSiglum("A\n")` is accepted (the pattern ends with `$`, which also matches before a final line feed). MODEL.md says `^[A-Z][A-Za-z0-9.]*$`. Test kept, `Skip = "domain defect: ..."`. Minor, same trait for `Parse`? No: `NumberStyles.None` refuses trailing whitespace.
+11. Smaller domain observations (not asserted as defects): `Variant` checks the length of the raw text (500) before normalising, so 501 characters of mostly whitespace is refused though its normalised text is short; `EditorialHypothesis.ProposedReading` has no length cap while a `Variant` text is capped at 500, so a non-conjecture hypothesis can never cite a long reading.
 
-1. **Length guards through BCL helpers are not read.** `ThrowIfGreaterThan(hand, MaxHand)` became
-   `.LessThanOrEqualTo(9)`, but `ThrowIfGreaterThan(text.Length, MaxTextLength, nameof(text))` and the
-   same on `rationale.Length` came out `to verify, unread guards`. Same for
-   `if (value.Length is 0 or > MaxLength)` on the siglum. These are the most common .NET 8 string
-   guards; I had to write `WithMaxLength(...)` by hand each time.
-2. **A compound bound is not read either:** `if (double.IsNaN(c) || c <= 0.0 || c > 1.0)` →
-   `Any.Double()` + `to verify`. I wrote `Any.Double().GreaterThan(0.0).LessThanOrEqualTo(1.0)`.
-3. **Cross-parameter rules are the bulk of the work** (Witness from<=to, Lacuna from<=to, CopyRelation
-   exemplar!=copy, Variant kind/text/hand, Hypothesis conjecture/witnesses: 5 of 8 types). Expected
-   and documented, and the marker lines pointing at the exact guard line were genuinely useful.
-   But of the three documented forms, "derive one draw from another in `Generate()`" breaks the pins
-   (`WithDatedTo(...)` no longer means anything), so I split the domains instead: datedFrom in
-   -800..400, datedTo in 400..1600; lacuna `from` in books 1-49, `to` in 50-99. It holds by
-   construction, but the trap is silent: `Arbitrary.Witness().WithDatedFrom(1500).Generate()` now
-   fails on most seeds, not all. Nothing in the docs warns that a pin on one side of a
-   cross-parameter rule must come with the other. I always pin both, which is fine for my tests.
-4. **Partitioning a composed type is awkward.** For exemplar != copy I wanted "a siglum starting A-M".
-   `AnyWitnessSiglum.WithValue(Func<AnyPattern, AnyPattern>)` only offers OneOf/Except (documented: no
-   pattern narrowing), so I bypassed the type's own generator:
-   `Any.StringMatching("[A-M][A-Za-z0-9.]{0,11}").As(v => new WitnessSiglum(v))`, then deleted the two
-   refining overloads by hand. This duplicates the siglum recipe that ADR-0089 says belongs to
-   `AnyWitnessSiglum`.
-5. **Retyping a factory**: replacing `Any.String().NonEmpty()` with `Any.StringMatching(...)` gives
-   CS0029 until the factory's return type *and* the `Func<…>` of the refining overload are retyped.
-   Documented clearly; still two edits that the tool's comment could name.
-6. **Pins on value objects are verbose**: `.WithWitness(new WitnessSiglum("A"))` everywhere. I added
-   test helpers rather than a `WithWitness(string)` overload, but it is noise in most tests.
-7. Minor: Info-level analyzers (JD030 on the remaining `NotBlank()` rows) never show in a CLI build,
-   so I only know of them from the docs.
-
-## What worked really well
-
-- One `any generate` call for seven types, with `--output` and `--entry-point static:Arbitrary`:
-  `Arbitrary.Variant()` reads well next to `Any.Int32()`. Composed parameters were wired through
-  `new AnyPassageReference()` / `new AnyWitnessSiglum()` without me asking.
-- "The file will not compile until you resolve it" is the right call: every marker named the
-  guard and the line, so I fixed bases in minutes instead of discovering them via flaky tests.
-- Refining lambdas are the daily win: `.WithHand(h => h.GreaterThan(Variant.FirstHand))` for a
-  correction keeps 1..9 from the base and reads exactly like the rule.
-- Pins taking collection expressions (`.WithSupportingWitnesses([])`) for `IReadOnlyCollection<T>`.
-- `[assembly: Reproducible]` once, and forget about seeds; no flake in 15 runs.
-- Guard-derived rows (`Positive().LessThanOrEqualTo(999)`, `Guid().NonEmpty()`, `NotBlank()`) were
-  right every time they were not flagged.
+## What worked well
+- The scaffold gives me ~9 generators in one command and the recap tells exactly where to look; the TODO sentinels turn "what the tool could not read" into compile errors at the right line, with the guard quoted.
+- `With…(value)` / `With…(lambda)` split made tests read well: `Any.Witness().WithSiglum(s).WithDatedFrom(900).WithDatedTo(1000)`, `Any.Variant().WithKind(k => k.Except(VariantKind.Correction))`.
+- `DifferentFrom` on any `IAny<T>` (`_copy.DifferentFrom(exemplar)`, `new AnyPassageReference().DifferentFrom(p)`) solved every "another one" need in one line; `Any.ListOf(...).WithCount(n).Distinct()` for distinct sigla also.
+- Generated `AnyWitness` with `OrderedPair` for the dating needed nothing from me and held across 15 x 293 runs.
+- `[assembly: Reproducible]` plus the seed report on failure: the two failures printed a replayable seed immediately.
+- Naming `anyXxx` for drawn values and literals for load-bearing ones (dates in `IsCertainlyOlderThan`, passage coordinates in `Covers`) kept the intent legible.
 
 ## Fluency: 4 / 5
-
-Scaffold-then-refine is fast and the result reads well. One point off because cross-parameter
-invariants (most of this domain) and plain `.Length` guards stay entirely manual, and the
-split-domain workaround makes some single-side pins silently seed-dependent.
+Day to day it is fast: scaffolding, completing five generators and writing ~190 test methods took no detours caused by the library, and the diagnostics and error messages were precise. Points lost on: the `dotnet test --project` command not working on SDK 10 without an undocumented `global.json`; the repetitive hand-written tie logic (Variant, Lacuna, CopyRelation, EditorialHypothesis) where pins silently lose to my repair code, and that the tool reads `a > b` but not `a.CompareTo(b) > 0` nor `a.Equals(b)`; plus the manual AnyString -> AnyPattern retyping.

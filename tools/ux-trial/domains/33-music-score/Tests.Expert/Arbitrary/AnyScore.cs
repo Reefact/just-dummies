@@ -1,14 +1,17 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Score --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 using System.Collections.Generic;
 
 using JustDummies;
-using MusicScore.Domain;
 
-namespace MusicScore.Tests.Expert.Arbitrary;
+namespace MusicScore.Domain;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Score" /> values. It draws from the ambient random
@@ -17,9 +20,12 @@ namespace MusicScore.Tests.Expert.Arbitrary;
 /// </summary>
 public sealed partial class AnyScore : IAny<Score> {
 
-    private readonly IAny<string>               _title;
-    private readonly IAny<Tempo>                _tempo;
-    private readonly IAny<IReadOnlyList<Staff>> _staves;
+    private IAny<string>               _title;
+    private IAny<Tempo>                _tempo;
+    private IAny<IReadOnlyList<Staff>> _staves;
+
+    private AnyString      _titleRecipe;
+    private AnyTempo       _tempoRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyScore()
@@ -28,8 +34,7 @@ public sealed partial class AnyScore : IAny<Score> {
                staves: AnyValidStaves()) { }
 
     private static AnyString AnyValidTitle() {
-        // The domain sets no cap; a title as printed on a cover page is a line, not a chapter.
-        return Any.String().NotBlank().WithLengthBetween(1, 120);
+        return Any.String().Printable().NotBlank().WithLengthBetween(1, 60);
     }
 
     private static AnyTempo AnyValidTempo() {
@@ -37,42 +42,82 @@ public sealed partial class AnyScore : IAny<Score> {
     }
 
     private static IAny<IReadOnlyList<Staff>> AnyValidStaves() {
-        // Staves of one score share their measure count, meters and repeat barlines; one arbitrary
-        // staff honours that by construction. A test that needs several writes them over one skeleton.
-        return new AnyStaff().As(staff => (IReadOnlyList<Staff>)[staff]);
+        // The staves of a score are tied together (names, measure count, meters, repeat barlines):
+        // see AnyScore.Custom.cs.
+        return new CoherentStaves();
     }
 
-    private AnyScore(IAny<string>               title,
-                     IAny<Tempo>                tempo,
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyScore(AnyString                     title,
+                     AnyTempo                      tempo,
                      IAny<IReadOnlyList<Staff>> staves) {
-        _title  = title;
-        _tempo  = tempo;
-        _staves = staves;
+        _title        = title;
+        _titleRecipe  = title;
+        _tempo        = tempo;
+        _tempoRecipe  = tempo;
+        _staves       = staves;
     }
 
-    /// <summary>Pins <c>title</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyScore(AnyScore from) {
+        _title        = from._title;
+        _titleRecipe  = from._titleRecipe;
+        _tempo        = from._tempo;
+        _tempoRecipe  = from._tempoRecipe;
+        _staves       = from._staves;
+    }
+
+    /// <summary>Pins <c>title</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyScore WithTitle(string value) {
-        return new AnyScore(new FixedValue<string>(value), _tempo, _staves);
+        AnyScore copy = new AnyScore(this);
+
+        copy._title = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>title</c> from <c>AnyValidTitle()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>title</c> is drawn from — <c>AnyValidTitle()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyScore WithTitle(Func<AnyString, AnyString> configure) {
-        return new AnyScore(configure(AnyValidTitle()), _tempo, _staves);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyScore copy = new AnyScore(this);
+
+        copy._titleRecipe = configure(_titleRecipe);
+        copy._title       = copy._titleRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>tempo</c> to a fixed value.</summary>
+    /// <summary>Pins <c>tempo</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyScore WithTempo(Tempo value) {
-        return new AnyScore(_title, new FixedValue<Tempo>(value), _staves);
+        AnyScore copy = new AnyScore(this);
+
+        copy._tempo = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>tempo</c> from <c>AnyValidTempo()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>tempo</c> is drawn from — <c>AnyValidTempo()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTempo, AnyTempo&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyScore WithTempo(Func<AnyTempo, AnyTempo> configure) {
-        return new AnyScore(_title, configure(AnyValidTempo()), _staves);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyScore copy = new AnyScore(this);
+
+        copy._tempoRecipe = configure(_tempoRecipe);
+        copy._tempo       = copy._tempoRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>staves</c> to a fixed value.</summary>
+    /// <summary>Pins <c>staves</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyScore WithStaves(IReadOnlyList<Staff> value) {
-        return new AnyScore(_title, _tempo, new FixedValue<IReadOnlyList<Staff>>(value));
+        AnyScore copy = new AnyScore(this);
+
+        copy._staves = Any.Fixed(value);
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Score" />.</summary>
@@ -80,20 +125,6 @@ public sealed partial class AnyScore : IAny<Score> {
         return new Score(_title.Generate(),
                          _tempo.Generate(),
                          _staves.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

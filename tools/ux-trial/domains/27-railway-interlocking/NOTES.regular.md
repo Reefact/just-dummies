@@ -1,55 +1,42 @@
-# Railway interlocking — notes (regular developer)
+# Regular notes — 27 Railway interlocking route control
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Created `Tests.Regular`, restored, then `any generate SectionId TrainId TrackSection Point PointSetting Route RouteLock --entry-point static:Arbitrary`.
-- Resolved every `to verify`: patterns for `SectionId`/`TrainId`, bounds for `TrackSection`, distinct
-  sections and distinct point names for `Route`, a non-default `lockedAt` for `RouteLock`.
-- Wrote a `Junction` fixture: the topology (which route shares what) is written out because it is what
-  the tests are about; section ids, lengths, speeds, point start position and area name are drawn.
-- 32 tests (route rules, conflicts, construction refusals, setting/locking, cancel, sequential release,
-  out-of-order clears). All pass; re-ran 8 times with fresh seeds, no flake.
+- Pages read: `PROJECT-README.md` (skimmed), `guides/getting-started`, `guides/core-concepts`, `guides/composition` (As, Combine, Then, DifferentFrom, OrderedPair), `packages/justdummies-cli` (whole, for the TODO / `to verify` workflow and the "when a guard ties two parameters" section), `packages/justdummies-xunit`, `generators/README`, `generators/strings` (patterns), `generators/collections` (Distinct, DistinctBy), `generators/dates-and-times`. Read `MODEL.md` and the whole `Domain/`.
+- `any` commands: `any generate SectionId TrainId PointSetting TrackSection Point Route` (run from `Tests.Regular` after `dotnet restore`).
+- Generators completed by hand:
+  - `AnySectionId`, `AnyTrainId`: replaced `Any.String()` by `Any.StringMatching("[A-Z]{1,2}[0-9]{1,4}")` / `"[0-9][A-Z][0-9]{2}"` and retyped `AnyString` to `AnyPattern` on the recipe field, the factory, the private ctor and the `Func<>` of the refining overload (the documented 4-line edit).
+  - `AnyRoute`: removed the four `TODO` pairs; `sections` became `.WithCountBetween(1, 6).Distinct()`, `pointSettings` `.WithMaxCount(4).DistinctBy(s => s.PointName)`; `Generate()` rewritten as `_entrySignal.Then(entry => _exitSignal.DifferentFrom(entry).Then(exit => Any.Combine(_name, _sections, _pointSettings, ...)))` so that the pins of the With… methods stay honoured.
+  - `AnyTrackSection`, `AnyPoint`, `AnyPointSetting`: used as scaffolded.
+- Hand-written helper `Network` (a 5-section, 1-point, 3-route layout drawn afresh per test: Main A-B-C, Siding A-B-E, Parallel D; ids, route names, trains and time are all dummies). `[assembly: Reproducible]` in `AssemblyInfo.cs`.
+- Tests written (156 cases, 107 methods in 5 files): `InterlockingConstructionTests` (blank/null/duplicate/unknown refusals, lookups), `InterlockingRoutingTests` (request: active/locks/points thrown; every reachable refusal; refused request changes nothing; cancel and approach lock; occupancy; sequential release; out-of-order catch-up; points released with their section; full release and reuse), `ValueObjectTests` (SectionId, TrainId, PointSetting, Point, TrackSection incl. bounds, NaN/Infinity, clearance time), `RouteTests` (constructor refusals, defensive copy, ConflictsWith in all shapes), `RouteLockTests`.
+- Result: green with 153 passed, 3 skipped (domain defects below), 0 failed. 15 further runs with fresh seeds: all green (153/0/3 each time).
 
-## Frictions, in the order I met them
-1. `any generate ... Point` failed for that one type:
-   `✗ Point: several types answer to that name. RailwayInterlocking.Domain.Point / System.Drawing.Point`.
-   My project never imports System.Drawing; the framework type should not compete with a type from a
-   project reference. Re-ran with the full name. Minor, but the batch exits 1.
-2. `TrackSection(id, lengthMetres, lineSpeedKmh)`: both guards are the most ordinary double guard there is,
-   `if (double.IsNaN(x) || x < MinimumLengthMetres || x > MaximumLengthMetres) throw`, and
-   `if (double.IsNaN(x) || x <= 0 || x > 300) throw`. Both came out `to verify, unread guards` with
-   `Any.Double()`. I expected `Between(10, 5000)` and `GreaterThan(0).LessThanOrEqualTo(300)`
-   (NaN is never drawn anyway, per the numbers page). Hand-wrote both.
-3. `RouteLock`: `if (lockedAt == default) throw` is unread too; would map to a `DifferentFrom(default)`.
-4. `SectionId`/`TrainId` validate with a regex: as documented, `to verify`. Replacing
-   `Any.String().NonEmpty()` by `Any.StringMatching(...)` means retyping the factory and the refining
-   `Func<AnyString, AnyString>` (documented, CS0029 otherwise). Every value object with a format pays it.
-5. `Route`: the `sections` TODO names only the null-element guard (line 26); the "section twice" guard
-   right below it is not named and the scaffolded `Any.ListOf(new AnySectionId()).NonEmpty()` can
-   draw duplicates. Same for "point set twice". I only caught it because I read the constructor.
-6. `Route` refuses `entrySignal == exitSignal`. There is no way to say "different from the other
-   parameter" in a scaffolded generator; I drew the two signals from disjoint patterns
-   (`SE[0-9]{1,3}` vs `SX[0-9]{1,3}`) with a comment. Works, but it is a trick.
-7. Two different trains (or two different section ids) in one test: the only honest spelling I found
-   is `Any.ListOf(Arbitrary.TrainId()).WithCount(2).Distinct().Generate()` then `[0]`/`[1]`. Drawing
-   twice could collide (rare, hence flaky). A scaffolded `AnyX` has no `DifferentFrom(...)`.
-8. Distinct point settings needed a hand-written `IEqualityComparer<PointSetting>` (PointSetting has
-   no value equality). `Distinct(comparer)` then worked fine, including inside a `With…` lambda with
-   `WithCount(1).Containing(...)`.
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Regular` does not run out of the box.** Exact output: `MSBUILD : error MSB1001: Unknown switch. ... Switch: --project`. On the .NET 10 SDK, `dotnet test <path>` then says `Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later ... you should opt-in to the new dotnet test experience`. The fix is a `global.json` with `{ "test": { "runner": "Microsoft.Testing.Platform" } }`, which I added in the domain folder. The JustDummies / Xunit package pages say nothing about it, and the `PROJECT-README` shows `dotnet test --solution` only (and says global.json is pinned in the repo, which a consumer does not have). Cost: ~5 minutes to find the cause.
+2. **`any generate` before restore**: first run printed `✗ SectionId: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable message; I only note that the CLI page's "Requires" section could say "a restored project".
+3. **Regex guards are never read (documented), so every value object with `Format.IsMatch` needs the manual retype `AnyString` -> `AnyPattern`.** Expected; the doc sample is accurate and the edit took the 4 lines it says. It is still the single most repetitive manual step (SectionId, TrainId). A one-line `--pattern`-style hint, or at least emitting the already-retyped file when the regex is in the subset, would be welcome (idea).
+4. **A throw inside `Combine`/`Then` is wrapped in `AnyGenerationException`.** After I made `AnyRoute.Generate()` derive the exit signal with `Then`, my refusal tests `Assert.Throws<ArgumentException>(() => new AnyRoute().WithName(blank).Generate())` failed with `Actual: typeof(JustDummies.AnyGenerationException) ---- Generation failed: the composer passed to Combine(...) threw for the generated values ("  ", System.Collections.Generic.List`1[...SectionId], ...) (ArgumentException: ...)`. Understandable once read (and the seed is given), but it means a scaffolded generator that has been completed with `Then`/`Combine` cannot be used to drive a constructor's refusals; I moved those tests to the constructor itself (helper `Build(...)`). Two side effects: the message dumps every generated value (a 1000-character random string made the failure output unreadable), and the plain scaffolded generators (e.g. `AnyTrackSection`) do NOT wrap, so the same test idiom behaves differently depending on how the generator was completed. The docs for "When a guard ties two parameters" do not warn about it.
+5. **JD037 caught my first attempt** (drawing `_exitSignal.Generate()` inside the lambda of `.As(...)`): `warning JD037: This draw runs inside the lambda passed to As, apart from the recipe: compose an offset with Any.Combine, or derive the dependent draw with Then`. Good diagnostic, and the suggested fix (`Then`) is what I did. Nothing to change.
+6. **The scaffold for "ties two parameters" (`entrySignal != exitSignal`) is `to verify` rather than solved**, as documented. `DifferentFrom` on an `IAny<string>` plus `Then` was the right tool, but I had to discover it in the `Crossing` sample of the CLI page; the composition page mentions it too. Fine once found; the doc path to it is long (CLI page, "Four forms cover most cases").
+7. **No way to say "a list of distinct elements by key, bounded count" in the scaffold**: the tool emitted `Any.ListOf(new AnyPointSetting())` with a `to verify` on a `Distinct().Count() != Count` guard; `DistinctBy` exists and worked first time (`Any.ListOf(new AnyPointSetting()).WithMaxCount(4).DistinctBy(setting => setting.PointName)`). Good.
+8. **`Network` helper needs `.Distinct()` everywhere identifiers must not collide** (5 section ids, 4 names, 2 trains). `Any.ListOf(new AnySectionId()).WithCount(5).Distinct()` works and is readable. Two draws that must differ (`DifferentFrom(other.Value)` on an `AnyPattern`) also worked. No friction, noting that this is the most frequent need in aggregate tests and it is well covered.
+9. **Pinning a nullable-annotated/IReadOnlyList parameter**: `WithSections(new[] { A, B, C })` and `WithPointSettings(Array.Empty<PointSetting>())` compile directly (array to `IReadOnlyList<>`), no cast needed. Fine.
+10. No analyzer false positive and no warning in the final build (`dotnet build` clean with nullable enabled).
 
-## What worked really well
-- `--entry-point static:Arbitrary` for several types in one command: `Arbitrary.Route()` reads well.
-- The non-compiling `TODO_verify_...` lines are a great work list; nothing silently wrong slipped in.
-- `NotBlank()` and `NonEmpty()` inferred from `ThrowIfNullOrWhiteSpace` and `Count == 0`.
-- Composed generators (`new AnySectionId()` inside `AnyTrackSection`, `AnyRoute`) just work once the leaf is fixed.
-- `WithSections([...])` pins with collection expressions, `WithPointSettings(p => ...)` refinements.
-- `[Reproducible]` is invisible until needed. Everything passed first run after the fixes.
+### Domain findings made by the tests (all kept, skipped with a reason)
+- **SectionId / TrainId accept a trailing newline**: `new SectionId("T101\n")` and `new TrainId("1A23\n")` succeed because the regexes are anchored with `$` (matches before a final `\n` in .NET); `\z` or `RegexOptions` fix it. Skipped tests `A_section_id_with_a_trailing_newline_is_refused`, `A_headcode_with_a_trailing_newline_is_refused` (deterministic, no seed involved).
+- **`RequestRoute(..., default)` breaks atomicity**: the `RouteLock` constructor refuses `lockedAt == default` only after points have been thrown and locked and sections locked, so the call throws `ArgumentException` and leaves locked sections/points with no active route (permanent lock-out; `CancelRoute` then says `RouteNotSet`). Skipped test `A_request_refused_for_its_lock_time_leaves_the_interlocking_unchanged` (deterministic).
+- **Dead refusals** (no test possible through the public API): `RefusalReason.SectionLocked`, `PointLocked` and `OutOfSequenceRelease` cannot be reached — a locked section/point always belongs to an active route sharing that section, which `ConflictingRoute` reports first. The point-conflict clause of `ConflictsWith` is only meaningful on routes outside an `Interlocking` (inside, a point lies in a section both routes would then share). Not a bug, but the model lists reasons that never occur.
+- Minor doc/code mismatch: `RouteLock.TrainHasEntered` is documented "once the train has entered the first section" but any occupation of any section of the route sets it (a glitch on the last section blocks cancellation).
+- `RequestRoute(null, ...)` throws `ArgumentNullException` from the dictionary lookup instead of an `UnknownRoute` refusal (not tested; low).
 
-## Domain remarks (not library findings)
-- `RefusalReason.SectionLocked` and `PointLocked` look unreachable: any route touching a locked
-  section or a locked point (which must lie in its own sections) is caught as `ConflictingRoute` first.
-  So I did not test them. `OutOfSequenceRelease` is internal-only.
+## What worked well
+- The scaffold + `to verify` workflow: the build stopped exactly at the guards it could not read, with file and line, and the comment named the retype needed for `StringMatching`.
+- `Distinct()`, `DistinctBy`, `DifferentFrom`, `Then`, `Any.Combine` made the aggregate layout (`Network`) short and fully arbitrary where it should be; only the structure and the asserted values are literals.
+- `[assembly: Reproducible]` — one line, and the failure output carried a replayable seed (`Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = ...)]`) on the first failures.
+- Analyzers (JD037) pointed to the right construct.
+- Pins on the scaffolded `With…` methods (`WithId`, `WithName`, `WithLengthMetres`, `WithLineSpeedKmh`) made boundary tests one-liners.
 
 ## Fluency: 4 / 5
-Fast and pleasant once the generators are fixed; about a third of my time went to hand-resolving
-`to verify` rows the guards made obvious (the double ranges) and to working around cross-parameter
-and "two different X" needs.
+The library itself was smooth and the docs answered every question I had once I located the right page; the generated files and the diagnostics were good. Points lost on the first ten minutes: `dotnet test --project` needing an undocumented `global.json` opt-in on .NET 10, and the `AnyGenerationException` wrapping that silently changes what a completed generator throws (making it unusable to test constructor refusals), plus the repetitive manual regex retype.

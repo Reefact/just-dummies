@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Duration --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,8 +19,11 @@ namespace MusicScore.Domain;
 /// </summary>
 public sealed partial class AnyDuration : IAny<Duration> {
 
-    private readonly IAny<long> _numerator;
-    private readonly IAny<long> _denominator;
+    private IAny<long> _numerator;
+    private IAny<long> _denominator;
+
+    private AnyInt64 _numeratorRecipe;
+    private AnyInt64 _denominatorRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyDuration()
@@ -24,60 +31,79 @@ public sealed partial class AnyDuration : IAny<Duration> {
                denominator: AnyValidDenominator()) { }
 
     private static AnyInt64 AnyValidNumerator() {
-        // A duration is non-negative; it has no upper bound, but sixteen whole notes keeps sums of
-        // dummies far from the checked overflow of the rational arithmetic.
-        return Any.Int64().Between(0, 16 * Duration.MaxDenominator);
+        return Any.Int64().Between(0, 64);
     }
 
     private static AnyInt64 AnyValidDenominator() {
-        // The normalised denominator never exceeds the written one, so 1..1024 keeps it notatable.
+        // The normalised denominator never exceeds the drawn one, so the notatable limit holds.
         return Any.Int64().Between(1, Duration.MaxDenominator);
     }
 
-    private AnyDuration(IAny<long> numerator,
-                        IAny<long> denominator) {
-        _numerator   = numerator;
-        _denominator = denominator;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyDuration(AnyInt64 numerator,
+                        AnyInt64 denominator) {
+        _numerator         = numerator;
+        _numeratorRecipe   = numerator;
+        _denominator       = denominator;
+        _denominatorRecipe = denominator;
     }
 
-    /// <summary>Pins <c>numerator</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyDuration(AnyDuration from) {
+        _numerator         = from._numerator;
+        _numeratorRecipe   = from._numeratorRecipe;
+        _denominator       = from._denominator;
+        _denominatorRecipe = from._denominatorRecipe;
+    }
+
+    /// <summary>Pins <c>numerator</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyDuration WithNumerator(long value) {
-        return new AnyDuration(new FixedValue<long>(value), _denominator);
+        AnyDuration copy = new AnyDuration(this);
+
+        copy._numerator = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>numerator</c> from <c>AnyValidNumerator()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>numerator</c> is drawn from — <c>AnyValidNumerator()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt64, AnyInt64&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyDuration WithNumerator(Func<AnyInt64, AnyInt64> configure) {
-        return new AnyDuration(configure(AnyValidNumerator()), _denominator);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyDuration copy = new AnyDuration(this);
+
+        copy._numeratorRecipe = configure(_numeratorRecipe);
+        copy._numerator       = copy._numeratorRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>denominator</c> to a fixed value.</summary>
+    /// <summary>Pins <c>denominator</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyDuration WithDenominator(long value) {
-        return new AnyDuration(_numerator, new FixedValue<long>(value));
+        AnyDuration copy = new AnyDuration(this);
+
+        copy._denominator = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>denominator</c> from <c>AnyValidDenominator()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>denominator</c> is drawn from — <c>AnyValidDenominator()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt64, AnyInt64&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyDuration WithDenominator(Func<AnyInt64, AnyInt64> configure) {
-        return new AnyDuration(_numerator, configure(AnyValidDenominator()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyDuration copy = new AnyDuration(this);
+
+        copy._denominatorRecipe = configure(_denominatorRecipe);
+        copy._denominator       = copy._denominatorRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Duration" />.</summary>
     public Duration Generate() {
         return new Duration(_numerator.Generate(),
                             _denominator.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

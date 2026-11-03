@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Trajectory --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 using System.Collections.Generic;
@@ -16,8 +20,10 @@ namespace SatelliteConjunction.Domain;
 /// </summary>
 public sealed partial class AnyTrajectory : IAny<Trajectory> {
 
-    private readonly IAny<SpaceObject>               _spaceObject;
-    private readonly IAny<IEnumerable<OrbitalState>> _states;
+    private IAny<SpaceObject>               _spaceObject;
+    private IAny<IEnumerable<OrbitalState>> _states;
+
+    private AnySpaceObject            _spaceObjectRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyTrajectory()
@@ -29,50 +35,61 @@ public sealed partial class AnyTrajectory : IAny<Trajectory> {
     }
 
     private static IAny<IEnumerable<OrbitalState>> AnyValidStates() {
-        // At least two states, epochs strictly increasing, at most MaximumStep apart: drawn as a start
-        // and a list of steps, so the ordering holds by construction.
-        return Any.Combine(new AnyEpoch(), AnySteps(), StatesFrom);
+        // From two to six states, strictly increasing epochs, each step from 1 s to the 10 minutes the domain allows.
+        return StatesFrom(new AnyEpoch(), covariance => covariance);
     }
 
-    private AnyTrajectory(IAny<SpaceObject>               spaceObject,
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyTrajectory(AnySpaceObject                spaceObject,
                           IAny<IEnumerable<OrbitalState>> states) {
-        _spaceObject = spaceObject;
-        _states      = states;
+        _spaceObject       = spaceObject;
+        _spaceObjectRecipe = spaceObject;
+        _states            = states;
     }
 
-    /// <summary>Pins <c>spaceObject</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyTrajectory(AnyTrajectory from) {
+        _spaceObject       = from._spaceObject;
+        _spaceObjectRecipe = from._spaceObjectRecipe;
+        _states            = from._states;
+        _stateCovariance   = from._stateCovariance;
+    }
+
+    /// <summary>Pins <c>spaceObject</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyTrajectory WithSpaceObject(SpaceObject value) {
-        return new AnyTrajectory(new FixedValue<SpaceObject>(value), _states);
+        AnyTrajectory copy = new AnyTrajectory(this);
+
+        copy._spaceObject = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>spaceObject</c> from <c>AnyValidSpaceObject()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>spaceObject</c> is drawn from — <c>AnyValidSpaceObject()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnySpaceObject, AnySpaceObject&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyTrajectory WithSpaceObject(Func<AnySpaceObject, AnySpaceObject> configure) {
-        return new AnyTrajectory(configure(AnyValidSpaceObject()), _states);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyTrajectory copy = new AnyTrajectory(this);
+
+        copy._spaceObjectRecipe = configure(_spaceObjectRecipe);
+        copy._spaceObject       = copy._spaceObjectRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>states</c> to a fixed value.</summary>
+    /// <summary>Pins <c>states</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyTrajectory WithStates(IEnumerable<OrbitalState> value) {
-        return new AnyTrajectory(_spaceObject, new FixedValue<IEnumerable<OrbitalState>>(value));
+        AnyTrajectory copy = new AnyTrajectory(this);
+
+        copy._states = Any.Fixed(value);
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Trajectory" />.</summary>
     public Trajectory Generate() {
         return new Trajectory(_spaceObject.Generate(),
                               _states.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

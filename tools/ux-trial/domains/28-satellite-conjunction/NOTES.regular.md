@@ -1,56 +1,59 @@
-# Satellite conjunction — regular developer notes
+# Regular notes — 28 Satellite conjunction risk assessment
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Created `Tests.Regular`, scaffolded all seven types in one call with `--entry-point static:Arbitrary`.
-- Refined every base: catalogue number / radius ranges, UTC epoch from the space age, covariance drawn
-  as variances + correlations (positive definite by construction), positions/velocities drawn as
-  direction x radius/speed with `Any.Combine`, trajectories as start + list of steps, a hand-written
-  `AnyTrajectory.Covering(epoch)` (partial file) and an `AnyConjunction.Generate()` that draws the TCA
-  first and builds both trajectories around it.
-- Risk tests use a hand-written crossing geometry (`Encounters`): miss distance, sigma and hard-body
-  radius are literals because Pc depends on them; epoch, ids, names, catalogue numbers are drawn.
-- 40 test methods (46 cases), `[assembly: Reproducible]`. All green over 25 consecutive runs.
+- Read, as a refresher: `PROJECT-README.md`, `README.md` (index), `guides/getting-started`, `guides/composition`, `packages/justdummies-cli` (all of it, I needed the "tied parameters" and "adjusting a parameter" parts), `packages/justdummies-xunit`, then `generators/numbers` (floating point section) and `generators/dates-and-times`.
+- Read `MODEL.md` and the nine `Domain/*.cs` files.
+- Created `Tests.Regular/SatelliteConjunction.Tests.Regular.csproj` from the template, then `dotnet restore` (the tool asked for it).
+- `any generate Epoch Vector3 PositionCovariance CollisionProbability RiskAssessment SpaceObject OrbitalState Trajectory Conjunction --entry-point any` (one run, nine types, nine generators + nine `Any.X()` entry points).
+  Recap: only `CollisionProbability` and `RiskAssessment` came out clean. Every other type was `to verify`: Epoch (offset and date guards), Vector3 (`Guard(x, nameof(x))` void helper), PositionCovariance (6 params), SpaceObject (isActive tied to kind), OrbitalState (radius and speed through a local), Trajectory (count and order), Conjunction (4 params tied together).
+- Generators completed by hand (all in `Tests.Regular/`):
+  - `AnyEpoch`: `Between(SpaceAgeStart + 1 day, 2100-01-01)`, UTC by default offset. Sentinel removed.
+  - `AnyVector3`: sentinels removed, kept `Any.Double()` (finite by construction).
+  - `AnyPositionCovariance`: rewritten. Variances `Between(1e-4, 1e6)`; the three cross terms are drawn as correlations in [-0.3, 0.3] and scaled by `sqrt(a*b)` in `Generate()` (diagonally dominant, so always positive definite). Added `WithCorrelation`, `WithVariance`.
+  - `AnySpaceObject`: sentinels removed; `Generate()` draws the kind first and keeps `isActive` only for a payload; `AnySpaceObject.Custom.cs` adds `Active()` and `Inert()`.
+  - `AnyOrbitalState`: position components in [5000, 20000] km (radius 8660..34641), velocity components in [0.5, 5] km/s (speed 0.87..8.66), through `AnyVector3` lambdas, so no retyping needed.
+  - `AnyTrajectory`: states recipe retyped from `AnySequence<OrbitalState>` to `IAny<IEnumerable<OrbitalState>>` (4 edits + removal of the `Func` overload); `AnyTrajectory.Custom.cs` adds `StartingAt`, `Covering(epoch)` and `WithStateCovariance(...)`; states are built from 1..5 steps of 1..600 s.
+  - `AnyConjunction`: `Generate()` draws the TCA first, then primary (active, covering) and secondary (`DifferentFrom` the primary's catalogue number, covering), using `ReferenceEquals(_primary, _primaryRecipe)` to leave a pinned trajectory alone.
+- Tests (`Tests.Regular/Tests/`, 180 methods, 214 cases, 4 skipped on domain defects), `[assembly: Reproducible]`:
+  - `EpochTests` (14): UTC instant kept, Sputnik boundary +/- 1 tick, prehistoric, positive and negative offsets refused, `Add`, `SecondsSince`, ordering, equality/hash, `ToString`.
+  - `Vector3Tests` (21 cases): components kept, non-finite component (theory over 3 axes x NaN/inf), `Plus`/`Minus`/`Scale`/`Dot`/`Cross` (axes, anticommutativity, orthogonality), `Magnitude` (3-4-12), `Normalized` and its refusal of zero, equality, `ToString`.
+  - `PositionCovarianceTests` (~35 cases): terms kept, cap at 1e6 and one ulp above (per axis), variance <= 0 / far above / not finite, cross term not finite, correlation >= 1, correlation just under 1, pairwise-valid but not positive definite, `Combine` (literal and drawn), `Project`, `MeanSigmaKm`, symmetry.
+  - `CollisionProbabilityTests`: [0,1] ends, negative/above 1/one ulp above/NaN, three levels over drawn ranges, thresholds as literals (1e-4, 1e-5, one ulp below), ordering, `ToString`.
+  - `RiskAssessmentTests`: kept, level mirrors probability, null parts, miss < 0 / non finite, speed 0 / > 24 / exactly 24, sigma <= 0 / non finite.
+  - `SpaceObjectTests`: kept, ends of the catalogue range, 0/negative/above max, blank names (theory), null, 24 vs 25 characters, undefined kinds (above and negative), radius <= 0 / > 100 / exactly 100 / non finite, active non-payload (theory), `ToString`.
+  - `OrbitalStateTests`: kept, altitude, inside the Earth, centre, surface vs one metre above, beyond the cap, zero and too-fast velocity, exactly 12 km/s, each null part (theory).
+  - `TrajectoryTests`: 0/1 state, null state, equal/reversed/swapped epochs, gap of exactly 10 min, 10 min + 1 tick, a gap in the middle, defensive copy, `Covers` (ends included), `StateAt` (node, midpoint, quarter, second segment, nearer covariance, outside the span, null).
+  - `ConjunctionTests` (nested `Construction`, `Assessment`, `Manoeuvre`, `Closure`): construction and every refusal; `Assess` against hand-derived probabilities (direct hit 2e-4, Gaussian factor, cap at 1, anisotropic, cross term in the plane, along-track variance irrelevant, tighter vs more dispersed covariance), miss distance, relative speed, combined sigma, interpolation off the nodes, co-moving, repeated assessment, assessing when closed; `PlanManeuver` and `Close` over the whole state graph. A `Scene` helper builds encounters from literal geometry and covariance and draws everything else.
+- Result: green with 4 skipped (below). First green run after the last edit, then 13 more runs in a row, all green (214 cases, 4 skipped, 0 failed), each with a fresh seed.
+- Domain defects kept as skipped tests (details in the friction list): `Two_valid_covariances_can_always_be_combined`, `Assessing_an_arbitrary_conjunction_gives_a_probability_and_assesses_it` (seed -2000471454, replays), `The_state_at_the_middle_of_a_maximum_step_on_a_low_circular_orbit_is_still_a_state`, `Asking_whether_a_missing_epoch_is_covered_is_refused_like_asking_for_its_state`. I unskipped each once to confirm it fails as described.
+- `global.json` added at W (see friction 1). `bin/` and `obj/` deleted at the end.
 
-## Frictions, in the order met
-1. `any generate ... Vector3 ...` -> `✗ Vector3: several types answer to that name.
-   SatelliteConjunction.Domain.Vector3 / System.Numerics.Vector3`. Clear and actionable; but the other
-   six types of the same command were written, so the exit code 1 surprised me for a minute. Fine.
-2. Plain range guards against a named constant were not read:
-   `if (catalogNumber < 1 || catalogNumber > MaximumCatalogNumber)` -> `to verify, unread guards`, recipe
-   `Any.Int32()`. Same for `!double.IsFinite(r) || r <= 0 || r > MaximumHardBodyRadiusMeters`, and
-   `utc < SpaceAgeStart` (static readonly). These are the most common guard shape in this codebase.
-3. Helper guards (`GuardVariance`, `Guard(x, ...)`) -> every parameter `to verify`. Expected per the docs.
-4. Almost every type here has a rule *between* parameters (PD covariance, radius of a vector, ordered
-   epochs, TCA covered by both trajectories, only a payload may be active, different catalogue
-   numbers). The scaffold is a starting point only: I rewrote `Generate()` or the factory type in 5 of 7
-   files. The "When a guard ties two parameters" section was the right page; it still took most of
-   the session. Changing a factory to `IAny<Vector3>` meant deleting the refining overload by hand.
-5. No clean way to express "only a payload may be active" without overriding a pin: I wrote a bounded
-   redraw loop in `AnySpaceObject.Generate()` so that a pin is honoured or refused by the constructor.
-6. **Biggest surprise (flaky test).** `AnyConjunction`'s base sets the primary to an active payload:
-   `new AnyTrajectory().WithSpaceObject(o => o.WithKind(Payload).WithIsActive(true))`. A test then wrote
-   `Arbitrary.Conjunction().WithPrimary(t => t.WithSpaceObject(o => o.WithCatalogNumber(n)))`.
-   The inner lambda restarts from `AnyTrajectory`'s own base, so the "active payload" rule silently
-   vanished and the test failed on ~2 runs out of 3 (`Expected "secondary", Actual "primary"`).
-   Documented ("what you set replaces what the base set for that part"), but in a two-level graph it
-   bites: the outer generator's rule is lost and it compiles. I had to restate the rule in the test.
-7. Drawn trajectory nodes had independent positions; `StateAt` interpolated through the Earth and the
-   domain threw — on seed 1288703124 only. `[Reproducible(Seed = ...)]` replayed it at once. My
-   generator's fault, fixed by sharing one drawn position across nodes.
-8. `PositionCovariance.Combine` of two legal covariances can exceed the 1000² km² ceiling (domain
-   rule, not the library); the Combine test refines `WithXx(v => v.LessThanOrEqualTo(half))`. The
-   refinement lambda made that one line — nice.
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Regular` does not work out of the box on the .NET 10 SDK.** `dotnet test --project Tests.Regular` gives `MSBUILD : error MSB1001: Unknown switch ... --switch: --project`; `dotnet test Tests.Regular` gives `Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. If you use dotnet test, you should opt-in to the new dotnet test experience`. The xunit.v3 template needs a `global.json` with `{ "test": { "runner": "Microsoft.Testing.Platform" } }` beside the solution. I added one at W and everything worked. The user documentation never mentions it (`getting-started` and the xunit page say nothing about how to run the tests); the project README only says `dotnet test --solution JustDummies.sln`. Cost: 5 minutes, the error is clear once you read it.
+2. **`any generate ...` before `dotnet restore`** prints `✗ Epoch: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable, but I passed nine types and it reported only the first one, so I could not tell whether the other eight would have failed the same way.
+3. **Nine types, seven of them "to verify".** The recap is honest and the sentinel mechanism did its job (the build named every line), but the noise level is high on a domain full of value objects with helper-method guards. Three kinds of sentinel were pure noise for me: `Vector3` (`Guard(x, nameof(x))` is a `void` helper that only checks `double.IsFinite`, and `Any.Double()` never draws a non-finite), the six `PositionCovariance` parameters (`GuardVariance`/`GuardFinite`/`GuardCorrelation` helpers), and `Epoch` (`utc.Offset != TimeSpan.Zero` and `utc < SpaceAgeStart`, a comparison with a `static readonly` field). I deleted 14 sentinel pairs after reading each guard. Would a `void Guard(double, string)` helper whose body is a single `double.IsFinite` throw be readable like the "returns the value" helpers are? Idea, not a bug.
+4. **Tied parameters are where all the effort went, as documented, but the cost is large.** Four types needed a hand-written `Generate()`: `PositionCovariance` (cross terms and positive-definiteness), `SpaceObject` (`isActive && kind != Payload`), `Trajectory` (count, order, step), `Conjunction` (active primary, distinct catalogue numbers, both cover the TCA). Roughly 250 lines of generator code for ~150 lines of domain. The documented forms ("derive in `Generate()`", `Then`, `DifferentFrom`) all worked first time and I never had to fight them; but each hand-written `Generate()` silently changes what a `With…` pin means (see 5, 6).
+5. **A pin that no longer reaches the draw is silent.** For `PositionCovariance` I removed `WithXy/WithXz/WithYz` (the cross terms are no longer drawn independently) and added `WithCorrelation`. For `SpaceObject` I kept `WithKind` and `WithIsActive` and made `Generate()` keep `isActive` only for a payload: my own test `Only_a_payload_can_be_active` immediately failed with `Assert.IsType() Failure: Value is null` because `WithKind(Debris).WithIsActive(true)` produced an inactive debris instead of the constructor refusal I was testing. I then built that one by hand with `new SpaceObject(...)`. The docs do warn about the consequence ("a parameter you now derive no longer draws from its field"), but it is still a trap in a generator that other tests will use. No library fix needed; maybe a sentence suggesting that a tied generator throws rather than silently normalises.
+6. **Extending a scaffolded generator with extra state is not covered by the "add a file beside it" recipe.** I wanted `Any.Conjunction().WithPrimary(p => p.WithStateCovariance(...))` so a test could keep summed variances under the domain cap. The extra field `_stateCovariance` lives in `AnyTrajectory.Custom.cs`, but the generated private copy constructor `AnyTrajectory(AnyTrajectory from)` does not know it, so every `With…` call dropped it. I had to edit the generated file to add `_stateCovariance = from._stateCovariance;`, which `any generate --force` would erase. The doc says "Never write a field of `this`" and shows a pin overload; it does not show state that must survive other `With…` calls. Medium friction; a partial hook (`partial void CopyCustomState(AnyTrajectory from)`) would fix it.
+7. **Retyping a recipe from a builder to an `IAny<T>`.** `states` was scaffolded as `AnySequence<OrbitalState>`. To draw a sequence whose epochs depend on each other I used `Any.Combine(...)`, which returns `IAny<IEnumerable<OrbitalState>>`. The doc section "When the replacement is another kind of generator" lists exactly the lines to change and it was accurate (field, recipe constructor parameter, factory return type, the `Func` overload deleted); I did it in a few minutes. Worth saying that it is mechanical rather than hard.
+8. **A uniform `Between(0, 1)` never draws a Low probability.** `Any.Double().Between(0, 1)` is uniform over the interval, so a `CollisionProbability` is below 1e-5 once in 100 000 draws; operationally the Low band is the most common one. For the level tests I had to declare each band (`Between(1e-4, 1)`, `Between(1e-5, BitDecrement(1e-4))`, `Between(0, BitDecrement(1e-5))`), which is right for a test about levels anyway, but a dummy `CollisionProbability` is practically always High, which can hide bugs in code that only sees Low. Idea: a log-uniform helper for probabilities.
+9. **xUnit analyzer `xUnit2016`** (not JustDummies): `Assert.Equal(expected, actual, 20)` for a 4e-12 probability is refused (`Keep precision in range [0..15]`); I switched to the tolerance overload `Assert.Equal(expected, actual, 1e-15)`. Mentioned because the rest of the suite used precision overloads without trouble.
+10. **Seeds are negative 32-bit integers** (`-2000471454`) and `[Reproducible(Seed = ...)]` accepts them. To keep a seeded failing test as a skipped test I had to unskip it and pin the seed temporarily to prove it still fails; a `Skip` hides it from the runner so the seed in the message is never exercised. Not a defect, just an observation: I'd have liked a `Reproducible(Seed=..., ...)` + `Skip` pairing to be checkable.
+11. **No JustDummies analyzer fired on 20 files** (`dotnet build` showed 0 warnings), including the scaffolded `Any.String()` rows that the docs say raise JD030 at Info. I did not raise severities. Nothing slowed me down; I could not tell whether the analyzers see inside my `Any.Combine(...)` composers.
+12. **Domain defects found by draws and by boundary tests** (all confirmed by running them unskipped once):
+    - `PositionCovariance.Combine` builds its result with the public constructor, so the 1 000 000 km² cap applies to the sum: two valid covariances of sigma 800 km cannot be combined, and `Conjunction.Assess()` throws `ArgumentOutOfRangeException: A variance must be positive and at most 1000000 km². (Parameter 'xx')`, `Actual value was 1308982.4889122401`. Found by a drawn conjunction on seed -2000471454 (replays). Skipped tests: `Two_valid_covariances_can_always_be_combined` (deterministic) and `Assessing_an_arbitrary_conjunction_gives_a_probability_and_assesses_it`. My other assessment tests pass explicit covariances, and one test caps the drawn variances at 5e5.
+    - `Trajectory.StateAt` linearly interpolates positions, so the midpoint of two valid states 10 minutes apart on a 350 km circular orbit (radius 6728 km, 7.7 km/s) has radius 6335.32 km and the `OrbitalState` constructor throws `An orbital position lies above the Earth's surface and below 100000 km altitude. (Parameter 'positionKm')` for an epoch `Covers` reports as covered. Deterministic.
+    - `Trajectory.Covers(null)` throws `NullReferenceException` whereas `StateAt(null)` throws `ArgumentNullException`.
+13. **The generator's default positions are not physical** (random point in a 15 000 km cube, random velocity): it is enough for every test I wrote (the domain only checks radius and speed), and I made the geometry explicit in `Scene` where it matters. If the domain ever checks consistency between position and velocity, every scaffolded draw would need rework.
 
 ## What worked well
-- `[assembly: Reproducible]` + the seed line in the output: copy, paste, rerun, exact replay. Twice.
-- `static:Arbitrary` entry point: `Arbitrary.SpaceObject().WithKind(...)` reads very well.
-- Refinements: `WithCatalogNumber(c => c.DifferentFrom(primary.CatalogNumber))`,
-  `WithXx(v => v.LessThanOrEqualTo(...))` — exactly the vocabulary I wanted.
-- `TODO_verify_...` not compiling forced me to read every guard; the recap names the guard and line.
-- `Any.Combine` with method groups, `Any.ListOf(...).WithCountBetween`, `Any.DateTimeOffset()` staying
-  UTC by default: all behaved as documented. No analyzer noise.
+- The `to verify` sentinel is a genuinely good idea in practice: the build named every line to decide, and none of the nine files could be used silently wrong. The recap's reasons (`ties isActive to kind`, `ties primary to secondary`) pointed at exactly the guards that needed code.
+- `--entry-point any` gave `Any.Conjunction()`, `Any.SpaceObject()` and friends, which made the test bodies read like the arrange blocks in the docs; the C# 14 extension compiled without ceremony on net10.0.
+- Refinement lambdas (`WithPositionKm(p => p.WithX(...))`, `WithSpaceObject(o => o.Inert())`) and the nested `DifferentFrom` on a typed builder (`o.WithCatalogNumber(n => n.DifferentFrom(...))`) were exactly what I needed for ties; refinements accumulating over the scaffolded base made `Active()`/`Inert()` two-liners.
+- `Then`/`As`/`Combine` composed an order-and-gap-constrained state list correctly first time; the draw replays from the seed (verified: seed -2000471454 reproduces the defect after I had reshaped the generator).
+- Literals stayed literals: thresholds, the 1957-10-04 boundary, the caps, the Pc formula inputs. Only identifiers, names, epochs, positions and speeds were drawn, and the draws did reveal a real defect (Combine cap) that a hand-picked covariance would have hidden.
+- `[assembly: Reproducible]` was one line, silent when green, and printed the seed with the attribute spelling to paste when red.
 
-## Fluency: 3/5
-Day-to-day API is fluent (4-5), but this domain is dominated by cross-parameter invariants, so the
-scaffold saved little and I hand-wrote most generators; the lost-outer-rule refinement (6) produced a
-flaky test that only the seed report made cheap to diagnose.
+## Fluency: 4 / 5
+The DSL, refinements, the entry point and the reproducibility attribute were fast and predictable; I never had to look up a constraint twice. I take a point off because the domain's tied parameters pushed me into ~250 lines of generator code (an expected, documented cost, but still the bulk of the work), because extending a scaffolded generator with extra state loses it through the generated copy constructor, and because the very first command a user runs (`dotnet test --project`) fails on the .NET 10 SDK without an undocumented `global.json`.

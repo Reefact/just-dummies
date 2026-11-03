@@ -1,57 +1,46 @@
-# Captive breeding — regular developer notes
+# Regular notes — 23 Captive breeding kinship optimisation
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Created `Tests.Regular`, restored, scaffolded in two runs with `--entry-point static:Arbitrary`:
-  `StudbookId Individual KinshipPolicy KinshipCoefficient`, then `Pedigree BreedingPlan BreedingPair`.
-- Resolved every `to verify` block (13 of them), wrote `AnyIndividual.Custom.cs` (`AsFounder()`,
-  `WithParents(sire, dam)`) and a small `Studbook` helper that registers founders/offspring whose
-  shape the test chooses while ids, names and birth dates are drawn.
-- 34 tests (registration rules, generation/ancestors/kinship/inbreeding/mean kinship, founder
-  contributions and equivalents, policy age window, every `Propose` refusal, approve/withdraw,
-  expected inbreeding, sire ranking, pair equality). All pass; re-ran 15 times, no flake.
-  Build: 0 warnings.
+- Read, in order: `MODEL.md` and the whole `Domain/` code; `docs/PROJECT-README.md`; skimmed `guides/getting-started`, `guides/core-concepts`, `packages/justdummies-xunit`, `packages/justdummies-cli` (what the last column means, adjusting a parameter, ordered pairs), `generators/README`, `dates-and-times`, `strings`, `collections`, the head of `numbers`, `guides/composition`.
+- Created `Tests.Regular/CaptiveBreeding.Domain.Tests.Regular.csproj` from the template; `[assembly: Reproducible]` in `AssemblyInfo.cs` so every test reports its seed.
+- `any` commands run (all with `--output Generators --entry-point any`):
+  `any generate StudbookId KinshipCoefficient GeneticContribution BreedingPair KinshipPolicy Individual` then `any generate Pedigree`.
+  I also dry-ran `BreedingPlan` and `PairingRefusedException` and did not keep them (a plan of random pedigree is meaningless; the exception is never an input).
+- Generators completed by hand:
+  - `AnyStudbookId`: replaced the neutral `Any.String()` by `Any.StringMatching("[A-Z]{2,4}-[0-9]{4,6}")` and retyped `AnyString` to `AnyPattern` as the TODO said (worked first time). Added `AnyStudbookId.Recipes.cs` with `WithInstitutionLetters("A-M")`.
+  - `AnyBreedingPair`: sire draws from institutions `A-M`, dam from `N-Z` (the only way I found to make `sire != dam` true by construction); kinship `WithValue(v => v.LessThanOrEqualTo(0.5))`.
+  - `AnyKinshipPolicy`: only the `maximumPairKinship` base (`LessThanOrEqualTo(0.25)`); the scaffold had already turned `max > min` into an `Any.OrderedPair(..., strict: true)`.
+  - `AnyIndividual`: parents default to "founder" (both `null`) instead of the scaffold's two independent `.OrNull()`; `AnyIndividual.Recipes.cs` adds `ChildOf(sire, dam)`.
+  - `Support/PedigreeBuilder.cs`: a small helper that registers founders/children with ids from one `Any.ListOf(new AnyStudbookId()).WithCount(60).Distinct()` and dates drawn relative to the parents.
+- Tests (225 methods, 252 cases): `StudbookIdTests` (16), `KinshipCoefficientTests` (18), `GeneticContributionTests` (9), `BreedingPairTests` (12), `KinshipPolicyTests` (24, incl. `IsOfBreedingAge` boundaries and a leap-day birth), `IndividualTests` (23, incl. `RecordDeath`), `PedigreeTests` (72: registration refusals, generations, ancestors, kinship by the tabular method on a family with siblings/half-siblings/cousins/inbred child, inbreeding, mean kinship, founder contributions and equivalents), `BreedingPlanTests` (51: every refusal reason, age window edges, quota, withdraw/approve life cycle, `RankSiresFor` ordering by pair kinship then mean kinship).
+- Two tests are `Skip`ped as domain defects (below). Result: 250 passed, 2 skipped, 0 failed. Repeated runs: 55 consecutive runs of the 251-case suite and 12 of the final 252-case suite, all green (fresh seeds each time, no failure so no seed to replay).
 
-## Frictions, in the order I met them
-1. `any` marked as `to verify` guards that are plain ranges, in very common C# shapes:
-   - `if (maximumPairingsPerIndividual is < 1 or > 10)` (relational `or` pattern) — `unread guards`
-   - `if (double.IsNaN(value) || value < 0.0 || value > 1.0)` — `unread guards`
-   - `if (string.IsNullOrWhiteSpace(name) || name.Length > 40)` — `unread guards`, while the same
-     `IsNullOrWhiteSpace` alone (Pedigree) is read as `NotBlank()`.
-   So 4 of 4 policy parameters and the coefficient came out as bare `Any.Int32()` / `Any.Double()`
-   plus a non-compiling TODO. Safe by design, but on a value-object-heavy domain that is a lot of
-   six-line blocks to delete by hand (I scripted it). The user docs do not say which guard shapes
-   are read; they point to the maintainers' specification §9.
-2. `Individual(…, StudbookId? sireId, StudbookId? damId)` with "both or neither": the scaffold
-   draws both ids non-null by default, so `Arbitrary.Individual().Generate()` is always a
-   non-founder whose parents exist nowhere — valid for the constructor, never registrable in a
-   `Pedigree`. I changed the default to a founder (pins of `null`) and added `WithParents(...)`
-   in a partial file. The partial + private-constructor recipe from the CLI page worked first time.
-3. Cross-parameter rule `maximumBreedingAgeYears > minimumBreedingAgeYears`: I drew min in [0,50]
-   and max in [51,100] so it holds by construction. Narrower than the domain, but honest; deriving
-   max from min in `Generate()` would have fought the `WithMaximum…` pin.
-4. `StudbookId` regex: swapped to `Any.StringMatching("^[A-Z]{2,4}-[0-9]{4,6}$")` and retyped
-   `AnyString` -> `AnyPattern` in two places, exactly as the CLI page describes. Smooth.
-5. `BreedingPair` sire != dam (and `Individual` id != parent ids): I left both ids drawn
-   independently from the pattern space; a collision is astronomically unlikely but this is
-   "valid by luck", not by construction. No per-parameter tool for "different from the other
-   parameter" short of hand-writing `Generate()`.
-6. `Any.DateOnly()` unconstrained spans the whole type, so `WithParents` (adds years to a parent's
-   birth date) would overflow on a founder drawn near `DateOnly.MaxValue`. Every founder therefore
-   goes through `WithBirthDate(d => d.Between(...))` in the helper — fine once known, but nothing
-   warned me; I found it by reasoning.
-7. Choosing a sex the test does not care about reads `Any.Enum<Sex>().Generate()` inline — OK,
-   slightly noisy in helper calls.
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Regular` does not work out of the box on SDK 10.0.114.** Output: `MSBUILD : error MSB1001: Unknown switch. ... --project Tests.Regular`. The `--project` / `--solution` form is the Microsoft.Testing.Platform mode of `dotnet test`; xunit.v3 test projects are MTP, but the SDK still defaults to the VSTest verb unless `global.json` says `{ "test": { "runner": "Microsoft.Testing.Platform" } }`. Nothing in the docs I read mentions it (the project README quotes `dotnet test --solution`). I added a `global.json` at the workspace root. Expected: either the doc for the xUnit adapter mentions the opt-in, or the command works.
+2. **`any generate` before a restore**: `✗ StudbookId: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable; I just lost one command. (Not a defect, a first-use speed bump.)
+3. **Regex guard in `StudbookId`**: `value  string  Any.String()  to verify, unread guards` and the file does not compile (`TODO_verify_the_generator_for_value`). The TODO comment is excellent (quotes the pattern, tells which four places to retype); the edit took one minute and compiled on the first try.
+4. **Guards that tie two parameters have no declarative answer.** `BreedingPair` (`sireId == damId`) and `Individual` (`id == sireId || id == damId`, sire/dam both-or-neither, sire != dam) are all marked `to verify` with the right line, but there is nothing in the DSL to say "draw two different ids". The scaffold of `Individual` also draws `sireId` and `damId` through two independent `.OrNull()`, which yields a rejected individual about 18% of the time (one null, one not) unless fixed. I solved it by narrowing alphabets (sire `A-M`, dam `N-Z`) and defaulting to a founder. `Any.OrderedPair` solved the min/max ages beautifully; an `Any.DistinctPair`/"different from the other draw" would have solved this.
+5. **`maximumPairKinship.Value > 0.25` is `to verify`** (`KinshipPolicy`, line 12) because the comparison goes through a member of another value object. The docs say to move such a guard into the value's constructor, but here the guard belongs to the policy, not to `KinshipCoefficient`. Hand-written `WithValue(v => v.LessThanOrEqualTo(0.25))`, fine, but the same domain fact (0.25 and 0.5 limits) now lives in two generators and the constructor.
+6. **Overload ambiguity on `null`**: `Any.Individual().WithName(null!)` and `.WithId(null!)` give `error CS0121: The call is ambiguous between the following methods or properties: 'AnyIndividual.WithName(string)' and 'AnyIndividual.WithName(Func<AnyString, AnyString>)'`. I wanted a null to test the null guard; had to write `(string)null!` / `(StudbookId)null!`. Every scaffolded `With…` pair behaves that way for reference types.
+7. **`any generate PairingRefusedException --dry-run`** reports three "unread guards" at `PairingRefusedException.cs, line 7: $"Pairing {sireId} x {damId} refused: {reason}"`. That line is the interpolated message passed to `base(...)`, not a guard. Harmless (I did not scaffold it), but a false positive on the most common shape of a custom exception.
+8. **`P1` culture surprise (mine, not the library's)**: my literal expectation `"ZSL-01234: 25.0%"` failed with `Actual: "ZSL-01234: 25.0 %"` under the invariant culture (.NET 10 ICU). I relaxed it to `StartsWith`. Not a JustDummies matter, noted because the domain's `GeneticContribution.ToString` is culture dependent.
+9. **Ids that must be distinct** (a pedigree needs dozens): `Any.ListOf(new AnyStudbookId()).WithCount(60).Distinct().Generate()` worked and was fast, and `StudbookId` has `Equals`, so JD028 stayed silent. But I still had to build a queue-based helper to hand them out; there is no "unique ids" idiom in the guides.
+10. **`Any.DateOnly()` default spans 0001-9999**: I never used it unconstrained where arithmetic follows (the doc warns clearly); I bounded every date relative to a season or a parent. `Between(parent.AddDays(1), parent.AddYears(4))` read well.
 
-## What worked really well
-- `Func<AnyX, AnyX>` refinements nest: `WithPolicy(p => p.WithMinimumBreedingAgeYears(m => m.LessThanOrEqualTo(5)))`
-  and `WithMaximumPairKinship(...)` read like the domain.
-- `Arbitrary.X()` static root: one prefix for every domain type, no C# 14 needed.
-- AnyX composition (`new AnyKinshipCoefficient()` inside `AnyKinshipPolicy`/`AnyBreedingPair`):
-  I fixed [0,1] once and refined to <= 0.25 / <= 0.5 where the owner demands it.
-- `[Reproducible]` on the class: zero ceremony.
-- The non-compiling TODO lines point at the exact guard and line — I never had to search.
+## What worked well
+- The scaffolder's recap is a real work list: each `to verify` pointed at the exact guard, the build refused to compile until I decided, and the regex TODO even named the retype.
+- It read `maximumBreedingAgeYears <= minimumBreedingAgeYears` as an order between two parameters and emitted a strict `Any.OrderedPair` with pins and refinements on both sides, which I did not have to touch.
+- Guards on strings/ints (`NotBlank().WithMaxLength(40)`, `Between(0, 50)`, `Positive().LessThanOrEqualTo(10)`) were inferred correctly.
+- Entry points (`Any.Individual().WithBirthDate(...).ChildOf(...)`) made the arrange blocks short and readable; pins versus lambda refinements were easy to choose.
+- `[assembly: Reproducible]` is a one-line decision, and no test ever needed a seed in 67 runs.
+- No drawn value ever broke a test in 67 runs. The two domain defects came from my own literals (a trailing line feed on a pattern-guarded id, and a quota scenario for the ranking), not from a draw: the library's draws for refusal tests (lower-case prefixes, short/long digit runs, blank names, out-of-range doubles) all behaved as the domain says.
+- Error messages from `Any.StringMatching` and generator composition never got in my way.
+
+## Domain findings
+- `StudbookId("ZSL-01234\n")` is accepted: the pattern `^[A-Z]{2,4}-[0-9]{4,6}$` ends with `$`, which .NET matches before a final line feed (use `\z`). Test `A_value_with_a_trailing_line_feed_is_refused` is skipped.
+- `BreedingPlan.RankSiresFor(dam)` returns sires that `Propose` would refuse for the pairing quota (or because the pair is already in the plan); the doc calls them "eligible". Test `A_sire_the_plan_would_refuse_for_his_quota_is_not_ranked` is skipped (fails on any seed).
+- Observation, not tested: `Individual.RecordDeath` can be called after registration with a date before one of its children's birth (the "dam dead before the birth" rule only lives in `Pedigree.Register`); and `BreedingPlan` refuses an animal as "dead" by `IsAlive` only, even if its recorded death is after the season start.
 
 ## Fluency: 4 / 5
-Fast and pleasant once the generators were fixed; the tests themselves were quick to write. One
-point off for the volume of `to verify` work on simple range guards the tool could plausibly read,
-and for the parentage default that produces unregistrable individuals until hand-edited.
+The workflow (scaffold, complete the flagged recipes, write tests with pins and lambdas) is quick and the DSL read naturally once I had the vocabulary, with the xUnit adapter making reproducibility free. Points were lost on the `dotnet test --project` incompatibility, on cross-parameter constraints (distinct ids, sire/dam coupling) that must be hand-built and hand-hidden in the generator, and on the `null` overload ambiguity.

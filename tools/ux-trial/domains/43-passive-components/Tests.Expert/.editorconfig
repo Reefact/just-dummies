@@ -1,0 +1,5 @@
+root = true
+
+[*.cs]
+# Info rules never print in `dotnet build`: raise them to see the advice in the terminal.
+dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning

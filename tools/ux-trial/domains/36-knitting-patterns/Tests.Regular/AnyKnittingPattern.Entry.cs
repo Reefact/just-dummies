@@ -1,15 +1,21 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
-// `any generate KnittingPattern --entry-point static:Arbitrary --force` overwrites it.
-// The root is partial, so every other type's entry point lands in its own file beside this one.
+// `any generate KnittingPattern --entry-point any --force` overwrites it.
+// It needs C# 14: a static extension member is what reaches this spelling without touching the library.
+
+using JustDummies;
 
 namespace KnittingPatterns.Domain;
 
-/// <summary>Reaches this project's scaffolded generators through one root.</summary>
-public static partial class Arbitrary {
+/// <summary>Hangs <c>Any.KnittingPattern()</c> off the library's own entry point.</summary>
+public static class AnyKnittingPatternEntry {
 
-    /// <summary>Starts an arbitrary <c>KnittingPattern</c>: constrain it through <c>With…</c>, then <c>Generate()</c>.</summary>
-    public static AnyKnittingPattern KnittingPattern() {
-        return new AnyKnittingPattern();
+    extension(Any) {
+
+        /// <summary>Starts an arbitrary <c>KnittingPattern</c>: constrain it through <c>With…</c>, then <c>Generate()</c>.</summary>
+        public static AnyKnittingPattern KnittingPattern() {
+            return new AnyKnittingPattern();
+        }
+
     }
 
 }

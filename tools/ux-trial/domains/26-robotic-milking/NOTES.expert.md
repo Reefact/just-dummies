@@ -1,61 +1,67 @@
-# Robotic milking — expert crafter notes
+# Expert notes — 26 robotic milking
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- `Tests.Expert/`: 40 test methods (48 cases with theories), all green on 9 consecutive runs, under
-  `[assembly: Reproducible]`.
-- Scaffolded `AnimalId Animal MilkingSettings MilkFlowReading MilkingAnomaly MilkingSession` in one
-  call with `--entry-point any --output ./Arbitrary`, then refined every `AnyValid…()` factory:
-  `Any.StringMatching("[A-Z]{2}[0-9]{12}")` (AnyPattern retyping), ranges + `WithScale`/`WithGranularity`,
-  blind quarters `Distinct().WithMaxCount(3)`.
-- Cross-field rules written by construction: settings delay drawn from 10 s so `4×clean+delay ≥ 30 s`
-  always holds; anomaly `Generate()` hand-written to draw a quarter only for quarter-level kinds;
-  session draws `startedAt` in 2026 and the cow's `lastMilkedAt` before 2025-12-31 12:00 (or null).
-- `AnyAnimal.Custom.cs` adds `WithLastMilkedAt(IAny<DateTimeOffset?>)` (the documented route for "sometimes null").
-- `Recipes.cs`: `HealthyReading()`, `CompliantBrushing(settings)`, `ShortWait()`, `AnySessionStart()`,
-  an arbitrary preparation order; `SessionDriver` extension methods prepare/attach/milk out a session
-  with arbitrary timings, so each test states only the step it is about.
+Pages read, in order: `PROJECT-README.md`, `guides/getting-started.en.md`, `packages/justdummies-cli.en.md` (all of it: guard tables, `to verify`, "Adjusting a parameter", "When a guard ties two parameters"), `guides/composition.en.md`, `generators/README.md`, `generators/dates-and-times.en.md`, `generators/enums-and-choices.en.md`, the decimal part of `generators/numbers.en.md`, the pattern/`AnyPattern` part of `generators/strings.en.md`, the sets part of `generators/collections.en.md`, `guides/reproducibility.en.md`, `packages/justdummies-xunit.en.md`, and "Arbitrary does not mean dummy" in `guides/core-concepts.en.md`. Then `MODEL.md` and the whole `Domain/` source.
 
-## Frictions and surprises, in order met
-1. Nine plain range guards were not read: `if (cleaningTime < TimeSpan.FromSeconds(5) || cleaningTime > TimeSpan.FromSeconds(30)) throw`,
-   same shape on `decimal` (`vacuumKpa < 38m || vacuumKpa > 50m`) and in `MilkFlowReading`. Recap:
-   `cleaningTime TimeSpan Any.TimeSpan() to verify, unread guards`. Yet `ArgumentOutOfRangeException.ThrowIfLessThan(int, 1)`
-   was read. Safe (build stops), but 9 of the 25 parameters needed hand work only for a one-line range.
-2. Only the *first* unread guard per parameter is named. On `MilkingSettings` that is the range check
-   (line 23); the cross-field rule `4 × cleaningTime + letDownDelay ≥ 30 s` (line 35) is never
-   mentioned. Fix the range, delete the TODO, and the generator still draws rejected settings sometimes.
-   I only caught it because I had read the domain.
-3. `MilkingAnomaly.elapsed` is reported as "unread guard at line 31: `ArgumentOutOfRangeException.ThrowIfLessThan(elapsed, TimeSpan.Zero)`"
-   — a guard that looks perfectly readable. The real cause is probably the `IsQuarterLevel(kind)` helper
-   above it (ADR-0110 "mark every parameter"), but the message points at the wrong line.
-4. `lastMilkedAt` is scaffolded `.AsNullable()` (never null); "never milked" is a real business state.
-   A lambda cannot say `OrNull()`, so I wrote the custom overload — documented, worked first time.
-5. A rule *between two generators* (session `startedAt` vs the nested animal's `lastMilkedAt`) has no
-   expression: a refinement cannot see a sibling draw. Workaround: disjoint time windows.
-6. Hand-written `Generate()` (anomaly) is lost on `--force`; the doc says so. I would like a generated
-   hook (e.g. a `partial` compose method) so a cross-field derivation survives a re-scaffold.
-7. No permutation/shuffle generator. "Teats are brushed one at a time, in any order" needed
-   `Any.ListOf(Any.ElementOf(milkable)).WithCount(n).Distinct()` — works (20 000 draws OK) but reads indirectly.
-8. "Last call wins": `HealthyReading().WithConductivityMsPerCm(c => c.GreaterThan(7.5m))` silently drops
-   the healthy refinement (restarts from base). Wanted here, documented, but a reusable recipe's name can lie.
-9. JD031 (Info) on my own `GreaterThanOrEqualTo(Zero).LessThanOrEqualTo(1h)` — fair, switched to `Between`.
-   Info diagnostics are invisible in `dotnet build` unless raised in `.editorconfig`.
+`any` commands run (from `Tests.Expert`, after `dotnet restore`, which the tool demands):
+1. `any generate AnimalId MilkingSettings MilkFlowReading MilkingAnomaly Animal MilkingSession` (first look at the recap).
+2. The same with `--entry-point any --force`, to get `Any.Animal()`, `Any.MilkingSession()`... (I had not edited anything yet).
 
-## Domain observation (not a library issue)
-- With ≥ 2 quarters, after one is milked out and the others are attached without a reading yet, `Phase`
-  is `Attaching`, not `Milking`. A drawn number of blind quarters surfaced it on the first run
-  (seed reported: `[Reproducible(Seed = 401722490)]`). I relaxed that assertion; the team should decide.
+Generators completed by hand (`AnyX.cs` files are mine, the six `AnyX.Entry.cs` are untouched):
+- `AnyAnimalId`: `Any.StringMatching("[A-Z]{2}[0-9]{12}")`, retyped `AnyString` -> `AnyPattern` in the five places the TODO named.
+- `AnyMilkingSettings`: the tie `4 x cleaning + delay >= 30 s` written in `Generate()` (delay drawn first, cleaning drawn from its recipe raised to the shortest cleaning the delay allows, rounded up to the tick); the generated `WithCleaningTime(TimeSpan)` pin edited so it also narrows the recipe `Generate()` now draws from.
+- `AnyMilkingAnomaly`: `_quarter` made nullable-meaning-"follow the kind"; `Generate()` gives quarter-level kinds a quarter and session-level kinds none, unless `WithQuarter`/`WithoutQuarter` was called (then the anomaly's own refusal applies).
+- `AnyAnimal`: blind quarters `Any.SetOf(Any.Enum<UdderQuarter>()).WithMaxCount(3)` (retyped `AnySequence` -> `AnySet`); `lastMilkedAt` drawn between 2020 and 2024.
+- `AnyMilkingSession`: `startedAt` drawn between 2025 and 2035, so that "last milked <= startedAt - minimum interval" holds by construction (disjoint windows with `AnyAnimal`), rather than by a tie in `Generate()`.
+- `AnyMilkFlowReading`: nothing to complete.
+- Hand-written test support: `Milking.cs` (drives a session through the protocol reading every duration from the session's own settings; `HealthyReading`, `ReadingOfMilk`, `DriveTo(phase)`, `SessionOfAFullUdder()`).
+
+Environment: `W/global.json` added (`"test": {"runner": "Microsoft.Testing.Platform"}`), see friction 1. `[assembly: Reproducible]` in `AssemblyInfo.cs`.
+
+Tests written (`Tests.Expert`, 222 test cases from 139 test methods, 4 skipped on purpose):
+- `AnimalIdTests`: valid tags (theory), 11 malformed tags (theory), trailing line feed (skipped, domain defect), null, country code, equality/hash/inequality.
+- `MilkingSettingsTests`: 12 accepted boundaries, each range just outside (one tick / 0.01 outside), the cross-field stimulation rule at exactly 30 s and one tick short.
+- `MilkFlowReadingTests`: retention, extremes accepted, each range refused just outside, undefined quarter, mastitis at 7.5 / 7.51.
+- `MilkingAnomalyTests`: quarter-level vs session-level kinds, the two refusal directions, critical/diverting flags per kind, elapsed bounds, undefined kind and quarter.
+- `AnimalTests`: lactation and days-in-milk bounds, null arguments, milkable quarters in declared order, 3 blind accepted / 4 refused, duplicate blind quarters, undefined quarter, last milking.
+- `QuarterMilkingTests`: initial state, attempts bound, undefined quarter.
+- `MilkingSessionStartTests`: one `QuarterMilking` per milkable quarter, initial state, retention, box 1..8, null arguments, the minimum interval at exactly / one tick under, the refusal naming the cow, `last > startedAt` as an `ArgumentException`.
+- `TeatPreparationTests`: phases Preparing/Attaching, cleaning time exactly / one tick under / over, overlap (one tick overlapping / touching / with a gap), before the session start, once per teat, blind teat, state unchanged after a refusal.
+- `CupAttachmentTests`: unprepared teat, let-down delay exactly / one tick early / zero, failure and retry, allowance 1..5 (theory: the last failure and not one sooner), given-up quarter, cup already on, blind quarter, all quarters given up -> Completed and incomplete.
+- `MilkFlowRecordingTests`: trapezoidal yield (6.25 kg), detachment under / at / before the threshold, readings not strictly increasing, cup not on, parallel quarters on their own clocks, completion and total, mastitis diversion at 7.5 / 7.51 and recorded once, blood, saleable vs total, blind quarter, null; one skipped (decimal precision).
+- `AnomalyReportingTests`: three critical kinds (immediately, mid-milking keeps the milk), no operation afterwards (3 tests), kick-off while attached / milking / on every quarter / cup not on / cup already off, two diverting kinds, order, blind quarter, after release, null; two skipped (domain defects).
+- `ReleaseTests`: phase through the protocol (theory over 6 phases), leaving from Completed / SafeState, refused from the other four phases, at the start instant, before the start, twice, operations afterwards.
+
+Result: `dotnet test --project Tests.Expert` green on the first complete run (218 passed, 4 skipped). Then 52 further runs (12 + 40, `--no-build`, fresh seeds each time) stayed green. I also removed each `Skip` once, ran, and confirmed the four skipped tests fail for the reason written on them, then restored the `Skip`.
+
+Domain defects found (skipped tests, none involves a seed: the failure is deterministic):
+1. `AnimalId` accepts `"FR123456789012\n"`: the pattern is anchored with `$`, which .NET also matches before a final line feed (needs `\z`).
+2. `MilkingSession.ReportAnomaly` accepts and records any anomaly while in `SafeState`, whereas `PrepareTeat`/`AttachCup`/`RecordFlow` refuse (MODEL.md: "no further operation").
+3. A refused `CupKickOff` (cup not on) is appended to `Anomalies` before the refusal is thrown.
+4. `QuarterMilking` integrates with `(decimal)TimeSpan.TotalMinutes`, a double: a 10 s step at 6 kg/min yields `0.500000000000001` instead of `0.5`.
+
+## Frictions and surprises, in order
+1. `dotnet test --project Tests.Expert` (the command of the brief) fails: `MSBUILD : error MSB1001: Unknown switch ... --project`. Without a `global.json` selecting the Microsoft Testing Platform runner, .NET SDK 10 runs VSTest, and `dotnet test Tests.Expert` then says `Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later`. I created `W/global.json` with `{ "test": { "runner": "Microsoft.Testing.Platform" } }`, after which `dotnet test --project` worked. Not a library problem, but the xunit adapter page (`justdummies-xunit.en.md`) says nothing about it, and `xunit.v3` 4.0.2 on net10 needs it: a first-time reader hits this before any JustDummies code runs.
+2. `any generate AnimalId ...` on a project not yet restored: `✗ AnimalId: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable; I only note that the CLI page I read does not say a restore must come first (it is natural, but the Install section could say it).
+3. Every scaffolded generator lands in the domain's namespace (`namespace RoboticMilking.Domain;`) although the page says to run from the test project and "that is where the file belongs". Test-only types in the production namespace is not what I would want; `--namespace` exists, but the default does the opposite of the advice. I kept the default to stay close to what the tool gives (a `Tests.Expert` file declaring `RoboticMilking.Domain.AnyAnimal` reads oddly).
+4. Five of six types did not build after scaffolding (`error CS0103: The name 'TODO_verify_the_generator_for_blindQuarters' does not exist in the current context`, and the same for `kind`, `quarter`, `animal`, `startedAt`, `settings`), plus the two for `cleaningTime`/`letDownDelay`. This is the documented design and it worked as intended: every one of them was a real rule I had to write (regex, a cross-field rule, a nullable that depends on a kind, a date window). I judged the stop justified in each case except 5 and 6.
+5. The `to verify` recap for `Animal.blindQuarters` names the wrong guard and misses the one that matters. Command: `any generate Animal`. Output: `blindQuarters  IEnumerable<UdderQuarter>  Any.SequenceOf(Any.Enum<UdderQuarter>())  to verify, unread guards` / `blindQuarters: unread guard at Animal.cs, line 33: if (!Enum.IsDefined(quarter)) ...` and the TODO in the file says the same, with no `; and 1 more`. But `Any.Enum<UdderQuarter>()` already honours that `IsDefined` guard; the rule that actually rejects draws is the one a few lines below, `if (blind.Count == Enum.GetValues<UdderQuarter>().Length) throw ...` ("a cow with four blind quarters cannot be milked"), a test on a local built from the parameter that the tool did not report at all. A developer who reads the named guard, sees that `Any.Enum` satisfies it, and deletes the two sentinel lines gets a generator that is refused on some draws: I measured the scaffolded recipe, `new Animal(id, 1, 1, Any.SequenceOf(Any.Enum<UdderQuarter>()).Generate(), null)`, refused 421 times out of 2000 draws (`ArgumentException`, "A cow with four blind quarters cannot be milked."). I wrote the real rule (`Any.SetOf(...).WithMaxCount(3)`) because I read the constructor.
+6. The `to verify` marks on `MilkingSession.animal`, `startedAt` and `settings` all cite the same guard, `MilkingSession.cs, line 31: if (last > startedAt) ...`. That guard involves `animal` (through `animal.LastMilkedAt`) and `startedAt`, not `settings`; `settings` is only involved by the interval guard a few lines below (`startedAt - last < settings.MinimumInterval`), which is never named. The CLI page says a mark of this kind "says so where it points" (`every parameter is marked here, since what decides this throw could not be traced back to one`); that sentence is absent from both the recap and the TODO, so the `settings` mark reads as an error in the tool. Low cost for me (I understood anyway), but misleading.
+7. The tie `4 x cleaningTime + letDownDelay >= 30 s` (MilkingSettings) is "a rule between two parameters that is not an order". The page offers four forms. The one that fit (`derive one draw from another inside Generate()`) comes with a caveat that bit me exactly as written: the dependent parameter's `With…` pin is dead. I needed `WithCleaningTime(TimeSpan)` and `WithLetDownDelay(TimeSpan)` to both keep working (tests pin the delay to 20 s, others pin the threshold, the cleaning time is read from the session), so I edited the generated pin to also narrow the recipe the new `Generate()` draws from. That edit lives in the file `--force` rewrites, whereas the page says the survivable place is a neighbouring file; a neighbouring file cannot replace a generated method. A sanctioned shape for "a tie the tool cannot pair, with both pins kept" would have saved me an unprincipled edit. (Also: if both are pinned and violate the tie, the failure is a library conflict exception from `GreaterThanOrEqualTo` on my pinned `Between(v, v)`, not the constructor's message; acceptable, it names both sides.)
+8. Tie between a kind and a nullable quarter (`MilkingAnomaly`). Scaffolded default: `_quarter = quarter.OrNull()`, so 1 anomaly in 10 has no quarter whatever its kind. The two marks were correct and I wrote `Generate()` myself; to keep `WithQuarter(...)`/`WithoutQuarter()` meaningful I had to turn the field into "null means follow the kind". About twenty lines, one design decision, nothing in the docs about nullable parameters whose nullability depends on another parameter (the closest page is "`null`, sometimes, always or never").
+9. Retyping after a replacement: `Any.StringMatching(...)` returns an `AnyPattern`; the TODO enumerated the five places (field, factory return type, recipe constructor, `Func<…>`, and the doc remark was stale: `Func&lt;AnyString, AnyString&gt;` stays in the XML comment, harmless). For `SequenceOf` -> `SetOf` nothing says which type name to use; I guessed `AnySet<UdderQuarter>` and it compiled. The generic builder names (`AnySet<T>`, `AnySequence<T>`, `AnyEnum<T>`) are not listed in the generator pages I read; I found them in the generated files.
+10. `Any.OneOf`/`DifferentFrom`: `Any.AnimalId().WithValue(tag => tag.DifferentFrom(anyAnimalId.Value))` works on the `AnyPattern` inside the lambda. No friction, noting it because the first reading of the strings page suggested only `OneOf`/`Except`/`DifferentFrom` exist there and I wondered whether the lambda parameter was an `AnyPattern`.
+11. Scaffolded unconstrained dates: `Any.DateTimeOffset()` for `lastMilkedAt` and `startedAt` spans year 1 to 9999; the dates page warns about arithmetic on them, and `startedAt - last` in the constructor is exactly that. I bounded both windows (and made them disjoint to satisfy the tie). Fine, but the recap row shows `Any.DateTimeOffset()` as if it were a safe base; only the `to verify` on the session made me look.
+12. The analyzers never fired on my code (no `JDxxx` warning in `dotnet build --no-incremental`; JD030 is Info and silent). I looked for them because I expected `WithQuarter(q => q)` (identity lambda to say "never null") to read as obscure; it is the documented spelling and reads acceptably in a test (`.WithKind(kind).WithQuarter(quarter => quarter)`), but I would have preferred a named `WithAQuarter()`.
 
 ## What worked well
-- The TODO-that-does-not-compile design: impossible to forget a recipe; the recap's `to verify` list is a
-  real work list. The `MilkingSession` cross-parameter guard was correctly flagged on all three parameters.
-- Refining lambdas compose through the graph: `Any.MilkingSession().WithAnimal(a => a.WithBlindQuarters(b => b.WithMaxCount(2)))`
-  reads like the requirement ("a cow with at least two teats").
-- `Any.ElementOf(session.Animal.MilkableQuarters)` for "some milkable quarter" — exactly the dummy I needed.
-- C# 14 entry points (`Any.MilkingSession()`) make arrange blocks uniform.
-- The CLI page's "When the replacement is another kind of generator" predicted the `AnyPattern` retyping exactly.
-- Failure output carried the replay attribute ready to paste.
+- The domain-typed entry point (`--entry-point any`) makes arrange blocks read well: `Any.MilkingSession().WithSettings(settings => settings.WithLetDownDelay(TwentySeconds)).Generate()` says that the delay matters and nothing else does. The lambda-refines-the-base design is the best part for tests: `WithAnimal(cow => cow.WithBlindQuarters(blind => blind.NonEmpty()))` states one fact about the cow and keeps all her other invariants.
+- Pins vs lambdas map exactly onto "literal that matters" vs "dummy": `WithMinimumInterval(TimeSpan.FromHours(6))` for the boundary tests, nothing for the others. It made me ask, for each test, whether the value reaches the assertion, and several draws that had slipped into assertions (a drawn quarter retained in a reading, a drawn cow's udder partition, a conductivity constrained to what the test asserts) went back to literals or were deleted.
+- `[assembly: Reproducible]` is a one-line decision for the whole suite, silent when green. Theories get one seed per case.
+- Failing loudly at scaffold time paid off: the TODO sentinels pointed me, at the line, to the six rules the constructors enforce that a plain scaffold would have violated on some draws.
+- Contradictions and bad ranges are refused with both sides named (e.g. my pinned cleaning time against the delay-implied floor), so a wrong pin fails on its first run.
+- `Any.Enum`, `Any.ElementOf`, `Any.SetOf(...).WithMaxCount(3)`, `WithBlindQuarters(blind => blind.Empty())`: the collection vocabulary was exactly what the domain needed, first try.
 
 ## Fluency: 4 / 5
-Everything I needed was reachable and documented; the domain-wide rules took real thought but each had a
-documented pattern. Minus one for the scaffolder leaving ordinary range guards unread and naming only the
-first guard, which hides cross-field rules — the one place a confident user could ship a flaky generator.
+The library itself was fluent: after the getting-started and CLI pages, every `Any.*` call and every refinement compiled on the first try except the two type names I had to guess, and the draws never contradicted a constraint. The score loses one point for the two places where the scaffolder's guidance was wrong or silent in a way that could cost correctness (frictions 5 and 6, the first of which would give an intermittent generator after a faithful reading of the recap), for the missing sanctioned shape for a non-order tie where both pins must survive (friction 7), and for the `dotnet test` setup hurdle on .NET 10 (friction 1). Everything else, including four real domain defects found by plain deterministic tests, went smoothly.

@@ -6,9 +6,8 @@ using System;
 using System.Collections.Generic;
 
 using JustDummies;
-using MusicScore.Domain;
 
-namespace MusicScore.Tests.Expert.Arbitrary;
+namespace MusicScore.Domain;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Voice" /> values. It draws from the ambient random
@@ -17,8 +16,11 @@ namespace MusicScore.Tests.Expert.Arbitrary;
 /// </summary>
 public sealed partial class AnyVoice : IAny<Voice> {
 
-    private readonly IAny<int>                       _number;
-    private readonly IAny<IReadOnlyList<VoiceEntry>> _entries;
+    private IAny<int>                       _number;
+    private IAny<IReadOnlyList<VoiceEntry>> _entries;
+
+    private AnyInt32            _numberRecipe;
+    private AnyList<VoiceEntry> _entriesRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyVoice()
@@ -26,57 +28,78 @@ public sealed partial class AnyVoice : IAny<Voice> {
                entries: AnyValidEntries()) { }
 
     private static AnyInt32 AnyValidNumber() {
-        return Any.Int32().Between(1, Voice.MaxVoices);
+        return Any.Int32().Positive().LessThanOrEqualTo(Voice.MaxVoices);
     }
 
     private static AnyList<VoiceEntry> AnyValidEntries() {
-        return Any.ListOf(new AnyVoiceEntry()).WithCountBetween(1, 8);
+        return Any.ListOf(new AnyVoiceEntry()).NonEmpty();
     }
 
-    private AnyVoice(IAny<int>                       number,
-                     IAny<IReadOnlyList<VoiceEntry>> entries) {
-        _number  = number;
-        _entries = entries;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyVoice(AnyInt32            number,
+                     AnyList<VoiceEntry> entries) {
+        _number        = number;
+        _numberRecipe  = number;
+        _entries       = entries;
+        _entriesRecipe = entries;
     }
 
-    /// <summary>Pins <c>number</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyVoice(AnyVoice from) {
+        _number        = from._number;
+        _numberRecipe  = from._numberRecipe;
+        _entries       = from._entries;
+        _entriesRecipe = from._entriesRecipe;
+    }
+
+    /// <summary>Pins <c>number</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVoice WithNumber(int value) {
-        return new AnyVoice(new FixedValue<int>(value), _entries);
+        AnyVoice copy = new AnyVoice(this);
+
+        copy._number = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>number</c> from <c>AnyValidNumber()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>number</c> is drawn from — <c>AnyValidNumber()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVoice WithNumber(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyVoice(configure(AnyValidNumber()), _entries);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVoice copy = new AnyVoice(this);
+
+        copy._numberRecipe = configure(_numberRecipe);
+        copy._number       = copy._numberRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>entries</c> to a fixed value.</summary>
+    /// <summary>Pins <c>entries</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVoice WithEntries(IReadOnlyList<VoiceEntry> value) {
-        return new AnyVoice(_number, new FixedValue<IReadOnlyList<VoiceEntry>>(value));
+        AnyVoice copy = new AnyVoice(this);
+
+        copy._entries = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>entries</c> from <c>AnyValidEntries()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>entries</c> is drawn from — <c>AnyValidEntries()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;VoiceEntry&gt;, AnyList&lt;VoiceEntry&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVoice WithEntries(Func<AnyList<VoiceEntry>, AnyList<VoiceEntry>> configure) {
-        return new AnyVoice(_number, configure(AnyValidEntries()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVoice copy = new AnyVoice(this);
+
+        copy._entriesRecipe = configure(_entriesRecipe);
+        copy._entries       = copy._entriesRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Voice" />.</summary>
     public Voice Generate() {
         return new Voice(_number.Generate(),
                          _entries.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

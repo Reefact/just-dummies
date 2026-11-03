@@ -1,12 +1,17 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate NucleotideSequence --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
+using DnaVariants.Domain;
 using JustDummies;
 
-namespace DnaVariants.Domain;
+namespace DnaVariants.Tests.Regular.Generators;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="NucleotideSequence" /> values. It draws from the ambient random
@@ -15,7 +20,9 @@ namespace DnaVariants.Domain;
 /// </summary>
 public sealed partial class AnyNucleotideSequence : IAny<NucleotideSequence> {
 
-    private readonly IAny<string> _bases;
+    private IAny<string> _bases;
+
+    private AnyString _basesRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyNucleotideSequence()
@@ -25,37 +32,43 @@ public sealed partial class AnyNucleotideSequence : IAny<NucleotideSequence> {
         return Any.String().WithChars(NucleotideSequence.Alphabet).WithLengthBetween(1, 200);
     }
 
-    private AnyNucleotideSequence(IAny<string> bases) {
-        _bases = bases;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyNucleotideSequence(AnyString bases) {
+        _bases       = bases;
+        _basesRecipe = bases;
     }
 
-    /// <summary>Pins <c>bases</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyNucleotideSequence(AnyNucleotideSequence from) {
+        _bases       = from._bases;
+        _basesRecipe = from._basesRecipe;
+    }
+
+    /// <summary>Pins <c>bases</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyNucleotideSequence WithBases(string value) {
-        return new AnyNucleotideSequence(new FixedValue<string>(value));
+        AnyNucleotideSequence copy = new AnyNucleotideSequence(this);
+
+        copy._bases = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>bases</c> from <c>AnyValidBases()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>bases</c> is drawn from — <c>AnyValidBases()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyNucleotideSequence WithBases(Func<AnyString, AnyString> configure) {
-        return new AnyNucleotideSequence(configure(AnyValidBases()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyNucleotideSequence copy = new AnyNucleotideSequence(this);
+
+        copy._basesRecipe = configure(_basesRecipe);
+        copy._bases       = copy._basesRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="NucleotideSequence" />.</summary>
     public NucleotideSequence Generate() {
         return new NucleotideSequence(_bases.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

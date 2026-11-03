@@ -1,21 +1,28 @@
-// Written by hand, never touched by `any generate Score --force`.
-
 using JustDummies;
 
-using MusicScore.Domain;
-
-namespace MusicScore.Tests.Expert.Arbitrary;
+namespace MusicScore.Domain;
 
 public sealed partial class AnyScore {
 
-    /// <summary>Titles a score may carry — the generator's own base, for a test that builds the score itself.</summary>
-    public static IAny<string> Titles() {
-        return AnyValidTitle();
-    }
+    /// <summary>
+    ///     One to three staves with distinct names, the same number of measures, the same meter in each
+    ///     measure and no repeat barline: what a score requires of its staves to be a score.
+    /// </summary>
+    private sealed class CoherentStaves : IAny<IReadOnlyList<Staff>> {
 
-    /// <summary>A score of one arbitrary staff whose measures follow <paramref name="shapes" />.</summary>
-    public AnyScore WithMeasures(params Func<AnyMeasure, AnyMeasure>[] shapes) {
-        return new AnyScore(_title, _tempo, new AnyStaff().WithMeasures(shapes).As(staff => (IReadOnlyList<Staff>)[staff]));
+        public IReadOnlyList<Staff> Generate() {
+            int           measureCount = Any.Int32().Between(1, 5).Generate();
+            TimeSignature[] meters     = Enumerable.Range(0, measureCount).Select(_ => new AnyTimeSignature().Generate()).ToArray();
+            List<string>  names        = Any.ListOf(Any.String().Alpha().WithLengthBetween(3, Staff.MaxNameLength)).WithCountBetween(1, 3).Distinct().Generate();
+
+            return names.Select(name => new AnyStaff().WithName(name)
+                                                      .WithMeasures(Enumerable.Range(1, measureCount)
+                                                                              .Select(number => new AnyMeasure().WithNumber(number).WithTimeSignature(meters[number - 1]).Generate())
+                                                                              .ToList())
+                                                      .Generate())
+                        .ToList();
+        }
+
     }
 
 }

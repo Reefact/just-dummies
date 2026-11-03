@@ -1,4 +1,4 @@
 using JustDummies.Xunit;
 
-// Every test draws from a pinned seed, reported when the test fails.
+// Every test of the suite draws under a pinned seed that is reported when it fails.
 [assembly: Reproducible]

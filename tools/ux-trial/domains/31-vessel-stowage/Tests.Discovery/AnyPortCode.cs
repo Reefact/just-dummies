@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate PortCode --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,48 +19,56 @@ namespace VesselStowage.Domain;
 /// </summary>
 public sealed partial class AnyPortCode : IAny<PortCode> {
 
-    private readonly IAny<string> _value;
+    private IAny<string> _value;
+
+    private AnyPattern _valueRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyPortCode()
         : this(value: AnyValidValue()) { }
 
     private static AnyPattern AnyValidValue() {
-        // UN/LOCODE: country code, then three of A-Z or 2-9.
+
         return Any.StringMatching("[A-Z]{2}[A-Z2-9]{3}");
     }
 
-    private AnyPortCode(IAny<string> value) {
-        _value = value;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyPortCode(AnyPattern value) {
+        _value       = value;
+        _valueRecipe = value;
     }
 
-    /// <summary>Pins <c>value</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyPortCode(AnyPortCode from) {
+        _value       = from._value;
+        _valueRecipe = from._valueRecipe;
+    }
+
+    /// <summary>Pins <c>value</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyPortCode WithValue(string value) {
-        return new AnyPortCode(new FixedValue<string>(value));
+        AnyPortCode copy = new AnyPortCode(this);
+
+        copy._value = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>value</c> from <c>AnyValidValue()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>value</c> is drawn from — <c>AnyValidValue()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyPattern, AnyPattern&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyPortCode WithValue(Func<AnyPattern, AnyPattern> configure) {
-        return new AnyPortCode(configure(AnyValidValue()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPortCode copy = new AnyPortCode(this);
+
+        copy._valueRecipe = configure(_valueRecipe);
+        copy._value       = copy._valueRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="PortCode" />.</summary>
     public PortCode Generate() {
         return new PortCode(_value.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

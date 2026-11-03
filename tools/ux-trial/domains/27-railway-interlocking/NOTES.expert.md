@@ -1,64 +1,54 @@
-# Railway interlocking — expert crafter notes
+# Expert notes — 27 Railway interlocking
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- `Tests.Expert`: 36 xUnit v3 tests, all green (15 consecutive runs, `[assembly: Reproducible]`).
-- `any.json` (`output: ./Arbitrary`, `entryPoint: any`), then `any generate SectionId TrainId PointSetting
-  TrackSection Point Route RouteLock`, so tests read `Any.Route()`, `Any.TrackSection()`, ...
-- Refined bases: `SectionId`/`TrainId` -> `Any.StringMatching(...)` (retyped to `AnyPattern` as the CLI page
-  says), track length/speed bounds, `lockedAt` -> `DifferentFrom(default)`, route sections `.Distinct()`,
-  point settings `.Distinct(PointSettingByPointName)`, names given a max length.
-- `AnyRoute` reworked by hand: entry/exit signals drawn together as two distinct names
-  (`ListOf(...).WithCount(2).Distinct().As(...)`), pinned with `WithSignals(entry, exit)`.
-- `AnyJunctionLayout : IAny<JunctionLayout>`: a fixed topology (approach, junction + point, main, branch,
-  independent siding; three routes) whose ids, names, lengths, speeds and initial point lie are all drawn.
-  Every interlocking test starts from it; `Recipes` holds route name, area name, instant, two distinct trains.
-- Tests cover: route invariants and `ConflictsWith`, track clearance time, control-table validation at
-  commissioning, route setting / refusals (unknown, conflicting, same route twice, train already routed,
-  occupied section) with "state unchanged" checks, cancellation (before entry, approach locked, not set),
-  sequential release (rear release, clear ahead ignored, out-of-order catch-up, point freed, route ends,
-  next conflicting route settable).
+Pages read, in order: `PROJECT-README.md`, `guides/getting-started.en.md`, `packages/justdummies-cli.en.md` (all of it, the guard tables included), `packages/justdummies-xunit.en.md`, `guides/composition.en.md` (skimmed through the CLI page's overload section), `guides/core-concepts.en.md`, `generators/README.md`, `generators/strings.en.md`, `generators/collections.en.md`, `generators/numbers.en.md`, `generators/enums-and-choices.en.md`, `generators/dates-and-times.en.md`, `guides/errors-and-conflicts.en.md`. Domain read in full (`MODEL.md` and every `.cs`).
 
-## Frictions and surprises, in order met
-1. `any generate ... Point ...`: `✗ Point: several types answer to that name. RailwayInterlocking.Domain.Point /
-   System.Drawing.Point. Name the one you mean in full.` Clear, but System.Drawing is not imported anywhere
-   in the test project; the domain project's own type could win. Fully-qualified name worked.
-2. `TrackSection`: `if (double.IsNaN(x) || x < MinimumLengthMetres || x > MaximumLengthMetres) throw` is
-   "unread guards" -> `Any.Double()`. A very ordinary guard shape (NaN || below const || above const).
-   Same for `if (lockedAt == default)`. Fixing by hand was easy; the TODO compile-stop did its job.
-3. `Route.sections`: recap says `guard, unread guards` and names only the first unread guard
-   (`sections.Any(s => s is null)`). The *distinctness* guard two lines below
-   (`sections.Distinct().Count() != sections.Count`) is named nowhere — neither recap, TODO nor JSON.
-   Same for `pointSettings` (distinct by name). Someone who checks "ListOf never yields null" and deletes
-   the TODO line gets routes that intermittently throw "traverses a section twice". I only caught it by
-   reading the constructor. The scaffolded base is `NonEmpty()` without `Distinct()`.
-4. Entry != exit signal: the CLI page's "When a guard ties two parameters" recipes (start + duration,
-   derive in `Generate()`) do not fit a "differs from" rule while keeping both pins; there is no
-   `DifferentFrom` on a plain `IAny<T>`. I restructured the generator around a distinct pair.
-5. Disjoint section runs for two routes: no way to say "a list disjoint from that one"; I drew one distinct
-   list and split it. Fine, but a recipe in the collections page would help.
-6. Distinct pairs (two trains, two route names) come up constantly: `ListOf(g).WithCount(2).Distinct()` +
-   indexing every time. A `Any.DistinctPairOf(g)` (or deconstruction on a 2-list) would read better.
-7. Dummy-vs-assertion tension: interlocking tests assert on fixture *handles* (`anyJunction.Main`), drawn
-   ids compared by identity, not by value. The "an any-name in the assertion is a property" heuristic
-   flags this though the outcome cannot depend on the drawn value. A doc paragraph on fixture handles
-   would settle it. Where the assertion is about a value (train, lock time, running order) I used literals.
-8. `--dry-run` prints `✓ AnyInterlocking.cs — ...` then `Nothing written`; the tick reads as "written".
-9. No analyzer diagnostic fired on my code (checked via a SARIF error log): nothing to report there.
+`any` commands run, from `Tests.Expert/`:
+1. `any generate SectionId TrainId PointSetting TrackSection Point Route RouteLock --output Generators --entry-point any --namespace RailwayInterlocking.Domain.Tests.Expert.Generators` (first run refused: project not restored; second run after `dotnet restore` wrote 7 generators + 7 `Any.X()` entry points). `Interlocking` was deliberately not scaffolded: its collections of sections/points/routes must be mutually consistent, which no per-parameter recipe can express; a hand-written `Junction` fixture builds it instead.
 
-## Domain observations (not library)
-- `PointLocked` and `SectionLocked` are unreachable: a point lies in a section of every route setting it,
-  so `ConflictingRoute` (checked on the full section list, released sections included) always wins first.
-  I did not write tests for those two reasons.
+Generators completed by hand (all documented recipes):
+- `AnySectionId`, `AnyTrainId`: the `to verify` row (`Format.IsMatch(value)`, a `static readonly Regex` field) replaced by `Any.StringMatching("[A-Z]{1,2}[0-9]{1,4}")` / `"[0-9][A-Z][0-9]{2}"`, retyped `AnyString` -> `AnyPattern` on the 3 lines + the `Func` the docs name, TODO lines deleted.
+- `AnyRoute`: `entrySignal != exitSignal` written in `Generate()` (`_exitSignal.DifferentFrom(entrySignal)`), sections `.NonEmpty().Distinct()`, point settings `.DistinctBy(setting => setting.PointName)`, 4 TODO pairs deleted.
+- Four one-method `partial` files (`AnyRoute.Custom.cs`, `AnyPoint.Custom.cs`, `AnyTrackSection.Custom.cs`, `AnyRouteLock.Custom.cs`) exposing the private `AnyValid…()` bases (`ValidName()`, `ValidLengthMetres()`, `ValidLineSpeedKmh()`, `ValidLockedAt()`), as the CLI page's "Three things the file does on purpose" suggests.
+
+Support code: `Junction` (a 5-section layout with a throat holding a point, 3 routes; all ids and names drawn, distinct), `Trains.AnyOtherThan`, `Instants.AnyLockTime`, `[assembly: Reproducible]`, `global.json` (see friction 1).
+
+Tests (108 methods, 173 cases): `SectionIdTests` (8), `TrainIdTests` (8), `PointSettingTests` (5), `TrackSectionTests` (8), `PointTests` (5), `RouteTests` (19: construction refusals, defensive copy, `ConflictsWith` both directions), `RouteLockTests` (4), `InterlockingConstructionTests` (13 refusals), `RequestRouteTests` (15: lock/throw/atomicity/each refusal), `CancelRouteTests` (7), `SequentialReleaseTests` (16: entry, rear release, points, early clear catch-up, spurious clears, independent routes).
+Value shapes and boundaries are literals (they are what those tests are about); topology is fixed, every name/id/headcode/time/signal is drawn.
+
+Result: first full run green: 169 passed, 4 skipped (4 domain defects, below), 0 failed. Then 12 more runs (fresh seeds each): all 12 identical, 0 failed. I also un-skipped the 4 defect tests once to prove each fails for the stated reason (done, then restored).
+
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Expert` does not work on the .NET 10 SDK out of the box.** First `dotnet test --project .` -> `MSBUILD : error MSB1001: Unknown switch. ... Switch: --project`; then `dotnet test Tests.Expert` -> `Microsoft.Testing.Platform.MSBuild.targets(395,5): error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. If you use dotnet test, you should opt-in to the new dotnet test experience.` Fix: a `global.json` with `{ "test": { "runner": "Microsoft.Testing.Platform" } }` beside the solution/folder. I expected the xUnit page (which lists `xunit.v3` 4.0.2 as the floor) to say so; it does not. I added the file in the domain folder.
+2. **`any generate` on an unrestored project**: `✗ SectionId: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. The message is clear and the fix is one command; noted only because my first call produced nothing. (Fine as is.)
+3. **The most common value-object guard — a `static readonly Regex` field — cannot be turned into a recipe.** Recap: `value  string  Any.String()  to verify, unread guards` and `unread guard at SectionId.cs, line 13: if (!Format.IsMatch(value)) ...`. The doc says "when yours is inside the subset the replacement is one line", and the TODO comment even names the retype for an inline literal pattern, but here the pattern lives in a field (`Format`), so the comment does not quote it and I had to open `SectionId.cs` and copy `^[A-Z]{1,2}[0-9]{1,4}$` by hand — which is a second copy of the invariant that can drift from the domain. I expected the tool to follow a `static readonly Regex` initialised by a literal, as it follows public constants for numeric bounds (it did that perfectly for `TrackSection.MinimumLengthMetres`).
+4. **The retype of `AnyString` to `AnyPattern` is a mechanical 4-line edit I did with a script.** The docs describe it precisely (field, recipe constructor parameter, factory, `Func<…>`), and it compiled first time, but it is exactly the kind of edit a tool could do when the user says so (e.g. `--pattern value='[A-Z]{3}'`). Cost: low, but it applies to every id-like value object (2 of 4 value objects here).
+5. **Ties between parameters of the same type that are equalities, not orders, are not recognised.** `if (string.Equals(entrySignal, exitSignal, StringComparison.Ordinal))` -> both parameters `to verify … ties entrySignal to exitSignal`. The CLI page has a ready answer (`DifferentFrom` inside `Generate()`), it worked as documented (`_exitSignal.DifferentFrom(entrySignal).Generate()`), and the reasoning "pin one side, the other still holds" is sound. I only note that the doc's "direct order" case (`start > end`) is scaffolded but `a == b` is not, though it is the same shape of tie; `DifferentFrom` is already in the library.
+6. **Collection guards phrased as `Distinct().Count() != Count`** (`sections.Distinct().Count() != sections.Count`, and the `Select(p => p.PointName).Distinct(...)` variant) are `unread guards`; the answer (`.Distinct()`, `.DistinctBy(...)`) is in the collections page. Worked as documented. The `sections.Any(s => s is null)` guard was not mentioned at all by the tool (the doc lists `items.Any(x => x is null)` as read, "nothing to add"), consistent with the doc, good.
+7. **The scaffold keeps `AnyValid…()` private, so every test that wanted "a valid name / length / lock time" needed a hand-written one-method partial file** (4 files here: friction in the CLI page's "Three things" section, which does announce it). The workaround is clean (`AnyRoute.ValidName().Except(known).Generate()` reads well, and survives `--force`), but 4 boilerplate files for a 9-class domain is noticeable. A `--expose-bases` option or `internal` bases would remove it. Idea, low.
+8. **A scaffolded generator for an aggregate whose parameters are mutually consistent collections (`Interlocking`) is not useful**, and the docs rightly say a per-parameter recipe cannot express it; I wrote `Junction` by hand. No complaint; mentioned because the CLI page's "graph of aggregates" section is about composed objects, not about aggregates whose children must reference each other, and I looked for guidance there.
+9. **`[Reproducible]` at assembly level reports a seed for a failing test that drew nothing.** While proving the `"T101\n"` defect, `A_section_id_followed_by_a_line_feed_is_refused` (no `Any.*` call in its body) failed with `[JustDummies] These arbitrary values were seeded with 281569570. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 281569570)].` — "these arbitrary values" is false there and the seed replays nothing. Harmless but a little misleading when the failure is a plain domain defect. Low.
+10. **JD030 (Info) fires on every scaffolded `Any.String().NotBlank()` row** (6 occurrences: `AnyPoint`, `AnyPointSetting`, `AnyRoute` x3, my `Junction` area name) once I raised the severity to warning to look: "This string dummy declares no length: it draws 1 to 1025 characters". Documented as by design; the domain declares no maximum for names/signals, so I left them (the draw of 1025 printable-or-control ASCII characters in a route name is precisely the indifference being put to the code, and it exercised nothing wrong here). Not a complaint, just the one diagnostic a reader of the build output would never see.
+11. **Positive surprise to record as a non-friction**: `Point resolved to RailwayInterlocking.Domain.Point; System.Drawing.Point also answers to that name.` — the tool resolved the right type and said so.
 
 ## What worked well
-- The TODO-that-does-not-compile: every unread guard was in front of me at build time, at the line.
-- `Any.StringMatching` for regex-shaped value objects: one line, exact.
-- Refining lambdas compose nicely: `WithSections(s => s.Containing(anyShared))` said exactly the test.
-- `Distinct(IEqualityComparer)` handled "settings distinct by point name" with no ceremony.
-- `any.json` + `--entry-point any`: `Any.Route()` beside `Any.Int32()` reads as one language.
-- Composing scaffolded generators into a layout recipe (`IAny<JunctionLayout>`) felt natural.
+- The fundamentals translate directly into test shape: in the aggregate tests, the layout's shape and the events are the literals/steps; ids, route names, point name, trains, lock times, signals, section lengths and speeds are all drawn and none of them reaches an assertion except as identity pass-through. Reading `Junction` plus a test tells the whole story.
+- Numeric guards were scaffolded precisely and referenced the domain's own constants (`Any.Double().Between(TrackSection.MinimumLengthMetres, TrackSection.MaximumLengthMetres)`), draws are ordinary (100 000 draws: smallest speed 0.0119 km/h, smallest length 10.001 m, no infinite clearance time).
+- `With…(Func<…>)` refinement composes well: `Any.Route().WithName(name => name.DifferentFrom(first.Name))`, `Any.SectionId().WithValue(v => v.Except(known))`, `Trains.AnyOtherThan` — "a second value different from the first" is one readable line each time.
+- `Any.ListOf(…).WithCount(5).Distinct()` and `DistinctBy` gave distinct ids/names with no retry code in the tests.
+- `[assembly: Reproducible]` + one-line seed in the failure output made every failing run replayable; the 12 repeated runs produced different seeds and stayed green.
+- The domain's atomicity defect (below) fell out of a deliberate literal (`default`), which is exactly the division of labour the docs preach: the dummy lock time is `AnyRouteLock.ValidLockedAt()`, the boundary is written down.
+- Warnings: zero, even with the compiler's nullable analysis on and C# 14 extension members for `Any.Route()` etc.
 
-## Fluency: 4/5
-Everything I needed existed or had a documented workaround, and the result reads like the domain.
-Minus one for the silent distinctness guards (finding 3), which is the kind of thing that ends as a
-rare flaky test, and for the hand rework a cross-parameter "differs from" rule required.
+Domain defects found (tests kept, `Skip = "domain defect: …"`):
+- `SectionId` and `TrainId` accept a trailing line feed (`"T101\n"`, `"1A23\n"`): the regex is anchored with `$`, which .NET also matches before a final `\n`; `^…\z` or `RegexOptions` would not.
+- `Interlocking.RequestRoute` locks points and sections *before* `new RouteLock(route, train, at)`, whose constructor throws `ArgumentException` for `at == default`. Result: the exception leaves every section of the route and its points locked, no route active; a retry is refused `SectionLocked`, `CancelRoute` says `RouteNotSet`, and `OnSectionCleared` never frees the sections (stuck until restart). Confirmed with a probe: `ArgumentException; retry=SectionLocked; cancel=RouteNotSet; approachStillLocked=True`. Violates "checks all, then throws and locks … atomically" and "state left unchanged".
+- `TrackSection(…, lineSpeedKmh: double.Epsilon)` is valid ((0, 300]) but `ClearanceTimeSeconds` is `+Infinity`. Low.
+Domain observations (no test possible / characterised only):
+- `RefusalReason.PointLocked`, `SectionLocked` and `OutOfSequenceRelease` cannot be produced through the public API from a consistent state (a route may only set points lying in its own sections, so any route competing for a point or section already conflicts and `ConflictingRoute` fires first; the release loop only ever releases the rear). `SectionLocked` is reachable only after the atomicity defect. Dead refusals are untestable, hence not in the suite.
+- Conflicts are computed from the static route definitions, so a section released behind the train still cannot go to a conflicting route until the whole route ends (characterised in `A_section_released_behind_the_train_is_not_available_to_a_conflicting_route_until_the_whole_route_has_ended`); this defeats part of the point of sequential release, but matches the stated invariant "no two active routes conflict".
+- `RequestRoute(null, …)` throws `ArgumentNullException` (from the dictionary) rather than `UnknownRoute`; trivial.
+
+## Fluency: 4 / 5
+The workflow (read, scaffold, finish by hand, write) was smooth and the library's vocabulary (`DifferentFrom`, `Except`, `Distinct`, `WithCount`, `With…(Func)`) let every test say what it meant with almost no ceremony; the docs anticipated nearly every wall I met (ties, regex guards, private bases). Points lost for the .NET 10 / `dotnet test --project` setup that nothing in the docs mentions, and for the regex-in-a-field guard that forces a copy of the domain's own pattern into the generator, which is the one place a drawn value can silently drift from the invariant it is supposed to honour.

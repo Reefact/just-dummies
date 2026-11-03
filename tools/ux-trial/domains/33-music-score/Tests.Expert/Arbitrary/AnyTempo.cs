@@ -1,13 +1,16 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Tempo --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
 using JustDummies;
-using MusicScore.Domain;
 
-namespace MusicScore.Tests.Expert.Arbitrary;
+namespace MusicScore.Domain;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Tempo" /> values. It draws from the ambient random
@@ -16,8 +19,11 @@ namespace MusicScore.Tests.Expert.Arbitrary;
 /// </summary>
 public sealed partial class AnyTempo : IAny<Tempo> {
 
-    private readonly IAny<double>   _beatsPerMinute;
-    private readonly IAny<Duration> _beatUnit;
+    private IAny<double>   _beatsPerMinute;
+    private IAny<Duration> _beatUnit;
+
+    private AnyDouble   _beatsPerMinuteRecipe;
+    private AnyDuration _beatUnitRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyTempo()
@@ -25,58 +31,81 @@ public sealed partial class AnyTempo : IAny<Tempo> {
                beatUnit:       AnyValidBeatUnit()) { }
 
     private static AnyDouble AnyValidBeatsPerMinute() {
-        return Any.Double().Between(20, 400);
+        return Any.Double().Between(20d, 400d);
     }
 
     private static AnyDuration AnyValidBeatUnit() {
-        // A plain or dotted beat of at most a dotted half: positive and never above a whole note.
-        return new AnyDuration().WithNumerator(n => n.OneOf(1, 3)).WithDenominator(d => d.OneOf(4, 8, 16));
+        // A beat unit is positive and at most a whole note: 1/4 to 3/4, then the shorter units and
+        // their dotted values (3/8, 3/16...). Numerator <= 3 over a denominator >= 4 never exceeds 3/4.
+        return new AnyDuration().WithNumerator(n => n.Between(1, 3))
+                                .WithDenominator(d => d.OneOf(4, 8, 16, 32));
     }
 
-    private AnyTempo(IAny<double>   beatsPerMinute,
-                     IAny<Duration> beatUnit) {
-        _beatsPerMinute = beatsPerMinute;
-        _beatUnit       = beatUnit;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyTempo(AnyDouble   beatsPerMinute,
+                     AnyDuration beatUnit) {
+        _beatsPerMinute       = beatsPerMinute;
+        _beatsPerMinuteRecipe = beatsPerMinute;
+        _beatUnit             = beatUnit;
+        _beatUnitRecipe       = beatUnit;
     }
 
-    /// <summary>Pins <c>beatsPerMinute</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyTempo(AnyTempo from) {
+        _beatsPerMinute       = from._beatsPerMinute;
+        _beatsPerMinuteRecipe = from._beatsPerMinuteRecipe;
+        _beatUnit             = from._beatUnit;
+        _beatUnitRecipe       = from._beatUnitRecipe;
+    }
+
+    /// <summary>Pins <c>beatsPerMinute</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyTempo WithBeatsPerMinute(double value) {
-        return new AnyTempo(new FixedValue<double>(value), _beatUnit);
+        AnyTempo copy = new AnyTempo(this);
+
+        copy._beatsPerMinute = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>beatsPerMinute</c> from <c>AnyValidBeatsPerMinute()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>beatsPerMinute</c> is drawn from — <c>AnyValidBeatsPerMinute()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyTempo WithBeatsPerMinute(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyTempo(configure(AnyValidBeatsPerMinute()), _beatUnit);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyTempo copy = new AnyTempo(this);
+
+        copy._beatsPerMinuteRecipe = configure(_beatsPerMinuteRecipe);
+        copy._beatsPerMinute       = copy._beatsPerMinuteRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>beatUnit</c> to a fixed value.</summary>
+    /// <summary>Pins <c>beatUnit</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyTempo WithBeatUnit(Duration value) {
-        return new AnyTempo(_beatsPerMinute, new FixedValue<Duration>(value));
+        AnyTempo copy = new AnyTempo(this);
+
+        copy._beatUnit = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>beatUnit</c> from <c>AnyValidBeatUnit()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>beatUnit</c> is drawn from — <c>AnyValidBeatUnit()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDuration, AnyDuration&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyTempo WithBeatUnit(Func<AnyDuration, AnyDuration> configure) {
-        return new AnyTempo(_beatsPerMinute, configure(AnyValidBeatUnit()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyTempo copy = new AnyTempo(this);
+
+        copy._beatUnitRecipe = configure(_beatUnitRecipe);
+        copy._beatUnit       = copy._beatUnitRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Tempo" />.</summary>
     public Tempo Generate() {
         return new Tempo(_beatsPerMinute.Generate(),
                          _beatUnit.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

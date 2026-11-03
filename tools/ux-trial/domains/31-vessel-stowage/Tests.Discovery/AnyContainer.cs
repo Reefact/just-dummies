@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
-// `any generate VesselStowage.Domain.Container --force` overwrites it. This type is partial, so members you add in a
+// `any generate Container --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,34 +19,37 @@ namespace VesselStowage.Domain;
 /// </summary>
 public sealed partial class AnyContainer : IAny<Container> {
 
-    private readonly IAny<ContainerId>   _id;
-    private readonly IAny<ContainerSize> _size;
-    private readonly IAny<decimal>?      _tareTonnes;
-    private readonly IAny<decimal>?      _grossMassTonnes;
-    private readonly IAny<PortCode>      _portOfLoading;
-    private readonly IAny<PortCode>?     _portOfDischarge;
-    private readonly IAny<HazardClass>   _hazard;
-    private readonly IAny<bool>?         _isReefer;
+    private IAny<ContainerId>       _id;
+    private IAny<ContainerSize>     _size;
+    private IAny<PortCode>          _portOfLoading;
+    private IAny<PortCode>          _portOfDischarge;
+    private IAny<HazardClass>       _hazard;
+    private IAny<bool>              _isReefer;
 
-    // Four parameters are tied to another one by the constructor, so a null field means "derive it
-    // in Generate()" rather than "draw it on its own":
-    //   tare            -> within the range of the drawn size
-    //   gross mass      -> between the tare and the maximum of the drawn size
-    //   port of discharge -> different from the port of loading
-    //   reefer          -> never for explosives or radioactive cargo
-    // Pinning one of them replaces the derivation, and a pin that breaks the rule is refused by the
-    // constructor on the first run.
+    private AnyContainerId         _idRecipe;
+    private AnyEnum<ContainerSize> _sizeRecipe;
+    private AnyDecimal             _tareTonnesRecipe;
+    private AnyDecimal             _grossMassTonnesRecipe;
+    private AnyPortCode            _portOfLoadingRecipe;
+    private AnyPortCode            _portOfDischargeRecipe;
+    private AnyEnum<HazardClass>   _hazardRecipe;
+    private AnyBoolean             _isReeferRecipe;
+
+    private bool     _hazardPinned;
+    private bool     _isReeferPinned;
+    private decimal? _tareTonnesPin;
+    private decimal? _grossMassTonnesPin;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyContainer()
         : this(id:              AnyValidId(),
                size:            AnyValidSize(),
-               tareTonnes:      null,
-               grossMassTonnes: null,
+               tareTonnes:      AnyValidTareTonnes(),
+               grossMassTonnes: AnyValidGrossMassTonnes(),
                portOfLoading:   AnyValidPortOfLoading(),
-               portOfDischarge: null,
+               portOfDischarge: AnyValidPortOfDischarge(),
                hazard:          AnyValidHazard(),
-               isReefer:        null) { }
+               isReefer:        AnyValidIsReefer()) { }
 
     private static AnyContainerId AnyValidId() {
         return new AnyContainerId();
@@ -52,135 +59,285 @@ public sealed partial class AnyContainer : IAny<Container> {
         return Any.Enum<ContainerSize>();
     }
 
-    private static AnyDecimal AnyValidTareTonnes(ContainerSize size) {
-        return size == ContainerSize.TwentyFoot
-            ? Any.Decimal().Between(1.8m, 3.2m).WithScale(2)
-            : Any.Decimal().Between(3.4m, 4.9m).WithScale(2);
+    private static AnyDecimal AnyValidTareTonnes() {
+        // The bounds depend on the size, so Generate() adds them: 1.8-3.2 t for 20 ft, 3.4-4.9 t for 40 ft.
+        return Any.Decimal().WithScale(2);
     }
 
-    private static AnyDecimal AnyValidGrossMassTonnes(ContainerSize size, decimal tareTonnes) {
-        return Any.Decimal().Between(tareTonnes, Container.MaxGrossMass(size)).WithScale(2);
+    private static AnyDecimal AnyValidGrossMassTonnes() {
+        // Generate() adds the bounds: from the tare up to the maximum gross mass of the size.
+        return Any.Decimal().WithScale(2);
     }
 
     private static AnyPortCode AnyValidPortOfLoading() {
         return new AnyPortCode();
     }
 
-    private static AnyPortCode AnyValidPortOfDischarge(PortCode portOfLoading) {
-        return new AnyPortCode().WithValue(v => v.DifferentFrom(portOfLoading.Value));
+    private static AnyPortCode AnyValidPortOfDischarge() {
+        return new AnyPortCode();
     }
 
     private static AnyEnum<HazardClass> AnyValidHazard() {
         return Any.Enum<HazardClass>();
     }
 
-    private static AnyBoolean AnyValidIsReefer(HazardClass hazard) {
-        return hazard is HazardClass.Explosives or HazardClass.Radioactive ? Any.Boolean().False() : Any.Boolean();
+    private static AnyBoolean AnyValidIsReefer() {
+        return Any.Boolean();
     }
 
-    private AnyContainer(IAny<ContainerId>   id,
-                         IAny<ContainerSize> size,
-                         IAny<decimal>?      tareTonnes,
-                         IAny<decimal>?      grossMassTonnes,
-                         IAny<PortCode>      portOfLoading,
-                         IAny<PortCode>?     portOfDischarge,
-                         IAny<HazardClass>   hazard,
-                         IAny<bool>?         isReefer) {
-        _id              = id;
-        _size            = size;
-        _tareTonnes      = tareTonnes;
-        _grossMassTonnes = grossMassTonnes;
-        _portOfLoading   = portOfLoading;
-        _portOfDischarge = portOfDischarge;
-        _hazard          = hazard;
-        _isReefer        = isReefer;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyContainer(AnyContainerId         id,
+                         AnyEnum<ContainerSize> size,
+                         AnyDecimal             tareTonnes,
+                         AnyDecimal             grossMassTonnes,
+                         AnyPortCode            portOfLoading,
+                         AnyPortCode            portOfDischarge,
+                         AnyEnum<HazardClass>   hazard,
+                         AnyBoolean             isReefer) {
+        _id                           = id;
+        _idRecipe                     = id;
+        _size                         = size;
+        _sizeRecipe                   = size;
+        _tareTonnesRecipe             = tareTonnes;
+        _grossMassTonnesRecipe        = grossMassTonnes;
+        _portOfLoading                = portOfLoading;
+        _portOfLoadingRecipe          = portOfLoading;
+        _portOfDischarge              = portOfDischarge;
+        _portOfDischargeRecipe        = portOfDischarge;
+        _hazard                       = hazard;
+        _hazardRecipe                 = hazard;
+        _isReefer                     = isReefer;
+        _isReeferRecipe               = isReefer;
     }
 
-    /// <summary>Pins <c>id</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyContainer(AnyContainer from) {
+        _id                           = from._id;
+        _idRecipe                     = from._idRecipe;
+        _size                         = from._size;
+        _sizeRecipe                   = from._sizeRecipe;
+        _tareTonnesRecipe             = from._tareTonnesRecipe;
+        _tareTonnesPin                = from._tareTonnesPin;
+        _grossMassTonnesRecipe        = from._grossMassTonnesRecipe;
+        _grossMassTonnesPin           = from._grossMassTonnesPin;
+        _portOfLoading                = from._portOfLoading;
+        _portOfLoadingRecipe          = from._portOfLoadingRecipe;
+        _portOfDischarge              = from._portOfDischarge;
+        _portOfDischargeRecipe        = from._portOfDischargeRecipe;
+        _hazard                       = from._hazard;
+        _hazardRecipe                 = from._hazardRecipe;
+        _hazardPinned                 = from._hazardPinned;
+        _isReeferPinned               = from._isReeferPinned;
+        _isReefer                     = from._isReefer;
+        _isReeferRecipe               = from._isReeferRecipe;
+    }
+
+    /// <summary>Pins <c>id</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyContainer WithId(ContainerId value) {
-        return new AnyContainer(new FixedValue<ContainerId>(value), _size, _tareTonnes, _grossMassTonnes, _portOfLoading, _portOfDischarge, _hazard, _isReefer);
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._id = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>id</c> from <c>AnyValidId()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>id</c> is drawn from — <c>AnyValidId()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyContainerId, AnyContainerId&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyContainer WithId(Func<AnyContainerId, AnyContainerId> configure) {
-        return new AnyContainer(configure(AnyValidId()), _size, _tareTonnes, _grossMassTonnes, _portOfLoading, _portOfDischarge, _hazard, _isReefer);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._idRecipe = configure(_idRecipe);
+        copy._id       = copy._idRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>size</c> to a fixed value.</summary>
+    /// <summary>Pins <c>size</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyContainer WithSize(ContainerSize value) {
-        return new AnyContainer(_id, new FixedValue<ContainerSize>(value), _tareTonnes, _grossMassTonnes, _portOfLoading, _portOfDischarge, _hazard, _isReefer);
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._size = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>size</c> from <c>AnyValidSize()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>size</c> is drawn from — <c>AnyValidSize()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;ContainerSize&gt;, AnyEnum&lt;ContainerSize&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyContainer WithSize(Func<AnyEnum<ContainerSize>, AnyEnum<ContainerSize>> configure) {
-        return new AnyContainer(_id, configure(AnyValidSize()), _tareTonnes, _grossMassTonnes, _portOfLoading, _portOfDischarge, _hazard, _isReefer);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._sizeRecipe = configure(_sizeRecipe);
+        copy._size       = copy._sizeRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>tareTonnes</c> to a fixed value.</summary>
+    /// <summary>Pins <c>tareTonnes</c> to a fixed value, which bounds <c>grossMassTonnes</c>; its recipe is kept for a later refinement.</summary>
     public AnyContainer WithTareTonnes(decimal value) {
-        return new AnyContainer(_id, _size, new FixedValue<decimal>(value), _grossMassTonnes, _portOfLoading, _portOfDischarge, _hazard, _isReefer);
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._tareTonnesPin                = value;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>grossMassTonnes</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>tareTonnes</c> is drawn from — <c>AnyValidTareTonnes()</c>, then each earlier refinement — through <paramref name="configure" />, in order with <c>grossMassTonnes</c>.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyContainer WithTareTonnes(Func<AnyDecimal, AnyDecimal> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._tareTonnesRecipe             = configure(_tareTonnesRecipe);
+        copy._tareTonnesPin                = null;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>grossMassTonnes</c> to a fixed value, which bounds <c>tareTonnes</c>; its recipe is kept for a later refinement.</summary>
     public AnyContainer WithGrossMassTonnes(decimal value) {
-        return new AnyContainer(_id, _size, _tareTonnes, new FixedValue<decimal>(value), _portOfLoading, _portOfDischarge, _hazard, _isReefer);
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._grossMassTonnesPin           = value;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>portOfLoading</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>grossMassTonnes</c> is drawn from — <c>AnyValidGrossMassTonnes()</c>, then each earlier refinement — through <paramref name="configure" />, in order with <c>tareTonnes</c>.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyContainer WithGrossMassTonnes(Func<AnyDecimal, AnyDecimal> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._grossMassTonnesRecipe        = configure(_grossMassTonnesRecipe);
+        copy._grossMassTonnesPin           = null;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>portOfLoading</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyContainer WithPortOfLoading(PortCode value) {
-        return new AnyContainer(_id, _size, _tareTonnes, _grossMassTonnes, new FixedValue<PortCode>(value), _portOfDischarge, _hazard, _isReefer);
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._portOfLoading = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>portOfLoading</c> from <c>AnyValidPortOfLoading()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>portOfLoading</c> is drawn from — <c>AnyValidPortOfLoading()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyPortCode, AnyPortCode&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyContainer WithPortOfLoading(Func<AnyPortCode, AnyPortCode> configure) {
-        return new AnyContainer(_id, _size, _tareTonnes, _grossMassTonnes, configure(AnyValidPortOfLoading()), _portOfDischarge, _hazard, _isReefer);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._portOfLoadingRecipe = configure(_portOfLoadingRecipe);
+        copy._portOfLoading       = copy._portOfLoadingRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>portOfDischarge</c> to a fixed value.</summary>
+    /// <summary>Pins <c>portOfDischarge</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyContainer WithPortOfDischarge(PortCode value) {
-        return new AnyContainer(_id, _size, _tareTonnes, _grossMassTonnes, _portOfLoading, new FixedValue<PortCode>(value), _hazard, _isReefer);
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._portOfDischarge = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Pins <c>hazard</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>portOfDischarge</c> is drawn from — <c>AnyValidPortOfDischarge()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyPortCode, AnyPortCode&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyContainer WithPortOfDischarge(Func<AnyPortCode, AnyPortCode> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._portOfDischargeRecipe = configure(_portOfDischargeRecipe);
+        copy._portOfDischarge       = copy._portOfDischargeRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>hazard</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyContainer WithHazard(HazardClass value) {
-        return new AnyContainer(_id, _size, _tareTonnes, _grossMassTonnes, _portOfLoading, _portOfDischarge, new FixedValue<HazardClass>(value), _isReefer);
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._hazard       = Any.Fixed(value);
+        copy._hazardPinned = true;
+
+        return copy;
     }
 
-    /// <summary>Draws <c>hazard</c> from <c>AnyValidHazard()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>hazard</c> is drawn from — <c>AnyValidHazard()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;HazardClass&gt;, AnyEnum&lt;HazardClass&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyContainer WithHazard(Func<AnyEnum<HazardClass>, AnyEnum<HazardClass>> configure) {
-        return new AnyContainer(_id, _size, _tareTonnes, _grossMassTonnes, _portOfLoading, _portOfDischarge, configure(AnyValidHazard()), _isReefer);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._hazardRecipe = configure(_hazardRecipe);
+        copy._hazard       = copy._hazardRecipe;
+        copy._hazardPinned = false;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>isReefer</c> to a fixed value.</summary>
+    /// <summary>Pins <c>isReefer</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyContainer WithIsReefer(bool value) {
-        return new AnyContainer(_id, _size, _tareTonnes, _grossMassTonnes, _portOfLoading, _portOfDischarge, _hazard, new FixedValue<bool>(value));
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._isReefer       = Any.Fixed(value);
+        copy._isReeferPinned = true;
+
+        return copy;
+    }
+
+    /// <summary>Refines the recipe <c>isReefer</c> is drawn from — <c>AnyValidIsReefer()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyBoolean, AnyBoolean&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyContainer WithIsReefer(Func<AnyBoolean, AnyBoolean> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyContainer copy = new AnyContainer(this);
+
+        copy._isReeferRecipe = configure(_isReeferRecipe);
+        copy._isReefer       = copy._isReeferRecipe;
+        copy._isReeferPinned = false;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Container" />.</summary>
     public Container Generate() {
-        ContainerSize size            = _size.Generate();
-        decimal       tareTonnes      = (_tareTonnes ?? AnyValidTareTonnes(size)).Generate();
-        decimal       grossMassTonnes = (_grossMassTonnes ?? AnyValidGrossMassTonnes(size, tareTonnes)).Generate();
-        PortCode      portOfLoading   = _portOfLoading.Generate();
-        PortCode      portOfDischarge = (_portOfDischarge ?? AnyValidPortOfDischarge(portOfLoading)).Generate();
-        HazardClass   hazard          = _hazard.Generate();
-        bool          isReefer        = (_isReefer ?? AnyValidIsReefer(hazard)).Generate();
+        ContainerSize size = _size.Generate();
 
-        return new Container(_id.Generate(), size, tareTonnes, grossMassTonnes, portOfLoading, portOfDischarge, hazard, isReefer);
-    }
+        (decimal minTare, decimal maxTare) = size == ContainerSize.TwentyFoot ? (1.8m, 3.2m) : (3.4m, 4.9m);
+        decimal tareTonnes      = _tareTonnesPin ?? _tareTonnesRecipe.Between(minTare, maxTare).Generate();
+        decimal grossMassTonnes = _grossMassTonnesPin ?? _grossMassTonnesRecipe.Between(tareTonnes, Container.MaxGrossMass(size)).Generate();
 
-    private sealed class FixedValue<TValue> : IAny<TValue> {
+        PortCode portOfLoading   = _portOfLoading.Generate();
+        PortCode portOfDischarge = _portOfDischarge.DifferentFrom(portOfLoading).Generate();
 
-        private readonly TValue _value;
+        // Explosives and radioactive cargo are refused in a reefer: whichever side the test left open gives way.
+        bool        isReefer = _isReefer.Generate();
+        HazardClass hazard   = isReefer && !_hazardPinned
+                                   ? _hazardRecipe.Except(HazardClass.Explosives, HazardClass.Radioactive).Generate()
+                                   : _hazard.Generate();
+        if (!_isReeferPinned && hazard is HazardClass.Explosives or HazardClass.Radioactive) { isReefer = false; }
 
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
+        return new Container(_id.Generate(),
+                             size,
+                             tareTonnes,
+                             grossMassTonnes,
+                             portOfLoading,
+                             portOfDischarge,
+                             hazard,
+                             isReefer);
     }
 
 }

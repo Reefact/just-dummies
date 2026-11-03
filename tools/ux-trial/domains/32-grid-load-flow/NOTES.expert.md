@@ -1,71 +1,49 @@
-# Grid load flow — expert crafter notes
+# Expert notes — 32 grid load flow
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- `Tests.Expert/`: 41 tests (40 pass, 1 skipped on purpose, see "Domain finding"), `[assembly: Reproducible]`.
-  Suite run 40 times in a row with fresh seeds: no failure.
-- Scaffolded `BusId Impedance PowerInjection VoltageLimits Bus Line Transformer` in one call with
-  `--output ./Arbitrary --entry-point any`, then resolved every `TODO_verify` line by hand.
-- Refined the bases: `BusId` → `Any.StringMatching("^[A-Z][A-Z0-9_-]{0,15}$")` (retyped to `AnyPattern`
-  as the CLI page explains); numeric ranges written from the domain constants (`Impedance.MaximumPu`...).
-- Cross-parameter rules made **dependent parameters** rather than retries:
-  - `AnyLine`/`AnyTransformer`: the second end is a `Func<BusId, IAny<BusId>>` drawing
-    `new AnyBusId().WithValue(v => v.DifferentFrom(from.Value))`; pins/refinements still work.
-  - `AnyBus`: generation depends on the type (PQ → `WithActiveMw(0.0)`), setpoint on type and limits
-    (PQ → null, otherwise `Between(limits.Min, limits.Max)`). `Generate()` draws type and limits first.
-  - `AnyVoltageLimits`: min in `[0.5, 1.0)`, max in `(1.0, 1.5]` so `min < max` holds by construction.
-- `AnyBases.cs` (hand-written partial) exposes two private bases (`BaseKvs()`, `Ids()`) so recipes that
-  draw several at once reuse the one rule: `Any.ListOf(AnyBus.BaseKvs()).WithCount(2).Distinct()` gives
-  a transformer's two voltage levels; `Any.ListOf(Any.BusId()).WithCount(n).Distinct()` gives bus ids.
-- `Recipes/Grid.cs`: topology recipes (`AnySlack`, `AnyLoadBus`, `AnyLineBetween`...) and electrical ones
-  (`Reference`, `Consumer`, `Feeder`) where the physics (impedance, load, setpoint, 100 MVA base) is
-  always a literal passed by the test and only names, kV levels, bands and ratings are drawn.
-- Ids an assertion names (`"LOAD"`, `"THIN"`, `"CIRCUIT-1"`) stay literals; drawn ids that must not
-  collide with one use `Any.BusId().WithValue(v => v.DifferentFrom("MISSING"))`.
+**Pages read, in order:** `PROJECT-README.md` (skimmed), `README.md` (index), `guides/getting-started`, `packages/justdummies-cli` (whole page, it is the one I leaned on), `packages/justdummies-xunit`, `guides/core-concepts`, `guides/composition` (first half), `generators/numbers`, `generators/strings`, `generators/collections`, `generators/enums-and-choices`, then `analyzers/README` when I wanted to see the Info rules.
 
-## Frictions and surprises, in the order met
-1. 13 of 31 scaffolded parameters came out `to verify`. The common numeric guard shape
-   `if (!double.IsFinite(x) || x < 0.0 || x > MaximumPu) throw ...` is not read, nor
-   `Math.Abs(x) > MaximumMagnitude`; every `double` became bare `Any.Double()`. In a physics domain that
-   is nearly every number. Recap line: `resistancePu: unread guard at Impedance.cs, line 12: if (!double.IsFinite(resistancePu) || ...`.
-   Meanwhile `ThrowIfNullOrWhiteSpace` + `Length > 64` was read perfectly (`NotBlank().WithMaxLength(64)`).
-2. A coupled entity (Bus: type ↔ setpoint ↔ generation; branch: from ≠ to) is marked, as documented,
-   but the library has no "dependent parameter" notion: I rewrote fields and the private constructor
-   to `Func<BusType, IAny<…>>`. Works well, but `--force` would destroy it and nothing helps write it.
-3. The scaffolded base for `toBus` is a second independent `new AnyBusId()` – the tool rightly marks it,
-   but a reader who deletes the TODO line keeps a recipe that collides on rare runs (1-char ids).
-4. `CA1822` (info) fires on the scaffolded `AnyBusId.WithValue(string)` pin (single-parameter type: the
-   pin touches no instance field). Harmless, noisy in an IDE.
-5. Dry-run of `GridNetwork`: `name: unread guard at GridNetwork.cs, line 26: foreach (Bus bus in buses)`.
-   Per ADR-0110 every parameter is marked, but pointing `name` at a loop over `buses` reads like a bug.
-6. While replaying a failing seed I inserted a diagnostic draw before the failing one: it shifted the
-   sequence and I logged the wrong value. Obvious in hindsight; the failure report gives the seed but
-   never the drawn values, so a probe is the only way to see them.
+**`any` commands run** (from `Tests.Expert/`, after `dotnet restore`):
+- `any generate BusId Impedance PowerInjection VoltageLimits SolverSettings --output Generators --entry-point any`
+- `any generate Bus Line Transformer GridNetwork BranchFlow LoadFlowResult --output Generators --entry-point any`
+- `any generate System.Numerics.Complex --dry-run` (only to understand a CS0246, see friction 7)
 
-## Domain finding (not a library issue) — the dummy earned its keep
-`How_hard_the_solver_accelerates_changes_the_path_not_the_answer` draws the acceleration factor over
-the whole domain `[1.0, 2.0)`. 4 of 30 runs failed: the Gauss-Seidel solver diverges from ~1.87 up on a
-trivial two-bus feeder (`Load flow did not converge after 5000 iterations (last voltage update 0.441 pu)`),
-though `SolverSettings` accepts those values. `[Reproducible(Seed = 1405633584)]` replayed it exactly.
-I did not narrow the draw to make it pass (that would restate the assertion); the test is skipped
-with the reason and the seeds, pending a team decision (cap the factor, or fix the solver).
+**Generators completed by hand**
+- `AnyBusId`: regex guard → `Any.StringMatching("[A-Z][A-Z0-9_-]{0,15}")`, retyped `AnyString` → `AnyPattern` (the documented four-place edit).
+- `AnyBus`: four parameters marked "to verify". I kept the scaffold's `With…` surface and rewrote `Generate()` so the type decides the setpoint (drawn inside the drawn limits for Pv/Slack, null for Pq) and the active generation (zero for Pq); pins win over the derived values.
+- `AnyLine`, `AnyTransformer`, `AnyBranchFlow`: `fromBus != toBus` tie written as `DifferentFrom` in `Generate()` (form 4 of the CLI page), skipped when the test pins the second end.
+- `AnyComplex` (not a domain type, written by hand: `Any.Combine` of two bounded doubles).
+- `AnyGridNetwork`: scaffold discarded, rewritten from scratch (a random tree of lines over buses of one voltage level, exactly one slack, 0–2 transformers each feeding a lower-voltage bus; every aggregate rule holds by construction).
+- Unmodified scaffolds: `AnyImpedance`, `AnyPowerInjection`, `AnyVoltageLimits` (paired through `Any.OrderedPair(strict: true)` by the tool), `AnySolverSettings`, `AnyLoadFlowResult`.
+
+**Tests written** (`Tests.Expert/Tests/`, 191 methods, 304 cases): `BusIdTests`, `ImpedanceTests`, `PowerInjectionTests`, `VoltageLimitsTests`, `SolverSettingsTests` (bounds on both sides of every limit as literals, parameter names asserted, equality, derived members with hand-computed numbers); `BusTests` (every cross-field rule, field rules, `NetInjection`, `ChangeLoad`, `Dispatch`); `LineTests`, `TransformerTests` (refusals, `Stamp()` numbers, tap steps and both end stops, off-grid tap); `GridNetworkConstructionTests` (each refusal of the aggregate, transformer rules, islanding); `GridNetworkBehaviourTests` (`ChangeLoad`, `TakeLineOutOfService` on a triangle and on a chain, `ReturnLineToService`, lookups, `SlackActiveDemandMw`); `BranchFlowTests`, `LoadFlowResultTests` (losses, loading, the exact 100 % boundary, violations, defensive copies); `LoadFlowSolverTests` (reference numbers from an independent script of mine, `W/lf.py`: single line, slack setpoint, slack load, PV bus, charging, line out of service and back, transformer taps, violations, overloads, zero-load network, tolerance/acceleration/iteration budget, divergence on 900 MW, solver leaves the network untouched); `GeneratorsTests` (300 draws from each generator I own, since a bug there would make every test lie).
+
+Dummies are used for what the code under test does not read (ids, names, base kV, ratings, the other ends of a branch, the slack's own generation, the network behind a `ChangeLoad`); every number or boundary a test is about is a literal.
+
+**Result:** `dotnet test --project Tests.Expert` green: 304 cases, 301 passed, 3 skipped (the three `Skip = "domain defect: …"`, all literal inputs, so no seed applies). After the last edit I ran it 14 more times with fresh seeds (`--no-build`): green every time. It also passes under `LANG=fr_FR.UTF-8` with ICU on. I also ran 12 repetitions before the last edits, all green.
+
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Expert` does not run.** Output: `MSBUILD : error MSB1001: Unknown switch. … --project Tests.Expert … Switch: --project`. The .NET 10 SDK only accepts `--project` in Microsoft.Testing.Platform mode, which needs a `global.json` (`{"test":{"runner":"Microsoft.Testing.Platform"}}`) that the template does not carry and no JustDummies page mentions (only `PROJECT-README` shows `dotnet test --solution`, without saying why that works there). I expected the command the brief gave. I added `W/global.json`; then it ran. Plain `dotnet test Tests.Expert` (VSTest) would presumably have worked too.
+2. **`any generate` before restore** stops with `✗ BusId: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and fast to act on; noted because it is the first thing a new user meets.
+3. **A regex held in a static field gets a thin TODO.** BusId guards with `Format.IsMatch(value)`; the recap says `to verify, unread guards` and the comment is `verify against BusId.cs, line 13: if (!Format.IsMatch(value)) ...`. The CLI page shows a richer comment (quoting the pattern, naming the `AnyString`→`AnyPattern` retype), but it only happens with an inline pattern. I opened BusId.cs, saw the pattern, and did the four-place retype from the page. Cost: small; a user who has not read the page would not know `Any.StringMatching` exists.
+4. **A type/setpoint/limits/generation tie (Bus) cannot be expressed per parameter, and the scaffold keeps no memory of a pin.** Four parameters came back `to verify` with long comments, and I had to rewrite `Generate()`. The part that hurt: a test pins `WithVoltageSetpointPu(1.02)` and the limits must then be drawn around it, but a pinned `_limits` (Any.Fixed) and a refined one look the same from `Generate()`. I used `ReferenceEquals(_limits, _limitsRecipe)` to tell "pinned" from "not pinned", which relies on a detail of the generated constructor. The two-parameter ordered case has `_xPin` fields in the scaffold; the general case has nothing equivalent. Expected: a documented way to ask "was this parameter pinned?".
+5. **A generator that enforces a tie blocks the test of the refusal.** I wrote `fromBus != toBus` as `_toBus.DifferentFrom(fromBus)` in `Generate()` (form 4). `Any.Line().WithFromBus(a).WithToBus(a)` then fails with `JustDummies.AnyGenerationException : Could not draw a value different from LOOP: 1000 draws in a row produced it. … usual cause is a generator that yields nothing else, such as one pinned to that value`, instead of the domain's `ArgumentException` that the test is about. The message is excellent, but it is the generator talking, not the domain. I made the `DifferentFrom` conditional on the second end not being pinned. The same happened in `AnyTransformer`, `AnyBranchFlow`.
+6. **Pinning `null` is ambiguous without a cast.** `Any.Bus().WithId(null!)` → `CS0121: The call is ambiguous between 'AnyBus.WithId(BusId)' and 'AnyBus.WithId(Func<AnyBusId, AnyBusId>)'`. The CLI page says "the cast tells the value apart from a lambda", so this is documented, but the null-refusal tests become `(BusId)null!` noise, six times per entity.
+7. **`AnyComplex` is emitted for a BCL struct and does not exist.** The recap row for `BranchFlow.fromEndMva` says `new AnyComplex()   to verify, AnyX, unread guards`; the build then fails with CS0246 on `AnyComplex`. `any generate System.Numerics.Complex --dry-run` works (it would write `AnyComplex.cs` in namespace `System.Numerics`), but nothing in the recap says so, and the "work list" paragraph of the page speaks of `any generate OrderReference`, a domain type. I wrote a 10-line `AnyComplex` by hand in the domain namespace instead.
+8. **`GridNetwork`: all five parameters marked, scaffold unusable as a base.** Recap: `name … every parameter is marked here, since what decides this throw could not be traced back to one, and 5 more`. That is honest (the rules are between buses, lines and transformers) and the page announces it, but the scaffold's `With…` methods (`WithBuses(IEnumerable<Bus>)`) cannot express anything valid. I deleted the file and wrote the generator whole. It would have been nice to be told, in the recap, that for an aggregate the realistic next step is a hand-written generator rather than 5 sentinels.
+9. **Info rules show up once raised, and they fire on scaffolded code.** With the four category severities raised to warning in `.editorconfig`, the build reports JD030 on `AnyBranchFlow.cs`(47), `AnyGridNetwork`/`Parts` (a network name has no documented length in the domain) and JD036 on `AnyBranchFlow.cs`(67) and `AnyBus.cs`(76) (`Any.Double()` for the unused setpoint recipe, `Any.Double().Positive()` for a rating). The CLI page says JD030 on scaffolded strings is by design; JD036 on scaffolded doubles is the same story but not mentioned. No analyzer fired on any test I wrote.
+10. **A dummy that was not one, caught by the draw.** My first `Only_the_branches_loaded_beyond_their_rating_are_overloaded` pinned the from-end flow and the rating but left the to-end flow drawn; `LoadingPercent` takes the larger end, so the draw reached the assertion and the test failed with three overloaded branches instead of one. The seed was printed (`[JustDummies] These arbitrary values were seeded with …`), the diagnosis took a minute, the fix was to pin `WithToEndMva(Complex.Zero)`. Same family, caught by review rather than by a run: a drawn Pq bus has a drawn reactive generation, which the solver does read, so every solver fixture pins `WithGeneration(PowerInjection.Zero)`. Not a library defect, but the scaffold makes "draw everything" the default, so the discipline is entirely on the test writer.
+11. **Culture.** My `ToString` test failed under `LANG=fr_FR.UTF-8` (`Expected "0.5 + j2 pu" Actual "0,5 + j2 pu"`): a domain defect, see findings. I pinned the culture inside the passing test and kept the French-culture variant as a skipped domain-defect test.
 
 ## What worked well
-- The TODO-that-does-not-compile design: the build was my work list, each line pointing at the guard.
-- `--entry-point any` across seven types in one call: `Any.Bus().WithType(...)` reads like the library.
-- Nested refinement: `.WithLimits(l => l.WithMaximumPu(m => m.GreaterThanOrEqualTo(1.02)))` states exactly
-  "the band must hold this setpoint" and keeps the rest drawn.
-- `Distinct()` over a list of a hand-written `IAny<BusId>` and over doubles: bounded, never flaky.
-- `[assembly: Reproducible]` + the seed line in the failing test's output; replay was one attribute.
-- The CLI page anticipated every edit I made (retyping to `AnyPattern`, the `(double?)null` pin cast,
-  "derive one draw from another inside Generate()", the partial file surviving `--force`).
-
-## What I would design differently
-- Read `double.IsFinite(x) || x < a || x > b` (and `Math.Abs(x) > m`) as `Between`: it is the idiom.
-- Let the scaffolder emit a dependent second parameter for `a.Equals(b)` guards (`DifferentFrom` the
-  first draw), or at least document the `Func<TFirst, IAny<TSecond>>` field pattern as a recipe.
-- Optional: list drawn values (or a hook) beside the seed when a `[Reproducible]` test fails.
+- The scaffold's recap column (`guard`, `AnyX`, `to verify`) was accurate throughout: every guard it claimed to read was right, and it referenced the domain's public constants (`Impedance.MaximumPu`, `Bus.MaximumBaseKv`, `Line.MaximumRatingMva`) instead of copying their values.
+- `VoltageLimits` came out paired through `Any.OrderedPair(…, strict: true)`, with the strictness matching `minimumPu >= maximumPu`, and pins propagate (`WithMinimumPu(0.95)` bounds the maximum). Zero work.
+- The `to verify` mechanism stops the build at the exact line; I never shipped an unvetted recipe by accident.
+- `Any.ListOf(new AnyBusId()).WithCount(n).Distinct()` just worked for unique ids on a custom `IAny<BusId>`; `Any.ElementOf(network.Buses)` picks "some bus, I do not care which".
+- `[assembly: Reproducible]` plus the seed line in the output of every failing case, including the theory case that failed on a literal. Failure messages from `AnyGenerationException` name the cause and the usual culprit.
+- `With…(lambda)` on a composed value (`WithLimits`, `WithBuses`) reads very well in the arrange block and states only what the test cares about.
+- The page's advice (derive one draw from another inside `Generate()`, `DifferentFrom` for two distinct values, keep refinements as functions) was all directly usable.
 
 ## Fluency: 4 / 5
-Everything I needed existed and the docs explained each step before I hit it; the suite was green
-first time and the one red run was a real domain defect replayed in one step. One point off for the
-amount of hand work numeric guards and coupled parameters still need in a physics domain.
+Simple value objects and entities are close to frictionless: scaffold, delete a sentinel or two, write the tests. The points go on the multi-parameter invariants that this domain is full of (Bus, Line, GridNetwork): there the tool correctly stops, but the scaffold gives no help to rebuild the tie (no "was it pinned" notion, a default `DifferentFrom` that blocks the very refusal tests I needed, an aggregate scaffold that is a pile of sentinels), and the `dotnet test --project` incantation from the brief failed without any hint from the docs. Everything I had to hand-write was ordinary C# and the library's own seams (`Combine`, `Then`, `DifferentFrom`, `OrderedPair`) made it short.

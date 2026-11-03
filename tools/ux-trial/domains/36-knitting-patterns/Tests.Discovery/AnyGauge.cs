@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Gauge --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,73 +19,59 @@ namespace KnittingPatterns.Domain;
 /// </summary>
 public sealed partial class AnyGauge : IAny<Gauge> {
 
-    private readonly IAny<decimal> _stitchesPer10Cm;
-    private readonly IAny<decimal>? _rowsPer10Cm;
+    private IAny<decimal> _stitchesPer10Cm;
+
+    private AnyDecimal _stitchesPer10CmRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyGauge()
-        : this(stitchesPer10Cm: AnyValidStitchesPer10Cm(),
-               rowsPer10Cm:     null) { }
+        : this(stitchesPer10Cm: AnyValidStitchesPer10Cm()) { }
 
     private static AnyDecimal AnyValidStitchesPer10Cm() {
-        return Any.Decimal().Between(4m, 60m).WithScale(1);
+        return Any.Decimal().Between(4m, 60m);
     }
 
-    private static AnyDecimal AnyValidRowsPer10Cm() {
-        return Any.Decimal().Between(4m, 80m).WithScale(1);
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyGauge(AnyDecimal stitchesPer10Cm) {
+        _stitchesPer10Cm       = stitchesPer10Cm;
+        _stitchesPer10CmRecipe = stitchesPer10Cm;
     }
 
-    private AnyGauge(IAny<decimal> stitchesPer10Cm,
-                     IAny<decimal>? rowsPer10Cm) {
-        _stitchesPer10Cm = stitchesPer10Cm;
-        _rowsPer10Cm     = rowsPer10Cm;
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyGauge(AnyGauge from) {
+        _stitchesPer10Cm       = from._stitchesPer10Cm;
+        _stitchesPer10CmRecipe = from._stitchesPer10CmRecipe;
     }
 
-    /// <summary>Pins <c>stitchesPer10Cm</c> to a fixed value.</summary>
+    /// <summary>Pins <c>stitchesPer10Cm</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyGauge WithStitchesPer10Cm(decimal value) {
-        return new AnyGauge(new FixedValue<decimal>(value), _rowsPer10Cm);
+        AnyGauge copy = new AnyGauge(this);
+
+        copy._stitchesPer10Cm = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>stitchesPer10Cm</c> from <c>AnyValidStitchesPer10Cm()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>stitchesPer10Cm</c> is drawn from — <c>AnyValidStitchesPer10Cm()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyGauge WithStitchesPer10Cm(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyGauge(configure(AnyValidStitchesPer10Cm()), _rowsPer10Cm);
-    }
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
 
-    /// <summary>Pins <c>rowsPer10Cm</c> to a fixed value.</summary>
-    public AnyGauge WithRowsPer10Cm(decimal value) {
-        return new AnyGauge(_stitchesPer10Cm, new FixedValue<decimal>(value));
-    }
+        AnyGauge copy = new AnyGauge(this);
 
-    /// <summary>Draws <c>rowsPer10Cm</c> from <c>AnyValidRowsPer10Cm()</c>, refined by <paramref name="configure" />.</summary>
-    public AnyGauge WithRowsPer10Cm(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyGauge(_stitchesPer10Cm, configure(AnyValidRowsPer10Cm()));
+        copy._stitchesPer10CmRecipe = configure(_stitchesPer10CmRecipe);
+        copy._stitchesPer10Cm       = copy._stitchesPer10CmRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Gauge" />.</summary>
     public Gauge Generate() {
-        // Rows per 10 cm lie within half to twice the stitches: unless a test set the rows itself, they are
-        // drawn inside the window the drawn stitches leave.
-        decimal stitchesPer10Cm = _stitchesPer10Cm.Generate();
-        decimal rowsPer10Cm     = _rowsPer10Cm?.Generate()
-                                  ?? Any.Decimal()
-                                        .Between(Math.Max(4m, stitchesPer10Cm / 2m), Math.Min(80m, stitchesPer10Cm * 2m))
-                                        .Generate();
+        // Rows per 10 cm lie in 4..80 and within half to twice the stitches: draw them inside both.
+        decimal stitches = _stitchesPer10Cm.Generate();
+        decimal rows     = Any.Decimal().Between(Math.Max(4m, stitches / 2m), Math.Min(80m, stitches * 2m)).Generate();
 
-        return new Gauge(stitchesPer10Cm, rowsPer10Cm);
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
+        return new Gauge(stitches, rows);
     }
 
 }

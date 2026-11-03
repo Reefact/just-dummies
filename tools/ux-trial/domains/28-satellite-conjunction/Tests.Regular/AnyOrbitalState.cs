@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate OrbitalState --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,10 +19,15 @@ namespace SatelliteConjunction.Domain;
 /// </summary>
 public sealed partial class AnyOrbitalState : IAny<OrbitalState> {
 
-    private readonly IAny<Epoch>              _epoch;
-    private readonly IAny<Vector3>            _positionKm;
-    private readonly IAny<Vector3>            _velocityKmPerSecond;
-    private readonly IAny<PositionCovariance> _covariance;
+    private IAny<Epoch>              _epoch;
+    private IAny<Vector3>            _positionKm;
+    private IAny<Vector3>            _velocityKmPerSecond;
+    private IAny<PositionCovariance> _covariance;
+
+    private AnyEpoch              _epochRecipe;
+    private AnyVector3            _positionKmRecipe;
+    private AnyVector3            _velocityKmPerSecondRecipe;
+    private AnyPositionCovariance _covarianceRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyOrbitalState()
@@ -31,70 +40,137 @@ public sealed partial class AnyOrbitalState : IAny<OrbitalState> {
         return new AnyEpoch();
     }
 
-    private static IAny<Vector3> AnyValidPositionKm() {
-        // The guard is on the radius, which no per-component recipe can honour: draw a direction and an
-        // altitude instead. The altitude keeps a margin under the ceiling for the rounding of sin/cos.
-        return Any.Combine(Any.Double().Between(1, OrbitalState.MaximumAltitudeKm - 1),
-                           AnyDirection(),
-                           (altitude, direction) => direction.Scale(OrbitalState.EarthRadiusKm + altitude));
+    private static AnyVector3 AnyValidPositionKm() {
+        // Every component in [5000, 20000] km: the radius lies in [8660, 34641] km, above the surface and under the altitude cap.
+        return new AnyVector3().WithX(x => x.Between(5_000, 20_000))
+                               .WithY(y => y.Between(5_000, 20_000))
+                               .WithZ(z => z.Between(5_000, 20_000));
     }
 
-    private static IAny<Vector3> AnyValidVelocityKmPerSecond() {
-        return Any.Combine(Any.Double().Between(0.1, OrbitalState.MaximumSpeedKmPerSecond - 0.01),
-                           AnyDirection(),
-                           (speed, direction) => direction.Scale(speed));
-    }
-
-    private static IAny<Vector3> AnyDirection() {
-        return Any.Combine(Any.Double().Between(-Math.PI / 2, Math.PI / 2),
-                           Any.Double().Between(-Math.PI, Math.PI),
-                           (latitude, longitude) => new Vector3(Math.Cos(latitude) * Math.Cos(longitude),
-                                                                Math.Cos(latitude) * Math.Sin(longitude),
-                                                                Math.Sin(latitude)));
+    private static AnyVector3 AnyValidVelocityKmPerSecond() {
+        // Every component in [0.5, 5] km/s: the speed lies in [0.87, 8.66] km/s, positive and under the cap.
+        return new AnyVector3().WithX(x => x.Between(0.5, 5))
+                               .WithY(y => y.Between(0.5, 5))
+                               .WithZ(z => z.Between(0.5, 5));
     }
 
     private static AnyPositionCovariance AnyValidCovariance() {
         return new AnyPositionCovariance();
     }
 
-    private AnyOrbitalState(IAny<Epoch>              epoch,
-                            IAny<Vector3>            positionKm,
-                            IAny<Vector3>            velocityKmPerSecond,
-                            IAny<PositionCovariance> covariance) {
-        _epoch               = epoch;
-        _positionKm          = positionKm;
-        _velocityKmPerSecond = velocityKmPerSecond;
-        _covariance          = covariance;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyOrbitalState(AnyEpoch              epoch,
+                            AnyVector3            positionKm,
+                            AnyVector3            velocityKmPerSecond,
+                            AnyPositionCovariance covariance) {
+        _epoch                     = epoch;
+        _epochRecipe               = epoch;
+        _positionKm                = positionKm;
+        _positionKmRecipe          = positionKm;
+        _velocityKmPerSecond       = velocityKmPerSecond;
+        _velocityKmPerSecondRecipe = velocityKmPerSecond;
+        _covariance                = covariance;
+        _covarianceRecipe          = covariance;
     }
 
-    /// <summary>Pins <c>epoch</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyOrbitalState(AnyOrbitalState from) {
+        _epoch                     = from._epoch;
+        _epochRecipe               = from._epochRecipe;
+        _positionKm                = from._positionKm;
+        _positionKmRecipe          = from._positionKmRecipe;
+        _velocityKmPerSecond       = from._velocityKmPerSecond;
+        _velocityKmPerSecondRecipe = from._velocityKmPerSecondRecipe;
+        _covariance                = from._covariance;
+        _covarianceRecipe          = from._covarianceRecipe;
+    }
+
+    /// <summary>Pins <c>epoch</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrbitalState WithEpoch(Epoch value) {
-        return new AnyOrbitalState(new FixedValue<Epoch>(value), _positionKm, _velocityKmPerSecond, _covariance);
+        AnyOrbitalState copy = new AnyOrbitalState(this);
+
+        copy._epoch = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>epoch</c> from <c>AnyValidEpoch()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>epoch</c> is drawn from — <c>AnyValidEpoch()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEpoch, AnyEpoch&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrbitalState WithEpoch(Func<AnyEpoch, AnyEpoch> configure) {
-        return new AnyOrbitalState(configure(AnyValidEpoch()), _positionKm, _velocityKmPerSecond, _covariance);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyOrbitalState copy = new AnyOrbitalState(this);
+
+        copy._epochRecipe = configure(_epochRecipe);
+        copy._epoch       = copy._epochRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>positionKm</c> to a fixed value.</summary>
+    /// <summary>Pins <c>positionKm</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrbitalState WithPositionKm(Vector3 value) {
-        return new AnyOrbitalState(_epoch, new FixedValue<Vector3>(value), _velocityKmPerSecond, _covariance);
+        AnyOrbitalState copy = new AnyOrbitalState(this);
+
+        copy._positionKm = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Pins <c>velocityKmPerSecond</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>positionKm</c> is drawn from — <c>AnyValidPositionKm()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyVector3, AnyVector3&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyOrbitalState WithPositionKm(Func<AnyVector3, AnyVector3> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyOrbitalState copy = new AnyOrbitalState(this);
+
+        copy._positionKmRecipe = configure(_positionKmRecipe);
+        copy._positionKm       = copy._positionKmRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>velocityKmPerSecond</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrbitalState WithVelocityKmPerSecond(Vector3 value) {
-        return new AnyOrbitalState(_epoch, _positionKm, new FixedValue<Vector3>(value), _covariance);
+        AnyOrbitalState copy = new AnyOrbitalState(this);
+
+        copy._velocityKmPerSecond = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Pins <c>covariance</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>velocityKmPerSecond</c> is drawn from — <c>AnyValidVelocityKmPerSecond()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyVector3, AnyVector3&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyOrbitalState WithVelocityKmPerSecond(Func<AnyVector3, AnyVector3> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyOrbitalState copy = new AnyOrbitalState(this);
+
+        copy._velocityKmPerSecondRecipe = configure(_velocityKmPerSecondRecipe);
+        copy._velocityKmPerSecond       = copy._velocityKmPerSecondRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>covariance</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrbitalState WithCovariance(PositionCovariance value) {
-        return new AnyOrbitalState(_epoch, _positionKm, _velocityKmPerSecond, new FixedValue<PositionCovariance>(value));
+        AnyOrbitalState copy = new AnyOrbitalState(this);
+
+        copy._covariance = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>covariance</c> from <c>AnyValidCovariance()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>covariance</c> is drawn from — <c>AnyValidCovariance()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyPositionCovariance, AnyPositionCovariance&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrbitalState WithCovariance(Func<AnyPositionCovariance, AnyPositionCovariance> configure) {
-        return new AnyOrbitalState(_epoch, _positionKm, _velocityKmPerSecond, configure(AnyValidCovariance()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyOrbitalState copy = new AnyOrbitalState(this);
+
+        copy._covarianceRecipe = configure(_covarianceRecipe);
+        copy._covariance       = copy._covarianceRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="OrbitalState" />.</summary>
@@ -103,20 +179,6 @@ public sealed partial class AnyOrbitalState : IAny<OrbitalState> {
                                 _positionKm.Generate(),
                                 _velocityKmPerSecond.Generate(),
                                 _covariance.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

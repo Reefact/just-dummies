@@ -1,64 +1,36 @@
-# Regular developer notes — 24 radiocarbon chronology
+# Regular notes — 24 radiocarbon chronology
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Created `Tests.Regular`, restored, scaffolded in one command:
-  `any generate RadiocarbonAge CalendarInterval CalibrationPoint CalibrationCurve Sample StratigraphicLayer PrecedenceRelation SiteChronology --entry-point static:Arbitrary`.
-- Kept 6 generators, deleted `AnyCalendarInterval` and `AnyPrecedenceRelation`: in every test I wrote, an
-  interval or a succession is what the assertion is about, so it stays a literal.
-- Refined the factories: `Between(...)` for ages, years and uncertainties; `StringMatching` for lab codes and
-  layer codes; reservoir offset `Zero()` by default (valid for every material; a shell test pins it);
-  curve points = `SetOf(years).WithCountBetween(2, 8).As(sort + map)` for strictly increasing years.
-- Two hand-made curves (`Curves.Linear()`, `Curves.Wiggle()`) are literals: their shape decides the outcome.
-- 34 test methods / 39 cases (one 4-row theory): age correction, sample invariants, calibration (incl. a
-  multimodal date from a curve wiggle), `CalibratedDate` (HDR, truncation, mixture), site editing rules,
-  and modelling (stratigraphic order, succession removing one mode of a bimodal layer in both directions,
-  contradiction naming both layers, modelled/reopen state). `[assembly: Reproducible]`.
-- `dotnet test --project Tests.Regular`: 39/39 green, and green on 8 further reruns (different seeds).
+- Read the domain (`MODEL.md`, every `Domain/*.cs`), then skimmed as a reminder: `PROJECT-README.md`, `guides/getting-started.en.md`, `packages/justdummies-cli.en.md` (the guard table, `to verify`, "Adjusting a parameter"), `packages/justdummies-xunit.en.md`, `generators/README.md`, and the `Distinct` / `WithCount*` / `OrderedBy` parts of `generators/collections.en.md` and the `StringMatching` part of `generators/strings.en.md`.
+- Created `Tests.Regular/RadiocarbonChronology.Tests.Regular.csproj` from the template, `dotnet restore`, then one `any` run for ten types:
+  `any generate RadiocarbonAge CalendarInterval CalibrationPoint CalibratedDate PrecedenceRelation OccupationEstimate Sample StratigraphicLayer CalibrationCurve SiteChronology --entry-point any --output Generators --namespace RadiocarbonChronology.Tests.Regular.Generators`
+- Scaffold result: 5 generators compiled as is (RadiocarbonAge, CalendarInterval with an `OrderedPair`, CalibrationPoint, OccupationEstimate, SiteChronology); 5 stopped the build on a `TODO_verify_…` sentinel and were completed by hand:
+  - `AnyStratigraphicLayer`: `code` -> `Any.StringMatching("[A-Z]{1,3}[0-9]{1,4}")`, retyped `AnyString` -> `AnyPattern` (field, ctor, `Func`), as the TODO said.
+  - `AnyPrecedenceRelation`: both codes -> same pattern, retyped; `Generate()` redraws the younger code (bounded loop) while it equals the older one.
+  - `AnySample`: `labCode` -> `Any.StringMatching("[A-Z][A-Za-z]{1,4}-[0-9]{3,6}")` retyped; `Generate()` forces offset 0 unless the material is `MarineShell`, and clamps the offset for a shell so that measurement - offset stays in 0..55000 (the three tied guards).
+  - `AnyCalibratedDate`: weights `Any.Double().Between(0.001, 1d)` in a list of 1..120, normalised in `Generate()`, first year slid back so the span stays in range.
+  - `AnyCalibrationCurve`: points `ListOf(AnyCalibrationPoint).WithCountBetween(2, 20).OrderedBy(year).DistinctBy(year)` (strictly increasing years), sentinel removed (no null is ever drawn).
+- Hand-built `TestCurves.Linear()` (radiocarbon age = 1950 - year, curve sigma 10, every 10 years from -10000 to 1950) so that a measurement of N BP peaks in the year 1950 - N and the site model can be reasoned about with literals.
+- Tests (189 methods, 238 cases with the theory rows, `[assembly: Reproducible]`): `RadiocarbonAgeTests`, `CalendarIntervalTests`, `CalibrationPointTests`, `CalibratedDateTests`, `CalibrationCurveTests`, `SampleTests` (+ `SampleDefectTests`), `StratigraphicLayerTests`, `PrecedenceRelationTests`, `OccupationEstimateTests`, `SiteChronologyTests` ( constructor, layers, samples, relations incl. cycles, `Model()` refusals/ordering/trimming/contradiction/multimodal/marine, modelled-state lock and `Reopen()`).
+- Result: green with `dotnet test --project Tests.Regular` (235 passed, 3 skipped as domain defects), then 12 further runs, all green (238 total, 0 failed, 3 skipped each time). Build has 0 warnings and no JDxxx diagnostic fired.
+- `bin/` and `obj/` deleted under `Tests.Regular` and `Domain`.
 
-## Frictions and surprises, in order met
-1. **Every numeric guard came back `to verify`.** All of the domain's range checks are written
-   `if (x < Min || x > Max) throw ...`; the scaffolder reads none of them (9 TODOs across 4 types). Recap:
-   `yearsBp: unread guard at RadiocarbonAge.cs, line 11: if (yearsBp < 0 || yearsBp > MaximumYearsBp)`.
-   I checked with a throwaway type: the same bounds as two separate `if`s give `Any.Int32().Between(0, 100)  guard`;
-   joined with `||`, even with literals, it gives `Any.Int32()  to verify, unread guards`. This is the most
-   common way to write a range guard, so most of the scaffold's value went away in this domain.
-   (It is safe, at least: the build stops, nothing wrong is drawn.)
-2. **The relational guard of `CalendarInterval` is never named.** The TODOs for `startYear`/`endYear` name
-   lines 11 and 16 (the range checks) only. `if (startYear > endYear)` at line 21 shows up nowhere: neither in
-   the recap nor in the file. Fix the two ranges as the TODOs suggest, delete the TODO lines, and you have a
-   generator that throws about half the time. The CLI page says a guard tying two parameters "stops the
-   build at the first"; here the first *range* guard took that place and hid the tie. I only caught it
-   because I read the constructor. (I ended up deleting that generator, for other reasons.)
-3. Lab and layer codes: regex guards are not read (documented). Replacing with `Any.StringMatching(...)`
-   means retyping the factory and the refining overload `AnyString` -> `AnyPattern` by hand, each time
-   (documented too, but it's the same 2-line chore for every regex-guarded string; the scaffolder could
-   just emit `AnyPattern` + a `StringMatching` TODO when it sees `Regex.IsMatch`/`[GeneratedRegex]`).
-4. Curve points: "strictly increasing calendar years" is a cross-element rule. `SetOf(...).As(...)` did it
-   cleanly, but the factory had to be retyped to `IAny<IReadOnlyList<CalibrationPoint>>` and the refining
-   overload deleted, so the curve loses its `WithPoints(p => ...)`. Acceptable.
-5. `Sample`'s offset/material tie: I chose a `Zero()` base instead of writing `Generate()` logic, because a
-   hand-written `Generate()` cannot tell a pin from a draw. Consequence: `WithReservoirOffset(o => o.Between(...))`
-   would contradict `Zero()`, so shell tests must pin the offset. Fine in practice, but it's a choice the
-   generator model pushes on you.
-6. Small: the generators and the `Arbitrary` root land in the domain's namespace
-   (`RadiocarbonChronology.Domain`) inside the test assembly. Works with no import, but it surprises in a
-   code review; I'd set `--namespace` / `any.json` next time.
-7. To test a constructor refusal, the Act is `generator.Generate()` (e.g. `Arbitrary.Sample().WithLabCode("12345")`).
-   Reads well enough; the alternative (`new Sample(...)` with dummies) needs a lab-code generator I can't
-   reach because `AnyValidLabCode()` is private.
+## Frictions and surprises, in order
+1. `dotnet test --project Tests.Regular` (the command given) fails on SDK 10.0.114: `MSBUILD : error MSB1001: Unknown switch ... Switch: --project`. Without `--project`: `error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later ... opt-in to the new dotnet test experience`. I had to add a `global.json` (`{"test":{"runner":"Microsoft.Testing.Platform"}}`) at W. The getting-started and xunit pages never say that a test project built from `xunit.v3` on the .NET 10 SDK needs it (the PROJECT-README only mentions that the repo itself pins the SDK in `global.json`). Cost: a few minutes. A line in the xunit page ("on the .NET 10 SDK, opt in to MTP in global.json") would save it.
+2. `any generate …` straight after creating the csproj: `✗ RadiocarbonAge: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. The message is clear and actionable; I only note I had not restored yet.
+3. The recap's `to verify` rows for ties between parameters (`CalibratedDate`, `Sample`, `PrecedenceRelation`) are accurate, but the tool cannot express a tie except for an ordered pair, so every one of these ended as a hand-written `Generate()` post-processing (normalise, force offset, redraw). It is the expected cost, but the generated `With…` methods remain per-parameter and then silently interact with my post-processing (e.g. `WithReservoirOffset(500)` on a Charcoal sample is overridden to 0 in `Generate()`). I documented it in a comment; a hint in the scaffold file for "tied parameters: adjust in Generate()" would help.
+4. Retyping `AnyString` -> `AnyPattern` is mechanical but touches 4-5 places per file, and I did it with a script. The TODO text lists exactly the places, which is good; a `--pattern code=...` option would be nice (idea).
+5. `Any.Enum<SampleMaterial>().Except(SampleMaterial.MarineShell)` worked first time; `WithYearsBp(…)` / `WithUncertainty(…)` / `WithCalendarYear(…)` on scaffolded generators read well in the Arrange blocks. No friction.
+6. Domain side, found by writing the cases a reviewer expects (see findings): lab code and layer code regexes end with `$`, so a trailing `\n` is accepted (`new Sample("OxA-12345\n", …)`, `new StratigraphicLayer("US12\n", …)` do not throw); and a marine shell at 55000 BP with offset -500 is accepted by `Sample` but `CorrectedAge` then throws `ArgumentOutOfRangeException` (55500 BP). Both are in the suite as skipped tests.
+7. No analyzer diagnostic fired at any point, including with `Any.Double().Negative()` / `GreaterThan(...)` used to draw invalid values for refusal tests, and with `Any.String().NotBlank()` without a max length for the curve/site names (the docs say the default is 0..1024 characters; that was fine here).
 
-## What worked really well
-- One command for 8 types with a shared `Arbitrary` root; recaps print the exact guard line that blocked
-  each parameter, so fixing was quick.
-- `any` composing `new AnyRadiocarbonAge()` inside `AnySample` and `new AnyCalibrationCurve()` inside
-  `AnySiteChronology`: fix the leaf once, every aggregate is valid.
-- Pins vs lambdas read exactly like the intent: `.WithMeasurement(m => m.WithYearsBp(300))`,
-  `.WithMaterial(m => m.DifferentFrom(SampleMaterial.MarineShell))`, `.WithCurve(Curves.Linear())`.
-- Drawn-then-pinned for "same code twice" tests: `WithCode(anyLayer.Code)`, `WithLabCode(anySample.LabCode)`.
-- `[assembly: Reproducible]` one line, nothing else to think about. No analyzer noise, no warnings.
+## What worked well
+- One `any generate` with ten types and `--entry-point any`: half the generators compiled untouched, and the composed ones (`AnySiteChronology` -> `AnyCalibrationCurve` -> `AnyCalibrationPoint`) wired themselves.
+- The guard reader understood `CalendarInterval.EarliestYear/LatestYear` constants and the `startYear > endYear` guard (`AnyOrderedPair`), and quoted the exact unread guard line for the ones it could not read; the build-stopping sentinel made it impossible to forget one.
+- `[assembly: Reproducible]` plus the seed printed on failure: the three real failures at the start (my arithmetic mistakes, not draws) each showed the seed with a ready-to-paste attribute.
+- `Distinct()` on a drawn list of lab codes to keep several samples of one site unique; `OrderedBy(...).DistinctBy(...)` for strictly increasing curve years.
+- The `WithX(value)` / `WithX(r => r…)` pair: refusal tests could pin one field and leave the rest arbitrary-but-valid.
 
 ## Fluency: 4 / 5
-Once the generators were fixed, writing 34 tests was fast and they read like the domain. The point lost is
-the scaffold: the `||` range guard is unread everywhere in this domain, so I rewrote nearly every scalar
-factory by hand, and the hidden `start <= end` guard is the kind of thing that would bite a less careful
-teammate.
+Everything the library offered did what the docs said and the generators were quick to write; the build never complained about misuse. Points lost for the `global.json` / MTP discovery on .NET 10 (not in the docs I was given), and because a domain with many tied constraints (distribution sums, sample offsets, ordered curve points) still means hand-writing `Generate()` and retyping the generator for patterns, which is normal but is where all my time went.

@@ -1,62 +1,66 @@
-# Satellite conjunction: notes from the expert crafter
+# Expert notes — 28 Satellite conjunction risk assessment
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Scaffolded `Epoch`, `Vector3`, `PositionCovariance`, `SpaceObject`, `OrbitalState`, `Trajectory`, `Conjunction`
-  with `any generate … --output ./Arbitrary --entry-point any`, then refined every `AnyValid…()` base.
-- Threw away the scaffolded `AnyConjunction`. I wrote one by hand that draws the *encounter*: miss vector, relative
-  velocity, covariances and radii can be pinned, and the rest is drawn (TCA, where it happens in orbit, the primary's
-  velocity, node spacing, ids, names, catalogue numbers).
-  Recipes I added: `Orbital` (direction × magnitude, built with `Any.Combine`), `AnyEphemeris` (linear motion through
-  an anchor epoch), `AnySpaceObject.Active()`, `AnyTrajectory.Covering(epoch)`, and diagonally dominant covariances.
-- 38 test methods (48 cases) across 9 files, with `[assembly: Reproducible]`. All pass, and they passed 150 runs in a row.
+Pages read, in order: `PROJECT-README.md`, `README.md` (index), `guides/getting-started`, `guides/core-concepts`,
+`guides/composition`, `packages/justdummies-cli` (almost all of it, the section "When a guard ties two parameters" twice),
+`packages/justdummies-xunit`, `generators/numbers`, `dates-and-times`, `collections`, `enums-and-choices` (skimmed), and
+`analyzers/JD036` (after the build, to understand what the tool wants of an unbounded `Any.Double()`).
 
-## Frictions and surprises, in the order I met them
-1. `any generate … Vector3` stopped with `✗ Vector3: several types answer to that name. SatelliteConjunction.Domain.Vector3 /
-   System.Numerics.Vector3`. The message is clear. Still, a type declared in the referenced project should win over a
-   BCL type the user never imported. The batch exit code was 1 even though six files had been written.
-2. `if (catalogNumber < 1 || catalogNumber > MaximumCatalogNumber)` came back as `unread guards`, with `Any.Int32()`.
-   The same happened to `!double.IsFinite(r) || r <= 0 || r > Max…`. In the same constructor,
-   `name.Length > MaximumNameLength` was read (`NotBlank().WithMaxLength(24)`). A two-sided range test is the most
-   common guard there is, and the user docs never say which guard shapes are read. They point to §9 of a maintainer spec.
-3. The first unread guard for `Epoch` was the offset check, and the recap never mentions `utc < SpaceAgeStart`.
-   The `TODO` names only the first guard, so I had to read the constructor anyway.
-4. Rules that hold between parameters were everywhere: active ⇒ Payload, positive-definite 3×3, a magnitude on a
-   `Vector3`, epochs strictly increasing and at most 10 minutes apart, and the TCA covered by both trajectories. The
-   tool marked each one correctly (`to verify`). For the aggregate, though, the scaffold was only a starting point to
-   delete. That matches the docs ("derive inside `Generate()`").
-5. When a base becomes `IAny<Vector3>`, I had to retype the factory and delete the refining overload by hand.
-   The docs explain this ("When the replacement is another kind of generator"), and it worked.
-6. Every scaffolded file has its own private `FixedValue<T>`, and my hand-written generators needed one too. A public
-   `Any.Fixed(value)` (or a documented `Any.OneOf(value)` idiom) would remove that copy-paste.
-7. **The dummies caught a real mistake in my test.** `ConjunctionLifecycleTests.A_closed_conjunction_is_not_assessed_again`
-   failed 2 times in 100. My "low risk" recipe pinned a 10 km miss along z and left the relative velocity drawn.
-   When the draw came out nearly parallel to z, the miss projected to almost nothing in the encounter plane and the
-   risk was High. `[Reproducible(Seed = -115355194)]` replayed it on the first try. The fix belonged in the recipe:
-   at a closest approach, the miss vector is perpendicular to the relative velocity, so whichever of the two is drawn
-   is now drawn perpendicular to the other. This is the "the test not caring is not the code not caring" promise
-   working as advertised.
-8. The pasted replay snippet `[Reproducible(Seed = …)]` did not compile at first (`CS0246 ReproducibleAttribute`).
-   The assembly-level attribute lives in another file, so the test file had no `using JustDummies.Xunit;`. This is
-   minor, but the message could say which namespace to import.
-9. Analyzers: no JD diagnostic anywhere (I checked through SARIF, Info included). That is good: there was nothing to fix.
+`any` commands run (from `Tests.Expert/`, after `dotnet restore`):
+`any generate Epoch Vector3 PositionCovariance CollisionProbability RiskAssessment SpaceObject OrbitalState Trajectory Conjunction --output Generators --entry-point any`
+(one invocation, nine types, `Any.Epoch()` ... `Any.Conjunction()` entry points).
+
+Generators completed by hand (all in `Tests.Expert/Generators/`):
+* `AnyEpoch`: base bounded to 1957-10-04 .. 2100-01-01 (headroom for `Add` and trajectory steps; the upper bound is not a domain rule, said so in a comment).
+* `AnyVector3`: sentinels removed, left unbounded (domain = any finite double).
+* `AnyPositionCovariance`: the six constructor parameters are tied by positive-definiteness. Variances drawn in (0, 1e6]; the three cross terms are re-read as correlations in [-0.4, 0.4] (diagonal dominance guarantees positive definiteness) and scaled by sqrt of the two variances in `Generate()`. The `Xy/Xz/Yz` pins were renamed `…Correlation`.
+* `AnySpaceObject`: `isActive` ties to `kind`. `Generate()` draws the kind first and only lets a payload be active; the `WithIsActive` pin and refinement were deleted (they would silently produce inactive objects) and replaced by `Active()` and `Inactive()` in the same file.
+* `AnyOrbitalState`: position/velocity drawn as "a direction scaled to a length" (`OrbitalGeometry.VectorOfLength`) so the radius is in (Earth radius, +100 000 km] and the speed in (0, 12]; a kilometre / 0.1 km/s kept off each end because normalising then scaling is not exact to the last bit. Recipe fields retyped `IAny<Vector3>`, refining overloads deleted.
+* `AnyTrajectory` (+ `AnyTrajectory.Custom.cs`): 2..6 states, steps in [1 s, 10 min], built with `Then`. All states share one position and velocity and differ by epoch and covariance (see friction 9). `Covering(Epoch)` added: a trajectory that contains a given instant.
+* `AnyConjunction`: rewritten (four tied parameters): draws a TCA, an active-payload primary covering it, a secondary with another catalogue number covering it.
+* `AnyCollisionProbability`, `AnyRiskAssessment`: kept as scaffolded (`Between(0d,1d)`, `Positive().LessThanOrEqualTo(24d)`, …).
+
+Support: `Encounter.cs`, a test data builder for a conjunction with known geometry (relative velocity along y, so the encounter plane is x-z and the Pc is hand-computable); `Encounter.OfRisk(level)` gives a head-on encounter that lands in High/Elevated/Low by construction. `GeneratorsTests.cs` draws each generator 300 times so a broken base is reported by name.
+
+Tests written (212 methods, 266 cases with theory rows; 260 pass, 6 skipped as domain defects):
+* `EpochTests` (offset refused for +1/-5/+5.5 h, space-age boundary +/- 1 tick, `Add`/`SecondsSince`, ordering, equality, `ToString`).
+* `Vector3Tests` (non-finite per component, algebra on literals, cross product handedness, `Normalized`, equality incl. +0/-0 hash, culture-independent `ToString`).
+* `PositionCovarianceTests` (variance ceiling by axis, zero/negative/non-finite, perfect correlation, three correlations that do not hold together, `MeanSigmaKm`, `Combine`, `Project`).
+* `CollisionProbabilityTests` (range, NaN/infinities, both thresholds at +/- 1 ulp, ordering, `ToString`).
+* `RiskAssessmentTests` (each argument refused at its boundary, level mirrors the probability).
+* `SpaceObjectTests` (catalogue range, name length 24/25 and blanks, undefined kind, radius ceiling, active-only-for-payload).
+* `OrbitalStateTests` (radius floor/ceiling at 1 ulp, speed 0/12/diagonal, nulls, `AltitudeKm`).
+* `TrajectoryTests` (counts, nulls, ordering, 10-minute gap at 10 min and +1 tick, `Covers` at both ends, interpolation on literal numbers incl. uneven spacing, nearer covariance, refusals outside the span).
+* `ConjunctionConstructionTests` (every constructor refusal; TCA at the very first/last instant; same catalogue number with another name).
+* `ConjunctionAssessmentTests` (Pc by hand: direct hit 5e-4, miss 0.3 km, summed radii, radius doubling, tight vs dispersed, elongated covariance along vs across, tilted covariance sign, cap at 1, underflow to 0; interpolation at a quarter step; history/status; closed and co-moving refusals).
+* `ConjunctionLifecycleTests` (PlanManeuver and Close from every status and level; blank reasons; the full path).
+
+Result: green. `dotnet test --project Tests.Expert`: 266 total, 260 passed, 0 failed, 6 skipped. One run to get green plus 29 further runs with fresh seeds (14 + 12 + 3), all green; before the last two skips were added the suite failed exactly twice, both times on a real finding (frictions 6 and 7).
+
+## Frictions and surprises, in order
+1. `dotnet test --project Tests.Expert` does not work on this SDK (10.0.114) out of the box. Exact output: `MSBUILD : error MSB1001: Unknown switch ... Switch: --project`; with plain `dotnet test` in the folder: `error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. If you use dotnet test, you should opt-in to the new dotnet test experience.` I expected the documented command to run. I created `W/global.json` with `{ "test": { "runner": "Microsoft.Testing.Platform" } }`. Neither the xUnit package page nor Getting started mentions that a `global.json` is needed for `xunit.v3` on .NET 10 (the library docs say "xUnit v3 (xunit.v3 4.0.2 or later)" only).
+2. `any generate Epoch ...` before a restore: `✗ Epoch: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable; I ran `dotnet restore` and re-ran. (Worth saying in the docs' "Run it from your test project" paragraph.)
+3. The recap is precise, but 7 of the 9 files did not compile (by design) and I had 18 sentinels to resolve (Epoch 1, Vector3 3, PositionCovariance 6, SpaceObject 2, OrbitalState 2, Trajectory 1, Conjunction 3): `Vector3` x3 and `PositionCovariance` x6 are void guard helpers (`Guard(x, nameof(x));`, `GuardVariance(...)`) which the docs say are not read ("a `void` helper called for its effect is marked"), `Epoch` because `utc < SpaceAgeStart` compares with a `static readonly` field (not a `const`) and the zero-offset test is not in the read table. Working as documented; for a value object whose guards are all in void helpers the tool gives no inference at all (`Any.Double()` x 6). Deleting the sentinels was mechanical but I had to read each constructor anyway.
+4. `Epoch`'s recap line: `utc  DateTimeOffset  Any.DateTimeOffset()  to verify, unread guards` / `first unread guard at Epoch.cs, line 11: if (utc.Offset != TimeSpan.Zero) ..., and 1 more`. `Any.DateTimeOffset()` already keeps the offset at +00:00 (docs, dates page), so the first guard was in fact satisfied by the base; only the second (the space-age floor) needed work. The tool cannot know that, fine, but the docs page for `utc.Offset` could be listed among the "reads" (it is the commonest guard on a UTC type).
+5. The tie `if (isActive && kind != ObjectKind.Payload)` (`&&` is never read) marked both `kind` and `isActive`: `kind: unread guard ... — ties isActive to kind`. The docs' "When a guard ties two parameters" offers four forms; none is a fit for a boolean that depends on an enum (`Then` would draw the kind first, but then `WithIsActive(true)` has nowhere to go). I wrote the tie in `Generate()` (kind first, `isActive && kind == Payload`). Consequence the docs do warn about: the scaffolded `WithIsActive(true)` pin would silently yield `false` for 2/3 of draws, so I deleted both `WithIsActive` overloads and added `Active()` (pins kind and flag) and `Inactive()`. Friction: nothing in the generated file stops a test from calling the dangerous pin, and "delete the member" is a manual step the docs do not mention. `--force` would bring it back.
+6. A drawn value revealed a domain defect. First complete run: `PositionCovarianceTests.Two_covariances_that_are_each_within_the_ceiling_but_add_up_beyond_it_can_still_be_combined` -> `System.ArgumentOutOfRangeException : A variance must be positive and at most 1000000 km². (Parameter 'xx') Actual value was 1200000.` from `Combine`. Worse, a probe of 3000 `Any.Conjunction().Generate().Assess()` calls (base variance in (0, 1e6], i.e. the full domain) threw this exact exception 2646 times (88 %). The draws are valid by the domain's own rules; `Assess` is not defined for them. `Any_screened_conjunction_can_be_assessed` is kept, skipped, with `Seed = 1278081590` (replay verified: it failed identically on the pinned seed). For the tests that are not about the covariance I bounded the `Encounter` builder's covariances to 250 000 km² per axis, commented why (the sum must stay under 1e6): with that bound the same probe passed 3000/3000. See also findings.
+7. A literal edge case of mine, found while "completing" tests: `new Vector3(double.Epsilon, 0, 0)` passed to `OrbitalState` is refused with `An orbital speed is positive and at most 12 km/s. ... Actual value was 0`: `Magnitude` is `sqrt(dot)` which underflows. Same cause: `new Vector3(1e-200, 0, 0).Normalized()` throws `The zero vector has no direction.`; `new Vector3(1e200, 0, 0).Magnitude` is `Infinity`. I replaced my "smallest speed" test by 1e-3 km/s and kept the two others as skipped domain defects. Not a library issue: a domain issue.
+8. `OrbitalState`'s radius guard (`radius <= EarthRadiusKm || radius > EarthRadiusKm + MaximumAltitudeKm` on `positionKm.Magnitude`) is a guard on a *derived quantity of a composed value*: the tool rightly said `positionKm ... new AnyVector3()  to verify, AnyX, unread guards`, but nothing guides the rewrite. I had to write `OrbitalGeometry.VectorOfLength(length)` (a direction scaled to a drawn length) and then retype `AnyVector3 -> IAny<Vector3>` in the field, the private constructor, `AnyValid…()`, and delete the refining overload and `_…Recipe` field and its two copies by hand (the "When the replacement is another kind of generator" section describes this for `AnyString -> AnyPattern`; for removing the refinement entirely I followed its last paragraph). Five edits per parameter, easy to get wrong without a compiler; I scripted them. It would be a good use of `--force`-surviving files if the tool could emit the refinement-free shape.
+9. `Trajectory` accepts a list of valid states whose *interpolation* is not valid: `[(7000,0,0) at t, (-7000,0,0) at t+10 min]` is a legal trajectory, but `StateAt(t+5min)` throws `ArgumentOutOfRangeException ... positionKm ... radius 0` (a state at the centre of the earth). So a dummy trajectory of independent states is not a usable dummy. I made my generator coherent (one position and velocity for all states, different epochs/covariances) and recorded the domain defect as a skipped test. The scaffold's own recipe, `Any.SequenceOf(new AnyOrbitalState())`, would have drawn independent states: the tool could not know, and nothing warned (`to verify, unread guards` was about count/order only).
+10. `.Then(...)` composed beautifully: the whole `StatesStartingAt` (count -> steps -> start -> states) is four nested `Then`s plus a `Combine`, a single recipe that replays from one seed; it compiled at the first attempt. `Any.Int32().Between(2, 6).Then(count => Any.ListOf(...).WithCount(count - 1).Then(steps => ...))` reads almost like the rule.
+11. `NonZero().Between(-1d, 1d)` on a double (used so a direction is never the zero vector) is accepted without complaint; I did not find it documented for doubles besides the support matrix (`NonZero` is listed for `double`). Worked.
+12. JD analyzers: default build shows no diagnostics at all (0 warnings). With `.editorconfig` raising JD030 and JD036 to warning I got 23 JD036 on a total of 23 sites, all deliberate: 3 in the scaffolded `AnyVector3` (a vector component really is any finite number), 2 in the scaffolded `AnyRiskAssessment` (`GreaterThanOrEqualTo(0d)` miss, `Positive()` sigma: no upper bound in the domain), and test sites like `Any.Double().Negative()` ("any negative speed is refused") and unbounded vector components. JD036 gives no way to say "the whole finite range really is the domain": `Between(double.MinValue, double.MaxValue)` is "reported like the one-sided chain it equals" and the remedy offered is a `[SuppressMessage]`. I kept the default severity and the draws. This is policy-consistent but noisy at warning level for a domain made of arbitrary finite numbers; not a defect.
+13. `Assert.Equal(double expected, double actual, double tolerance)` (xUnit) needed for the Pc checks; no relation to JustDummies. Noted only because the numbers that matter most here (Pc spans 1e-14 .. 1) need a relative tolerance and `precision:` is a decimals count.
+14. Replay worked as documented: `[JustDummies] These arbitrary values were seeded with 1278081590. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 1278081590)].` I pinned it, got the identical exception twice, then added `Skip`.
 
 ## What worked well
-- `NotBlank().WithMaxLength(24)` and `Guid().NonEmpty()` were read straight from the guards. `AnyX` composition went
-  through the whole graph, and the build stopping on `TODO_verify_…` with the exact guard line was the right default.
-- Partial classes plus `--entry-point any`: `Any.SpaceObject().Active()` and `Any.Trajectory().Covering(tca)` read like
-  the domain.
-- `Any.Combine` built direction × magnitude vectors cleanly. `DifferentFrom` inside a refinement gives distinct
-  catalogue numbers in one line: `WithCatalogNumber(n => n.DifferentFrom(primary.CatalogNumber))`.
-- `Any.Enum<ObjectKind>().DifferentFrom(Payload)` and `Any.DateTimeOffset().WithOffsetBetween(1h, 14h)` stated the
-  test's premise exactly.
-- Seed report, then pin, then replay, then unpin: it took under a minute.
-
-## What I would design differently
-- A guard-shape table in the user docs (what is read, what is not), especially for `a < x || x > b` and `double.IsFinite`.
-- The recap could list *all* unread guards per parameter, not just the first.
-- Prefer source types over framework types when a short name is ambiguous.
+* The test shape the docs teach fits this domain: nearly every value that reaches an assertion is a literal (thresholds, boundaries +/- 1 ulp, hand-computed Pc), and the dummies are the things the refusals and transitions do not care about (catalogue numbers, names, epochs, object kinds, ids, reasons). Reading a test tells which is which.
+* `Encounter.OfRisk(RiskLevel)` plus `AssessedAt(level)` (which asserts that the setup produced the level, so a mis-built encounter fails loudly) made the whole state machine testable in a few lines per transition.
+* The draws earned their keep: the unconstrained-covariance conjunction exposed that `Assess` fails on 88 % of valid inputs, which a hand-picked literal would never have shown; the seed replayed it exactly.
+* The unread-guard sentinels and the `to verify` recap forced me to read every constructor; none of the nine generators drew a value the constructor rejects once finished (300 draws each, a heavier 3000-draw probe for conjunctions).
+* `Any.Reproducibly` was unnecessary: `[assembly: Reproducible]` in one file covers the suite and the failure output named the seed every time.
+* `With…(Func<…>)` refinements read well at the call site: `Any.SpaceObject().WithCatalogNumber(n => n.DifferentFrom(primary.CatalogNumber))` states exactly the rule ("another object") and nothing else.
 
 ## Fluency: 4 / 5
-The DSL and the seed loop are excellent, and the scaffolder is honest about what it cannot do. I lost one point
-because in a math-heavy domain almost every rule sits between parameters. Most of the scaffold therefore ended up
-as `to verify` plus hand-written recipes, and the user docs do not explain why a plain range guard went unread.
+The documented path (read the docs, scaffold, complete the TODO sentinels, write Arrange/Act/Assert tests with `anyXxx` names and literals) was fast and the library never produced a value its own contract rejected; `Then`, `Combine`, `DifferentFrom` and the refinement lambdas did what I expected at the first compile. I lose a point for three costs of the scaffolding when a domain ties its parameters (frictions 5, 8, 9): each aggregate type with a derived-quantity or cross-parameter guard needed a hand-written `Generate()` and a manual removal of the pins that would then lie, and the `.NET 10` runner opt-in (friction 1) is not documented anywhere I looked.

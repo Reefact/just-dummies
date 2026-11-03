@@ -1,63 +1,44 @@
-# Expert crafter notes — 22 Pulmonary nodules
+# Expert notes — 22 pulmonary nodules
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- `Tests.Expert`: 31 test methods (34 cases with a 4-row theory), all green, re-run 25 times with fresh
-  seeds (`[assembly: Reproducible]`): 0 failures.
-- Scaffolded all ten domain types in one call: `any generate SpatialPoint … TrackedNodule --entry-point any
-  --output ./Arbitrary --namespace PulmonaryNodules.Tests.Expert.Arbitrary`, then refined every `AnyValid…()`.
-- Cross-parameter guards (uncertainty < volume, voxels × voxel volume ≤ 20 000 mm³, boundary ≤ voxels,
-  slice spacing ≤ thickness, segmentation spacing = exam spacing) are written as **dependent bases**: the
-  field becomes `Func<TDependency, IAny<T>>`, so `WithX(x => …)` refinements still start from a base that
-  keeps the tie, and pins stay pins. This is the pattern I would like `any` to scaffold.
-- `Thorax.cs` holds the scenario recipes: `Inside` (a reusable `Func<AnySpatialPoint, AnySpatialPoint>`),
-  `Fiducials()` (set of distinct `LandmarkKind` × positions via `Any.Combine`), `PatientRepositioning()`,
-  `FollowUpOf(exam, shift, days)`, `SegmentedAt(exam, centroid)`. `AnyCtExam.Custom.cs` adds the
-  `WithLandmarks(IAny<…>)` overload, as the CLI page recommends.
-- Tests cover volumetry (trend vs. uncertainty and the 25 % threshold, doubling time, quadrature),
-  segmentation measurement, registration (shift recovery, unshared landmarks ignored, too few landmarks,
-  residual too large), exam/observation invariants and the aggregate (same nodule after repositioning,
-  tolerance in/out, residual widening the window, ordering, resolution, baseline vs. latest comparison).
+- Read, in order: `PROJECT-README.md` (skimmed), `README.md`, `guides/getting-started`, `guides/core-concepts`, `packages/justdummies-xunit`, `packages/justdummies-cli` (whole page, it is the long one), `generators/README`, `numbers`, `enums-and-choices`, `guides/composition`; then `dates-and-times`, `collections` and `strings` by grep only (DateOnly, DictionaryOf/SetOf, StringMatching).
+- Read `MODEL.md` and every file of `Domain/` before writing anything.
+- Project `Tests.Expert/PulmonaryNodules.Tests.Expert.csproj` from the template; `dotnet restore` (the tool refuses to run before it).
+- `any` commands: one call, ten types, with `--output Generators --namespace PulmonaryNodules.Tests.Expert.Generators --entry-point any`:
+  `any generate SpatialPoint VoxelSpacing AnatomicalLandmark TranslationTransform MeasuredVolume Segmentation VolumeChange CtExam NoduleObservation TrackedNodule ...`.
+  Result: 5 files compiled as scaffolded (SpatialPoint, AnatomicalLandmark, TranslationTransform, MeasuredVolume, VolumeChange, TrackedNodule), 4 stopped the build on purpose (VoxelSpacing, Segmentation, CtExam, NoduleObservation).
+- Generators completed by hand:
+  - `AnyVoxelSpacing`: three `Between(...)` from the domain constants (the `Guard(value, max, name)` helper was marked `to verify`).
+  - `AnySegmentation`: voxel-count base capped at 500 = 20000 / (2 x 2 x 10), so the 20000 mm3 rule holds for every spacing without any redraw.
+  - `AnyCtExam` (rewritten, ~180 lines): accession `Any.StringMatching("CT[0-9]{8}")` (retyped to `AnyPattern`), dates in 2000-2040, landmarks of distinct kinds built through `Any.DictionaryOf(kinds, points).As(...)`, and the spacing/thickness tie (slice spacing <= thickness) written in `Generate()` with two nullable pins.
+  - `AnyNoduleObservation` (rewritten): the segmentation is drawn on the exam's spacing, or the exam on a pinned segmentation's spacing.
+  - `AnyMeasuredVolume`: only the `JD036` fix (see friction 9).
+- `Support/Scans.cs`: builders for tracking scenes (whole-millimetre landmarks so that shifts and residuals are exact and a test can sit exactly on the tolerance).
+- Tests, 12 files (156 test methods, 223 cases, 221 run + 2 skipped as domain defects): `SpatialPointTests`, `VoxelSpacingTests`, `AnatomicalLandmarkTests`, `TranslationTransformTests` (value + `Estimate`: mean displacement, RMS residual, 3-landmark minimum, 15 mm residual and 300 mm shift boundaries), `MeasuredVolumeTests`, `SegmentationTests`, `VolumeChangeTests` (arithmetic, trend with both thresholds and their exact boundaries, doubling time), `CtExamTests`, `NoduleObservationTests`, `TrackedNoduleTests` (creation, `Track` on / around the tolerance and the residual widening, "registered onto the latest exam, not the baseline", `MarkResolved`, terminal state, `CompareLatest` / `CompareWithBaseline`), `GeneratorTests` (300 draws of every generator: the hand-completed rules must hold on every seed), and `[assembly: Reproducible]`.
+- Result: green. `dotnet test --project Tests.Expert` passed on the first complete run, then 52 more consecutive runs (fresh seeds each, 12 + 40, plus 6 after the last edit) with 0 failure. Two tests are `Skip`ped on purpose (domain defects below).
+- Needed to add `global.json` (see friction 1) to be able to run `dotnet test --project` at all.
 
 ## Frictions and surprises, in order
-1. `any` leaves the commonest range guard unread: `if (x < lo || x > hi) throw …` → `to verify, unread
-   guards` on every such parameter (MeasuredVolume, Segmentation, CtExam, TranslationTransform,
-   TrackedNodule). A one-sided `if (c > Max)` *is* read (`LessThanOrEqualTo(100)`), constants included.
-   Confirmed with a throw-away probe type: `b < 1 || b > 100` unread, `c > Max` read. The safe failure
-   (non-compiling TODO) works as designed, but 9 of 13 marks came from this one shape.
-2. `SpatialPoint` and `VoxelSpacing` validate through `XMm = Guard(xMm, …)` (a helper returning the value):
-   silent, as the CLI page warns, so `Any.Double()` was emitted with no mark — a recipe that the
-   constructor rejects on almost every draw (ordinary magnitude ±1e6 vs. ±2000 mm). Documented, still the
-   costliest surprise of the session: nothing in the recap says "look here".
-3. The `landmarks` TODO names only the *first* unread guard (no null item), not the one that matters
-   (each kind once). I found the duplicate-kind rule by reading the constructor anyway.
-4. Cross-parameter guards: the docs offer "derive in `Generate()`", but that breaks the generated
-   `WithX(Func<…>)` contract (the refinement no longer starts from the tied base). I rewrote fields as
-   functions of their dependency; ~40 lines per type, done by hand four times.
-5. `Any.ListOf(landmark).Distinct(LandmarkKindComparer.Instance)` with only `WithMinCount(3)` failed on
-   some seeds: `JustDummies.AnyGenerationException : Could not generate a distinct collection of 9
-   elements: the element generator produced only 8 distinct value(s) before the draw budget was exhausted.
-   Loosen the count or widen the element generator's domain.` Clear and seeded — but a comparer hides the
-   cardinality (8 enum members), so I had to restate it as `WithMaxCount(Enum.GetValues<…>().Length)`.
-   I switched `Fiducials()` to `SetOf(Enum<LandmarkKind>())` zipped with positions: distinct by construction.
-   A "distinct by key" (`DistinctBy(l => l.Kind)`) that gates on the key generator's cardinality is missing.
-6. Pinning the uncertainty forces the test to restate `volume > uncertainty` (`WithVolumeMm3(v =>
-   v.GreaterThan(30))`): my dependent base only runs one way. A library-level way to express a tie
-   between two drawn values would help; I understand why it is refused (no solver) and agree.
-7. Dependent windows: `WithAcquiredOn(d => d.Before(latestDate))` conflicts with the base lower bound
-   if the latest exam fell on the base's first day (≈1/40 000). Correct, loud, but a real-test hazard.
+1. **`dotnet test --project` does not run on this SDK without an MTP opt-in.** `dotnet test --project Tests.Expert` -> `MSBUILD : error MSB1001: Unknown switch ... --project`; `dotnet test Tests.Expert` -> `error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. If you use dotnet test, you should opt-in to the new dotnet test experience.` Expected: the xunit adapter page (and getting-started) to say how to run the suite; xunit.v3 on .NET 10 needs `global.json` `{ "test": { "runner": "Microsoft.Testing.Platform" } }`. I added it next to the test project. Not a library defect, but the xunit page is where a user lands and it is silent.
+2. **`any generate` before `dotnet restore`.** `✗ SpatialPoint: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable. No complaint; worth noting that the docs do not say it.
+3. **`VoxelSpacing` helper with a `max` argument is not read.** The domain guards through `Guard(value, max, name)` called with `MaxInPlaneSpacingMm` / `MaxSliceSpacingMm`. The CLI page shows exactly this idiom for `SpatialPoint` (a helper returning its parameter), but with the bound written inside the helper. Here the bound is an argument, so `any` printed `rowMm double Any.Double().GreaterThanOrEqualTo(VoxelSpacing.MinSpacingMm) to verify, guard, unread guards` for all three parameters, silently dropping the upper bound of the scaffolded recipe (the build stops on `TODO_verify_the_generator_for_rowMm`, so it is safe, just 3 x 2 hand edits that a call-site constant substitution could have avoided). `SpatialPoint` itself (same idiom, bound inside) scaffolded perfectly: `Any.Double().Between(-2000d, 2000d)  guard`.
+4. **Rules tying two parameters beyond an order cost a lot of hand code.** `any` correctly paired `boundaryVoxelCount <= voxelCount` (`Any.OrderedPair`, with pins honoured both ways: very good) and `uncertainty < volume` (strict pair). But `spacing.SliceMm <= sliceThicknessMm` (CtExam), `count x voxelVolume <= 20000` (Segmentation) and `segmentation.Spacing == exam.Spacing` (NoduleObservation) are marked `to verify ... ties X to Y` and the scaffold offers nothing but the TODO. The page lists four patterns, none of which keeps the generated `With...` pin/lambda API coherent: writing `Generate()` by hand meant replacing the `IAny<T> _x` + recipe pair with `T? _xPin` fields and re-implementing every `With...` overload of the two parameters (~120 lines for CtExam alone). What I expected: a documented recipe for "derive B from A while keeping `WithA(pin)` and `WithB(pin)` both valid". I did it as: A drawn first from a base bounded by B's pin when B is pinned, else by B's maximum; B then drawn `>=` A. Idea: a scaffold flavour for "derived parameter".
+5. **Segmentation cap trade-off.** To keep `AnyValidVoxelCount()` free of the spacing, I capped the base at 500 voxels (valid for the coarsest voxel). Consequence: a default segmentation never has more than 500 voxels even for fine spacings where the domain allows 2 million. Documented in a comment, tests that need more pin. The page ("derive one draw from another inside `Generate()`") would have given a wider range at the price of the hand code of friction 4.
+6. **Regex retype is manual and spans four places, as announced.** The `TODO(any)` comment for `^CT[0-9]{8}$` said exactly what to do (retype `AnyString` -> `AnyPattern` on the recipe field, constructor, Func). I followed it while rewriting the file for friction 4. Probe: `Any.StringMatching("^CT[0-9]{8}$")` (with the anchors) is accepted and draws `CT18468467`, which the page does not say; the TODO suggestion drops them.
+7. **Domain defect: accession pattern accepts a trailing line feed.** `Any.CtExam().WithAccessionNumber("CT12345678\n").Generate()` does not throw `FormatException` (`$` in .NET matches before a final `\n`; the model says `^CT[0-9]{8}$`). Test kept, skipped: `An_accession_number_followed_by_a_line_feed_is_refused` (`Skip = "domain defect: ... (literal case, no seed involved)"`). Confirmed by unskipping once: `Expected: typeof(System.FormatException)` then no exception.
+8. **Domain defect: `TranslationTransform.Estimate` counts a duplicated baseline kind twice.** `Estimate([Carina, Carina, SternalAngle], [Carina, SternalAngle])` returns a transform (dx 0, residual 0) although only two distinct kinds are common (minimum is 3). `CtExam` forbids duplicates, but `Estimate` is public and takes any collection (and a duplicate in the follow-up list throws a bare `ArgumentException` from `ToDictionary`). Test kept, skipped: `A_kind_located_twice_in_the_baseline_counts_only_once_towards_the_three_common_landmarks`. Confirmed with a throw-away probe (`accepted: 0 0`).
+9. **JD036 on a scaffolded recipe, only visible once the severity is raised.** With every `JD0xx` set to `warning` in `.editorconfig`, the only diagnostic in the whole project was `AnyMeasuredVolume.cs(37,16): warning JD036: This floating-point dummy declares no range: one draw in ten spans the whole type` on the scaffolded `Any.Double().GreaterThanOrEqualTo(0d)` for `uncertaintyMm3`. In context it is a false positive: the same generator draws it through `Any.OrderedPair(..., volume, strict: true)`, which bounds it below the volume (<= 20000), so the "whole type" tenth draw cannot happen. I replaced it by `Between(0d, MeasuredVolume.MaxVolumeMm3)` (honest and quiet), but the tool's own output trips the library's rule. The default build shows nothing (Info), which is why I only found it by raising severities.
+10. **Unexpected failure messages were good.** When my own `AnyCtExam` bounded the spacing by a pinned thickness of 0 or -1: `ConflictingAnyConstraintException : Cannot apply LessThanOrEqualTo(0) because Between(0.1, 10) already requires values greater than or equal to 0.1.` plus `[JustDummies] These arbitrary values were seeded with 144815853. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 144815853)].` Both told me exactly where my generator, not the domain, was wrong. I fixed the generator so a thickness the exam refuses anyway never bounds the spacing and the refusal stays the exam's own.
+11. **`WithX(Func<...>)` and `WithX(value)` are easy to confuse once generics are involved.** `Any.TrackedNodule().WithPatientId(null)` is ambiguous between `string` and `Func<AnyString, AnyString>` (CS0121); I needed `(string)null!` (observed: `error CS0121: The call is ambiguous between ... 'AnyTrackedNodule.WithPatientId(string)' and 'AnyTrackedNodule.WithPatientId(Func<AnyString, AnyString>)'`). The page documents the cast for nullable reference *pins*, not for a null passed to a non-nullable one. Trivial.
 
 ## What worked well
-- The `TODO_verify_…` lines that stop the build, with the guard quoted and `file, line`: excellent.
-- `--entry-point any` on net10.0: `Any.CtExam()` beside `Any.Int32()` reads beautifully.
-- `With…(Func<AnyX, AnyX>)` refinement + reusable `Func` recipes (`Thorax.Inside`) compose cleanly through
-  three levels (`TrackedNodule → baseline → exam/segmentation`).
-- `Any.StringMatching("CT[0-9]{8}").DifferentFrom(previous)` for "another accession": one line.
-- `Any.SetOf(Any.Enum<…>()).WithCount(3)` + `Any.Enum<…>().Except(set)` express "shared vs. extra
-  landmark" exactly. `Any.Combine` with a zipping composer gave distinctness by construction.
-- `[assembly: Reproducible]` + the seed line in test output: zero ceremony.
-- Analyzers stayed silent on this code (no false positive).
+- The entry point (`--entry-point any`, `Any.CtExam().WithAcquiredOn(...)`) reads like the domain. Test bodies say "a next-day follow-up of this nodule" and nothing else; it removed all the construction noise of an aggregate that needs an exam, a spacing, a segmentation and landmarks.
+- The two-flavour `With...` (pin / lambda over the valid base) made the "dummy vs significant" split visible in every arrange: `Any.VoxelSpacing().WithSliceMm(1.25)` pins the one edge the rule is about and leaves the in-plane edges drawn; `Any.CtExam().WithSliceThicknessMm(2.9).WithSpacing(slice3)` is a refusal test that names its two significant values.
+- `any` recognised and paired the ordered parameters by itself, pins included, and its recap told me per parameter which ones to verify, with the exact line of the guard it could not read. The "build stops here on purpose" design worked: nothing silently wrong reached a run.
+- `[assembly: Reproducible]` + the seed in the failure output + the analyzers' wording made the 3 failures I caused myself (friction 10) a one-minute fix, and the suite stayed green over 52 repeated runs.
+- `Any.DictionaryOf(kinds, points).WithCountBetween(0, 8)` is the right tool for "distinct kinds, each with a value" and was found in the collections page in one search.
+- The docs' discipline about what is a dummy matches how the domain splits: nothing in an assertion is drawn, every boundary (`2000.001`, `20_000.001`, 25 % exactly, difference == combined uncertainty) is a literal on each side.
 
 ## Fluency: 4 / 5
-The DSL and the scaffold-then-own model are a pleasure once the bases are right. One point lost because a
-domain like this (bounded doubles, coupled parameters) makes `any` mark or silently miss most guards, so
-roughly half the effort went into hand-writing bases the tool could have read (`a < lo || a > hi`).
+Everything that is a single value object or a direct order scaffolds, compiles and reads very well, and the failure/seed reporting is excellent; I would have scored 5 on those. The score drops one point because this domain is made of cross-parameter rules (slice <= thickness, volume cap by spacing, spacing equality across exam and segmentation), and for those the tool correctly stops but leaves the whole pin/lambda surface to be re-implemented by hand; plus the `dotnet test` / MTP setup gap on .NET 10 and a helper-with-argument guard that `any` could not read although a nearly identical idiom is the documented example.

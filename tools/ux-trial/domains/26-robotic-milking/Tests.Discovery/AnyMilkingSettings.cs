@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate MilkingSettings --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,12 +19,19 @@ namespace RoboticMilking.Domain;
 /// </summary>
 public sealed partial class AnyMilkingSettings : IAny<MilkingSettings> {
 
-    private readonly IAny<TimeSpan> _cleaningTime;
-    private readonly IAny<TimeSpan> _letDownDelay;
-    private readonly IAny<decimal>  _vacuumKpa;
-    private readonly IAny<decimal>  _detachFlowThreshold;
-    private readonly IAny<int>      _maxAttachAttempts;
-    private readonly IAny<TimeSpan> _minimumInterval;
+    private IAny<TimeSpan> _cleaningTime;
+    private IAny<TimeSpan> _letDownDelay;
+    private IAny<decimal>  _vacuumKpa;
+    private IAny<decimal>  _detachFlowThreshold;
+    private IAny<int>      _maxAttachAttempts;
+    private IAny<TimeSpan> _minimumInterval;
+
+    private AnyTimeSpan _cleaningTimeRecipe;
+    private AnyTimeSpan _letDownDelayRecipe;
+    private AnyDecimal  _vacuumKpaRecipe;
+    private AnyDecimal  _detachFlowThresholdRecipe;
+    private AnyInt32    _maxAttachAttemptsRecipe;
+    private AnyTimeSpan _minimumIntervalRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyMilkingSettings()
@@ -32,9 +43,7 @@ public sealed partial class AnyMilkingSettings : IAny<MilkingSettings> {
                minimumInterval:     AnyValidMinimumInterval()) { }
 
     private static AnyTimeSpan AnyValidCleaningTime() {
-        // The domain allows 5 s, but 4 x cleaningTime + letDownDelay >= 30 s ties it to the delay.
-        // From 7.5 s up, any delay satisfies the rule, so the cross-field rule holds by construction.
-        return Any.TimeSpan().Between(TimeSpan.FromSeconds(7.5), TimeSpan.FromSeconds(30));
+        return Any.TimeSpan().Between(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30));
     }
 
     private static AnyTimeSpan AnyValidLetDownDelay() {
@@ -57,102 +66,193 @@ public sealed partial class AnyMilkingSettings : IAny<MilkingSettings> {
         return Any.TimeSpan().Between(TimeSpan.FromHours(4), TimeSpan.FromHours(12));
     }
 
-    private AnyMilkingSettings(IAny<TimeSpan> cleaningTime,
-                               IAny<TimeSpan> letDownDelay,
-                               IAny<decimal>  vacuumKpa,
-                               IAny<decimal>  detachFlowThreshold,
-                               IAny<int>      maxAttachAttempts,
-                               IAny<TimeSpan> minimumInterval) {
-        _cleaningTime        = cleaningTime;
-        _letDownDelay        = letDownDelay;
-        _vacuumKpa           = vacuumKpa;
-        _detachFlowThreshold = detachFlowThreshold;
-        _maxAttachAttempts   = maxAttachAttempts;
-        _minimumInterval     = minimumInterval;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyMilkingSettings(AnyTimeSpan cleaningTime,
+                               AnyTimeSpan letDownDelay,
+                               AnyDecimal  vacuumKpa,
+                               AnyDecimal  detachFlowThreshold,
+                               AnyInt32    maxAttachAttempts,
+                               AnyTimeSpan minimumInterval) {
+        _cleaningTime              = cleaningTime;
+        _cleaningTimeRecipe        = cleaningTime;
+        _letDownDelay              = letDownDelay;
+        _letDownDelayRecipe        = letDownDelay;
+        _vacuumKpa                 = vacuumKpa;
+        _vacuumKpaRecipe           = vacuumKpa;
+        _detachFlowThreshold       = detachFlowThreshold;
+        _detachFlowThresholdRecipe = detachFlowThreshold;
+        _maxAttachAttempts         = maxAttachAttempts;
+        _maxAttachAttemptsRecipe   = maxAttachAttempts;
+        _minimumInterval           = minimumInterval;
+        _minimumIntervalRecipe     = minimumInterval;
     }
 
-    /// <summary>Pins <c>cleaningTime</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyMilkingSettings(AnyMilkingSettings from) {
+        _cleaningTime              = from._cleaningTime;
+        _cleaningTimeRecipe        = from._cleaningTimeRecipe;
+        _letDownDelay              = from._letDownDelay;
+        _letDownDelayRecipe        = from._letDownDelayRecipe;
+        _vacuumKpa                 = from._vacuumKpa;
+        _vacuumKpaRecipe           = from._vacuumKpaRecipe;
+        _detachFlowThreshold       = from._detachFlowThreshold;
+        _detachFlowThresholdRecipe = from._detachFlowThresholdRecipe;
+        _maxAttachAttempts         = from._maxAttachAttempts;
+        _maxAttachAttemptsRecipe   = from._maxAttachAttemptsRecipe;
+        _minimumInterval           = from._minimumInterval;
+        _minimumIntervalRecipe     = from._minimumIntervalRecipe;
+    }
+
+    /// <summary>Pins <c>cleaningTime</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSettings WithCleaningTime(TimeSpan value) {
-        return new AnyMilkingSettings(new FixedValue<TimeSpan>(value), _letDownDelay, _vacuumKpa, _detachFlowThreshold, _maxAttachAttempts, _minimumInterval);
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._cleaningTime = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>cleaningTime</c> from <c>AnyValidCleaningTime()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>cleaningTime</c> is drawn from — <c>AnyValidCleaningTime()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTimeSpan, AnyTimeSpan&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSettings WithCleaningTime(Func<AnyTimeSpan, AnyTimeSpan> configure) {
-        return new AnyMilkingSettings(configure(AnyValidCleaningTime()), _letDownDelay, _vacuumKpa, _detachFlowThreshold, _maxAttachAttempts, _minimumInterval);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._cleaningTimeRecipe = configure(_cleaningTimeRecipe);
+        copy._cleaningTime       = copy._cleaningTimeRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>letDownDelay</c> to a fixed value.</summary>
+    /// <summary>Pins <c>letDownDelay</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSettings WithLetDownDelay(TimeSpan value) {
-        return new AnyMilkingSettings(_cleaningTime, new FixedValue<TimeSpan>(value), _vacuumKpa, _detachFlowThreshold, _maxAttachAttempts, _minimumInterval);
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._letDownDelay = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>letDownDelay</c> from <c>AnyValidLetDownDelay()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>letDownDelay</c> is drawn from — <c>AnyValidLetDownDelay()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTimeSpan, AnyTimeSpan&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSettings WithLetDownDelay(Func<AnyTimeSpan, AnyTimeSpan> configure) {
-        return new AnyMilkingSettings(_cleaningTime, configure(AnyValidLetDownDelay()), _vacuumKpa, _detachFlowThreshold, _maxAttachAttempts, _minimumInterval);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._letDownDelayRecipe = configure(_letDownDelayRecipe);
+        copy._letDownDelay       = copy._letDownDelayRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>vacuumKpa</c> to a fixed value.</summary>
+    /// <summary>Pins <c>vacuumKpa</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSettings WithVacuumKpa(decimal value) {
-        return new AnyMilkingSettings(_cleaningTime, _letDownDelay, new FixedValue<decimal>(value), _detachFlowThreshold, _maxAttachAttempts, _minimumInterval);
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._vacuumKpa = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>vacuumKpa</c> from <c>AnyValidVacuumKpa()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>vacuumKpa</c> is drawn from — <c>AnyValidVacuumKpa()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSettings WithVacuumKpa(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyMilkingSettings(_cleaningTime, _letDownDelay, configure(AnyValidVacuumKpa()), _detachFlowThreshold, _maxAttachAttempts, _minimumInterval);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._vacuumKpaRecipe = configure(_vacuumKpaRecipe);
+        copy._vacuumKpa       = copy._vacuumKpaRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>detachFlowThreshold</c> to a fixed value.</summary>
+    /// <summary>Pins <c>detachFlowThreshold</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSettings WithDetachFlowThreshold(decimal value) {
-        return new AnyMilkingSettings(_cleaningTime, _letDownDelay, _vacuumKpa, new FixedValue<decimal>(value), _maxAttachAttempts, _minimumInterval);
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._detachFlowThreshold = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>detachFlowThreshold</c> from <c>AnyValidDetachFlowThreshold()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>detachFlowThreshold</c> is drawn from — <c>AnyValidDetachFlowThreshold()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSettings WithDetachFlowThreshold(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyMilkingSettings(_cleaningTime, _letDownDelay, _vacuumKpa, configure(AnyValidDetachFlowThreshold()), _maxAttachAttempts, _minimumInterval);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._detachFlowThresholdRecipe = configure(_detachFlowThresholdRecipe);
+        copy._detachFlowThreshold       = copy._detachFlowThresholdRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>maxAttachAttempts</c> to a fixed value.</summary>
+    /// <summary>Pins <c>maxAttachAttempts</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSettings WithMaxAttachAttempts(int value) {
-        return new AnyMilkingSettings(_cleaningTime, _letDownDelay, _vacuumKpa, _detachFlowThreshold, new FixedValue<int>(value), _minimumInterval);
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._maxAttachAttempts = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>maxAttachAttempts</c> from <c>AnyValidMaxAttachAttempts()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>maxAttachAttempts</c> is drawn from — <c>AnyValidMaxAttachAttempts()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSettings WithMaxAttachAttempts(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyMilkingSettings(_cleaningTime, _letDownDelay, _vacuumKpa, _detachFlowThreshold, configure(AnyValidMaxAttachAttempts()), _minimumInterval);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._maxAttachAttemptsRecipe = configure(_maxAttachAttemptsRecipe);
+        copy._maxAttachAttempts       = copy._maxAttachAttemptsRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>minimumInterval</c> to a fixed value.</summary>
+    /// <summary>Pins <c>minimumInterval</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSettings WithMinimumInterval(TimeSpan value) {
-        return new AnyMilkingSettings(_cleaningTime, _letDownDelay, _vacuumKpa, _detachFlowThreshold, _maxAttachAttempts, new FixedValue<TimeSpan>(value));
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._minimumInterval = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>minimumInterval</c> from <c>AnyValidMinimumInterval()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>minimumInterval</c> is drawn from — <c>AnyValidMinimumInterval()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTimeSpan, AnyTimeSpan&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSettings WithMinimumInterval(Func<AnyTimeSpan, AnyTimeSpan> configure) {
-        return new AnyMilkingSettings(_cleaningTime, _letDownDelay, _vacuumKpa, _detachFlowThreshold, _maxAttachAttempts, configure(AnyValidMinimumInterval()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSettings copy = new AnyMilkingSettings(this);
+
+        copy._minimumIntervalRecipe = configure(_minimumIntervalRecipe);
+        copy._minimumInterval       = copy._minimumIntervalRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="MilkingSettings" />.</summary>
     public MilkingSettings Generate() {
-        return new MilkingSettings(_cleaningTime.Generate(),
-                                   _letDownDelay.Generate(),
+        // The tie: four teats at cleaningTime plus the delay stimulate for at least MinimumLetDownStimulation.
+        // Only the first sixth of the cleaning range can break it, so a few redraws find a pair that holds; pinned
+        // values are honoured, and a pinned pair that breaks the tie reaches the constructor, which refuses it.
+        TimeSpan cleaningTime = _cleaningTime.Generate();
+        TimeSpan letDownDelay = _letDownDelay.Generate();
+        for (int attempt = 0; attempt < 50 && (cleaningTime * 4) + letDownDelay < MilkingSettings.MinimumLetDownStimulation; attempt++) {
+            cleaningTime = _cleaningTime.Generate();
+            letDownDelay = _letDownDelay.Generate();
+        }
+
+        return new MilkingSettings(cleaningTime,
+                                   letDownDelay,
                                    _vacuumKpa.Generate(),
                                    _detachFlowThreshold.Generate(),
                                    _maxAttachAttempts.Generate(),
                                    _minimumInterval.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

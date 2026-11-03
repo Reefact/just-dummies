@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Route --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 using System.Collections.Generic;
@@ -16,11 +20,17 @@ namespace RailwayInterlocking.Domain;
 /// </summary>
 public sealed partial class AnyRoute : IAny<Route> {
 
-    private readonly IAny<string>                      _name;
-    private readonly IAny<string>                      _entrySignal;
-    private readonly IAny<string>                      _exitSignal;
-    private readonly IAny<IReadOnlyList<SectionId>>    _sections;
-    private readonly IAny<IReadOnlyList<PointSetting>> _pointSettings;
+    private IAny<string>                      _name;
+    private IAny<string>                      _entrySignal;
+    private IAny<string>                      _exitSignal;
+    private IAny<IReadOnlyList<SectionId>>    _sections;
+    private IAny<IReadOnlyList<PointSetting>> _pointSettings;
+
+    private AnyString             _nameRecipe;
+    private AnyString             _entrySignalRecipe;
+    private AnyString             _exitSignalRecipe;
+    private AnyList<SectionId>    _sectionsRecipe;
+    private AnyList<PointSetting> _pointSettingsRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyRoute()
@@ -34,109 +44,170 @@ public sealed partial class AnyRoute : IAny<Route> {
         return Any.String().NotBlank();
     }
 
-    private static AnyPattern AnyValidEntrySignal() {
-        // Route refuses entry == exit. A cross-parameter rule has no leaf constraint, so the two signals
-        // are drawn from disjoint shapes ("SE..." prefixes) and can never be equal.
-        return Any.StringMatching("SE[0-9]{1,3}");
+    private static AnyString AnyValidEntrySignal() {
+        return Any.String().NotBlank();
     }
 
-    private static AnyPattern AnyValidExitSignal() {
-        // Route refuses entry == exit. A cross-parameter rule has no leaf constraint, so the two signals
-        // are drawn from disjoint shapes ("SX..." prefixes) and can never be equal.
-        return Any.StringMatching("SX[0-9]{1,3}");
+    private static AnyString AnyValidExitSignal() {
+        return Any.String().NotBlank();
     }
 
     private static AnyList<SectionId> AnyValidSections() {
-        return Any.ListOf(new AnySectionId()).NonEmpty().Distinct();
+        return Any.ListOf(new AnySectionId()).WithCountBetween(1, 6).Distinct();
     }
 
     private static AnyList<PointSetting> AnyValidPointSettings() {
-        return Any.ListOf(new AnyPointSetting()).Distinct(PointNameComparer.Instance);
+        return Any.ListOf(new AnyPointSetting()).WithMaxCount(4).DistinctBy(setting => setting.PointName);
     }
 
-    private AnyRoute(IAny<string>                      name,
-                     IAny<string>                      entrySignal,
-                     IAny<string>                      exitSignal,
-                     IAny<IReadOnlyList<SectionId>>    sections,
-                     IAny<IReadOnlyList<PointSetting>> pointSettings) {
-        _name          = name;
-        _entrySignal   = entrySignal;
-        _exitSignal    = exitSignal;
-        _sections      = sections;
-        _pointSettings = pointSettings;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyRoute(AnyString             name,
+                     AnyString             entrySignal,
+                     AnyString             exitSignal,
+                     AnyList<SectionId>    sections,
+                     AnyList<PointSetting> pointSettings) {
+        _name                = name;
+        _nameRecipe          = name;
+        _entrySignal         = entrySignal;
+        _entrySignalRecipe   = entrySignal;
+        _exitSignal          = exitSignal;
+        _exitSignalRecipe    = exitSignal;
+        _sections            = sections;
+        _sectionsRecipe      = sections;
+        _pointSettings       = pointSettings;
+        _pointSettingsRecipe = pointSettings;
     }
 
-    /// <summary>Pins <c>name</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyRoute(AnyRoute from) {
+        _name                = from._name;
+        _nameRecipe          = from._nameRecipe;
+        _entrySignal         = from._entrySignal;
+        _entrySignalRecipe   = from._entrySignalRecipe;
+        _exitSignal          = from._exitSignal;
+        _exitSignalRecipe    = from._exitSignalRecipe;
+        _sections            = from._sections;
+        _sectionsRecipe      = from._sectionsRecipe;
+        _pointSettings       = from._pointSettings;
+        _pointSettingsRecipe = from._pointSettingsRecipe;
+    }
+
+    /// <summary>Pins <c>name</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRoute WithName(string value) {
-        return new AnyRoute(new FixedValue<string>(value), _entrySignal, _exitSignal, _sections, _pointSettings);
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._name = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>name</c> from <c>AnyValidName()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>name</c> is drawn from — <c>AnyValidName()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRoute WithName(Func<AnyString, AnyString> configure) {
-        return new AnyRoute(configure(AnyValidName()), _entrySignal, _exitSignal, _sections, _pointSettings);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._nameRecipe = configure(_nameRecipe);
+        copy._name       = copy._nameRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>entrySignal</c> to a fixed value.</summary>
+    /// <summary>Pins <c>entrySignal</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRoute WithEntrySignal(string value) {
-        return new AnyRoute(_name, new FixedValue<string>(value), _exitSignal, _sections, _pointSettings);
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._entrySignal = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>entrySignal</c> from <c>AnyValidEntrySignal()</c>, refined by <paramref name="configure" />.</summary>
-    public AnyRoute WithEntrySignal(Func<AnyPattern, AnyPattern> configure) {
-        return new AnyRoute(_name, configure(AnyValidEntrySignal()), _exitSignal, _sections, _pointSettings);
+    /// <summary>Refines the recipe <c>entrySignal</c> is drawn from — <c>AnyValidEntrySignal()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyRoute WithEntrySignal(Func<AnyString, AnyString> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._entrySignalRecipe = configure(_entrySignalRecipe);
+        copy._entrySignal       = copy._entrySignalRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>exitSignal</c> to a fixed value.</summary>
+    /// <summary>Pins <c>exitSignal</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRoute WithExitSignal(string value) {
-        return new AnyRoute(_name, _entrySignal, new FixedValue<string>(value), _sections, _pointSettings);
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._exitSignal = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>exitSignal</c> from <c>AnyValidExitSignal()</c>, refined by <paramref name="configure" />.</summary>
-    public AnyRoute WithExitSignal(Func<AnyPattern, AnyPattern> configure) {
-        return new AnyRoute(_name, _entrySignal, configure(AnyValidExitSignal()), _sections, _pointSettings);
+    /// <summary>Refines the recipe <c>exitSignal</c> is drawn from — <c>AnyValidExitSignal()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyRoute WithExitSignal(Func<AnyString, AnyString> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._exitSignalRecipe = configure(_exitSignalRecipe);
+        copy._exitSignal       = copy._exitSignalRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>sections</c> to a fixed value.</summary>
+    /// <summary>Pins <c>sections</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRoute WithSections(IReadOnlyList<SectionId> value) {
-        return new AnyRoute(_name, _entrySignal, _exitSignal, new FixedValue<IReadOnlyList<SectionId>>(value), _pointSettings);
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._sections = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>sections</c> from <c>AnyValidSections()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>sections</c> is drawn from — <c>AnyValidSections()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;SectionId&gt;, AnyList&lt;SectionId&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRoute WithSections(Func<AnyList<SectionId>, AnyList<SectionId>> configure) {
-        return new AnyRoute(_name, _entrySignal, _exitSignal, configure(AnyValidSections()), _pointSettings);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._sectionsRecipe = configure(_sectionsRecipe);
+        copy._sections       = copy._sectionsRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>pointSettings</c> to a fixed value.</summary>
+    /// <summary>Pins <c>pointSettings</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRoute WithPointSettings(IReadOnlyList<PointSetting> value) {
-        return new AnyRoute(_name, _entrySignal, _exitSignal, _sections, new FixedValue<IReadOnlyList<PointSetting>>(value));
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._pointSettings = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>pointSettings</c> from <c>AnyValidPointSettings()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>pointSettings</c> is drawn from — <c>AnyValidPointSettings()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;PointSetting&gt;, AnyList&lt;PointSetting&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRoute WithPointSettings(Func<AnyList<PointSetting>, AnyList<PointSetting>> configure) {
-        return new AnyRoute(_name, _entrySignal, _exitSignal, _sections, configure(AnyValidPointSettings()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRoute copy = new AnyRoute(this);
+
+        copy._pointSettingsRecipe = configure(_pointSettingsRecipe);
+        copy._pointSettings       = copy._pointSettingsRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Route" />.</summary>
     public Route Generate() {
-        return new Route(_name.Generate(),
-                         _entrySignal.Generate(),
-                         _exitSignal.Generate(),
-                         _sections.Generate(),
-                         _pointSettings.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
+        return _entrySignal.Then(entry => _exitSignal.DifferentFrom(entry)
+                                                     .Then(exit => Any.Combine(_name, _sections, _pointSettings,
+                                                                               (name, sections, pointSettings) => new Route(name, entry, exit, sections, pointSettings))))
+                           .Generate();
     }
 
 }

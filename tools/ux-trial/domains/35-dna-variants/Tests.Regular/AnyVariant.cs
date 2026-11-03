@@ -1,12 +1,17 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Variant --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
+using DnaVariants.Domain;
 using JustDummies;
 
-namespace DnaVariants.Domain;
+namespace DnaVariants.Tests.Regular.Generators;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Variant" /> values. It draws from the ambient random
@@ -15,10 +20,15 @@ namespace DnaVariants.Domain;
 /// </summary>
 public sealed partial class AnyVariant : IAny<Variant> {
 
-    private readonly IAny<Accession> _accession;
-    private readonly IAny<int>       _position;
-    private readonly IAny<Allele>    _reference;
-    private readonly IAny<Allele>    _alternate;
+    private IAny<Accession> _accession;
+    private IAny<int>       _position;
+    private IAny<Allele>    _reference;
+    private IAny<Allele>    _alternate;
+
+    private AnyAccession _accessionRecipe;
+    private AnyInt32     _positionRecipe;
+    private AnyAllele    _referenceRecipe;
+    private AnyAllele    _alternateRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyVariant()
@@ -43,82 +53,130 @@ public sealed partial class AnyVariant : IAny<Variant> {
         return new AnyAllele();
     }
 
-    private AnyVariant(IAny<Accession> accession,
-                       IAny<int>       position,
-                       IAny<Allele>    reference,
-                       IAny<Allele>    alternate) {
-        _accession = accession;
-        _position  = position;
-        _reference = reference;
-        _alternate = alternate;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyVariant(AnyAccession accession,
+                       AnyInt32     position,
+                       AnyAllele    reference,
+                       AnyAllele    alternate) {
+        _accession       = accession;
+        _accessionRecipe = accession;
+        _position        = position;
+        _positionRecipe  = position;
+        _reference       = reference;
+        _referenceRecipe = reference;
+        _alternate       = alternate;
+        _alternateRecipe = alternate;
     }
 
-    /// <summary>Pins <c>accession</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyVariant(AnyVariant from) {
+        _accession       = from._accession;
+        _accessionRecipe = from._accessionRecipe;
+        _position        = from._position;
+        _positionRecipe  = from._positionRecipe;
+        _reference       = from._reference;
+        _referenceRecipe = from._referenceRecipe;
+        _alternate       = from._alternate;
+        _alternateRecipe = from._alternateRecipe;
+    }
+
+    /// <summary>Pins <c>accession</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVariant WithAccession(Accession value) {
-        return new AnyVariant(new FixedValue<Accession>(value), _position, _reference, _alternate);
+        AnyVariant copy = new AnyVariant(this);
+
+        copy._accession = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>accession</c> from <c>AnyValidAccession()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>accession</c> is drawn from — <c>AnyValidAccession()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyAccession, AnyAccession&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVariant WithAccession(Func<AnyAccession, AnyAccession> configure) {
-        return new AnyVariant(configure(AnyValidAccession()), _position, _reference, _alternate);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVariant copy = new AnyVariant(this);
+
+        copy._accessionRecipe = configure(_accessionRecipe);
+        copy._accession       = copy._accessionRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>position</c> to a fixed value.</summary>
+    /// <summary>Pins <c>position</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVariant WithPosition(int value) {
-        return new AnyVariant(_accession, new FixedValue<int>(value), _reference, _alternate);
+        AnyVariant copy = new AnyVariant(this);
+
+        copy._position = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>position</c> from <c>AnyValidPosition()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>position</c> is drawn from — <c>AnyValidPosition()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVariant WithPosition(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyVariant(_accession, configure(AnyValidPosition()), _reference, _alternate);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVariant copy = new AnyVariant(this);
+
+        copy._positionRecipe = configure(_positionRecipe);
+        copy._position       = copy._positionRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>reference</c> to a fixed value.</summary>
+    /// <summary>Pins <c>reference</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVariant WithReference(Allele value) {
-        return new AnyVariant(_accession, _position, new FixedValue<Allele>(value), _alternate);
+        AnyVariant copy = new AnyVariant(this);
+
+        copy._reference = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>reference</c> from <c>AnyValidReference()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>reference</c> is drawn from — <c>AnyValidReference()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyAllele, AnyAllele&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVariant WithReference(Func<AnyAllele, AnyAllele> configure) {
-        return new AnyVariant(_accession, _position, configure(AnyValidReference()), _alternate);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVariant copy = new AnyVariant(this);
+
+        copy._referenceRecipe = configure(_referenceRecipe);
+        copy._reference       = copy._referenceRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>alternate</c> to a fixed value.</summary>
+    /// <summary>Pins <c>alternate</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyVariant WithAlternate(Allele value) {
-        return new AnyVariant(_accession, _position, _reference, new FixedValue<Allele>(value));
+        AnyVariant copy = new AnyVariant(this);
+
+        copy._alternate = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>alternate</c> from <c>AnyValidAlternate()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>alternate</c> is drawn from — <c>AnyValidAlternate()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyAllele, AnyAllele&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyVariant WithAlternate(Func<AnyAllele, AnyAllele> configure) {
-        return new AnyVariant(_accession, _position, _reference, configure(AnyValidAlternate()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyVariant copy = new AnyVariant(this);
+
+        copy._alternateRecipe = configure(_alternateRecipe);
+        copy._alternate       = copy._alternateRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Variant" />.</summary>
     public Variant Generate() {
-        // A variant must change something: the alternate allele differs from the reference one.
-        // Both are drawn independently, so redraw the alternate a bounded number of times
-        // (a pinned pair that is equal fails in the constructor, as it should).
+        // The constructor refuses a change from an allele to itself: the alternate is drawn different from the reference.
         Allele reference = _reference.Generate();
-        Allele alternate = _alternate.Generate();
-        for (int attempt = 0; attempt < 20 && alternate.Equals(reference); attempt++) {
-            alternate = _alternate.Generate();
-        }
 
-        return new Variant(_accession.Generate(), _position.Generate(), reference, alternate);
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
+        return new Variant(_accession.Generate(),
+                           _position.Generate(),
+                           reference,
+                           _alternate.DifferentFrom(reference).Generate());
     }
 
 }

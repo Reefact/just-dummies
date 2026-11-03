@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate MilkingSession --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -15,10 +19,15 @@ namespace RoboticMilking.Domain;
 /// </summary>
 public sealed partial class AnyMilkingSession : IAny<MilkingSession> {
 
-    private readonly IAny<Animal>          _animal;
-    private readonly IAny<int>             _boxNumber;
-    private readonly IAny<DateTimeOffset>  _startedAt;
-    private readonly IAny<MilkingSettings> _settings;
+    private IAny<Animal>          _animal;
+    private IAny<int>             _boxNumber;
+    private IAny<DateTimeOffset>  _startedAt;
+    private IAny<MilkingSettings> _settings;
+
+    private AnyAnimal          _animalRecipe;
+    private AnyInt32           _boxNumberRecipe;
+    private AnyDateTimeOffset  _startedAtRecipe;
+    private AnyMilkingSettings _settingsRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyMilkingSession()
@@ -28,96 +37,153 @@ public sealed partial class AnyMilkingSession : IAny<MilkingSession> {
                settings:  AnyValidSettings()) { }
 
     private static AnyAnimal AnyValidAnimal() {
-        // The session refuses a cow milked after it starts or less than MinimumInterval before it, a rule
-        // between animal, startedAt and settings. The base draws a cow the robot never milked; a test about
-        // the interval pins LastMilkedAt itself.
-        return new AnyAnimal().WithLastMilkedAt((DateTimeOffset?)null);
+        // Realistic last-milked dates, so that "last milked + minimum interval" never overflows the type.
+        return new AnyAnimal().WithLastMilkedAt(d => d.Between(new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                                                               new DateTimeOffset(2035, 1, 1, 0, 0, 0, TimeSpan.Zero)));
     }
 
     private static AnyInt32 AnyValidBoxNumber() {
-        return Any.Int32().Positive().LessThanOrEqualTo(8);
+        return Any.Int32().Positive().LessThanOrEqualTo(MilkingSession.BoxCount);
     }
 
     private static AnyDateTimeOffset AnyValidStartedAt() {
-        // Not a constructor guard: a session is a moment in a robot's working life, and tests step from it.
-        return Any.DateTimeOffset().Between(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                                            new DateTimeOffset(2100, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        return Any.DateTimeOffset().Between(new DateTimeOffset(2036, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                                            new DateTimeOffset(2040, 1, 1, 0, 0, 0, TimeSpan.Zero));
     }
 
     private static AnyMilkingSettings AnyValidSettings() {
         return new AnyMilkingSettings();
     }
 
-    private AnyMilkingSession(IAny<Animal>          animal,
-                              IAny<int>             boxNumber,
-                              IAny<DateTimeOffset>  startedAt,
-                              IAny<MilkingSettings> settings) {
-        _animal    = animal;
-        _boxNumber = boxNumber;
-        _startedAt = startedAt;
-        _settings  = settings;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyMilkingSession(AnyAnimal          animal,
+                              AnyInt32           boxNumber,
+                              AnyDateTimeOffset  startedAt,
+                              AnyMilkingSettings settings) {
+        _animal          = animal;
+        _animalRecipe    = animal;
+        _boxNumber       = boxNumber;
+        _boxNumberRecipe = boxNumber;
+        _startedAt       = startedAt;
+        _startedAtRecipe = startedAt;
+        _settings        = settings;
+        _settingsRecipe  = settings;
     }
 
-    /// <summary>Pins <c>animal</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyMilkingSession(AnyMilkingSession from) {
+        _animal          = from._animal;
+        _animalRecipe    = from._animalRecipe;
+        _boxNumber       = from._boxNumber;
+        _boxNumberRecipe = from._boxNumberRecipe;
+        _startedAt       = from._startedAt;
+        _startedAtRecipe = from._startedAtRecipe;
+        _settings        = from._settings;
+        _settingsRecipe  = from._settingsRecipe;
+    }
+
+    /// <summary>Pins <c>animal</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSession WithAnimal(Animal value) {
-        return new AnyMilkingSession(new FixedValue<Animal>(value), _boxNumber, _startedAt, _settings);
+        AnyMilkingSession copy = new AnyMilkingSession(this);
+
+        copy._animal = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>animal</c> from <c>AnyValidAnimal()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>animal</c> is drawn from — <c>AnyValidAnimal()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyAnimal, AnyAnimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSession WithAnimal(Func<AnyAnimal, AnyAnimal> configure) {
-        return new AnyMilkingSession(configure(AnyValidAnimal()), _boxNumber, _startedAt, _settings);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSession copy = new AnyMilkingSession(this);
+
+        copy._animalRecipe = configure(_animalRecipe);
+        copy._animal       = copy._animalRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>boxNumber</c> to a fixed value.</summary>
+    /// <summary>Pins <c>boxNumber</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSession WithBoxNumber(int value) {
-        return new AnyMilkingSession(_animal, new FixedValue<int>(value), _startedAt, _settings);
+        AnyMilkingSession copy = new AnyMilkingSession(this);
+
+        copy._boxNumber = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>boxNumber</c> from <c>AnyValidBoxNumber()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>boxNumber</c> is drawn from — <c>AnyValidBoxNumber()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSession WithBoxNumber(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyMilkingSession(_animal, configure(AnyValidBoxNumber()), _startedAt, _settings);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSession copy = new AnyMilkingSession(this);
+
+        copy._boxNumberRecipe = configure(_boxNumberRecipe);
+        copy._boxNumber       = copy._boxNumberRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>startedAt</c> to a fixed value.</summary>
+    /// <summary>Pins <c>startedAt</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSession WithStartedAt(DateTimeOffset value) {
-        return new AnyMilkingSession(_animal, _boxNumber, new FixedValue<DateTimeOffset>(value), _settings);
+        AnyMilkingSession copy = new AnyMilkingSession(this);
+
+        copy._startedAt = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>startedAt</c> from <c>AnyValidStartedAt()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>startedAt</c> is drawn from — <c>AnyValidStartedAt()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDateTimeOffset, AnyDateTimeOffset&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSession WithStartedAt(Func<AnyDateTimeOffset, AnyDateTimeOffset> configure) {
-        return new AnyMilkingSession(_animal, _boxNumber, configure(AnyValidStartedAt()), _settings);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSession copy = new AnyMilkingSession(this);
+
+        copy._startedAtRecipe = configure(_startedAtRecipe);
+        copy._startedAt       = copy._startedAtRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>settings</c> to a fixed value.</summary>
+    /// <summary>Pins <c>settings</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMilkingSession WithSettings(MilkingSettings value) {
-        return new AnyMilkingSession(_animal, _boxNumber, _startedAt, new FixedValue<MilkingSettings>(value));
+        AnyMilkingSession copy = new AnyMilkingSession(this);
+
+        copy._settings = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>settings</c> from <c>AnyValidSettings()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>settings</c> is drawn from — <c>AnyValidSettings()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyMilkingSettings, AnyMilkingSettings&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMilkingSession WithSettings(Func<AnyMilkingSettings, AnyMilkingSettings> configure) {
-        return new AnyMilkingSession(_animal, _boxNumber, _startedAt, configure(AnyValidSettings()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyMilkingSession copy = new AnyMilkingSession(this);
+
+        copy._settingsRecipe = configure(_settingsRecipe);
+        copy._settings       = copy._settingsRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="MilkingSession" />.</summary>
     public MilkingSession Generate() {
-        return new MilkingSession(_animal.Generate(),
+        // The tie: a cow last milked at L may only start a session at L + MinimumInterval or later (not before L).
+        // The start is derived from the cow and the settings; the drawn startedAt serves a cow never milked.
+        Animal           animal   = _animal.Generate();
+        MilkingSettings  settings = _settings.Generate();
+        DateTimeOffset   startedAt = animal.LastMilkedAt is { } last
+            ? last + settings.MinimumInterval + Any.TimeSpan().Between(TimeSpan.Zero, TimeSpan.FromDays(2)).Generate()
+            : _startedAt.Generate();
+
+        return new MilkingSession(animal,
                                   _boxNumber.Generate(),
-                                  _startedAt.Generate(),
-                                  _settings.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
+                                  startedAt,
+                                  settings);
     }
 
 }

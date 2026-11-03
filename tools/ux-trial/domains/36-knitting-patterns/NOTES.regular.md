@@ -1,62 +1,44 @@
-# Knitting patterns — regular developer notes
+# Regular notes — 36 knitting patterns
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
+- Read MODEL.md and all of `Domain/` first. Then, as a reminder, the docs: `PROJECT-README.md`, `guides/getting-started`, `packages/justdummies-xunit`, `packages/justdummies-cli` (the whole "What the last column means", "Through a graph of aggregates", "Adjusting a parameter" and "When a guard ties two parameters" sections), `guides/composition` (to `.Then`), and parts of `generators/enums-and-choices` and `generators/collections`.
+- Created `Tests.Regular/KnittingPatterns.Tests.Regular.csproj` from the template. `dotnet restore`, then one command for all nine types:
+  `any generate StitchRun StitchRepeat RowInstruction Gauge PatternSection KnittingPattern ExpandedRow Fabric StitchCountMismatchException --entry-point any`
+  (entry points `Any.StitchRun()` etc. wanted for a readable arrange; net10.0 so C# 14 is fine).
+- Result of the scaffold: `AnyStitchRun`, `AnyFabric` compiled untouched; `AnyStitchRepeat`, `AnyGauge`, `AnyExpandedRow`, `AnyPatternSection`, `AnyKnittingPattern`, `AnyStitchCountMismatchException` stopped the build with `to verify`; `AnyRowInstruction` had a `TODO` for the abstract `IRowElement`.
+- Generators completed by hand:
+  - `AnyStitchRepeat`: bounded the base so the 10 000-operation limit holds by construction (<= 5 runs of <= 100 stitches, `times` 2..20 -> at most 500 x 20); deleted the two `TODO_verify` lines.
+  - `AnyGauge`: kept the two scaffolded recipes, derived the rows in `Generate()` from the drawn stitch gauge (`GreaterThanOrEqualTo(s/2).LessThanOrEqualTo(s*2)` on the rows recipe) and added a `_rowsPinned` flag so `WithRowsPer10Cm(value)` still means what it says.
+  - `AnyIRowElement` (new, by hand): stitch run or repeat, via `Any.Boolean()`.
+  - `AnyRowInstruction`: elements = `Any.ListOf(new AnyIRowElement()).WithCountBetween(1, 4)`; the printed count is no longer an independent draw: removed its recipe/pin/refine members and wrote `WithExpectedStitchCount(int?)`, `WithoutExpectedStitchCount()`, `WithStatedStitchCount()`; `Generate()` prints either nothing or exactly what the elements produce.
+  - `AnyExpandedRow`: `stitchesBefore` is derived from the operations (`Generate()`), removed its members; operations recipe `ListOf(Enum<StitchKind>).WithCountBetween(1,30).ContainingAny(Enum.DifferentFrom(YarnOver))` so a row always consumes something.
+  - `AnyPatternSection`: rewritten almost whole (a run of consecutive rows on alternating sides: first row, first side, count, row template) because "consecutive" is a rule between elements of a list.
+  - `AnyContiguousSections` (new, by hand) and `AnyKnittingPattern`: first section at row 1, sections contiguous, names distinct case-insensitively (`Distinct(StringComparer.OrdinalIgnoreCase)`), each section's first row on the side the fabric presents.
+  - `AnyStitchCountMismatchException`: only deleted three `TODO_verify` lines (see friction 5).
+- Tests written (10 classes, 119 methods, 164 cases): `StitchKindTests` (table of consumes/produces, increase/decrease direction), `StitchRunTests`, `StitchRepeatTests` (arithmetic, expansion order, defensive copy, 10 000-operation boundary 20 x 500 / 21 x 500, multi-run limit, refusals), `RowInstructionTests` (sums, expansion, printed count equal / different / below one, refusals, yarn-over-only row), `GaugeTests` (corner cases of the plausibility rule, range refusals, rounding half up for stitches/rows, minimum 1, `WidthOf`), `ExpandedRowTests`, `PatternSectionTests` (trim, 60/61 characters, jumps, same side twice, refusals), `KnittingPatternTests` (a hand-computed 6-row hat expanded row by row, mismatch / wrong-side patterns that construct but do not expand, gaps, overlaps, duplicate names by case and padding, finished width), `FabricTests` (state after Work, refusals and state left untouched, check order: sequence before side before count), `StitchCountMismatchExceptionTests`.
+  The numbers the test is about are literals (`12`, `13`, `9`, `18 sts`); title, gauge rows, section names, irrelevant cast-ons and "any invalid count" values are drawn.
+- `[assembly: Reproducible]` in `AssemblyInfo.cs`.
+- Result: 164 cases, 161 green, 3 skipped as domain defects (below). First run: 2 failed — one was my own arithmetic slip in a test (yo + k2tog is neutral; fixed), one was a real domain defect. Then 3 + 12 + 40 (55 in total) fresh-seed runs, all green (161 passed, 3 skipped).
 
-- Created `Tests.Regular`, restored, scaffolded six types in one run:
-  `any generate StitchRun StitchRepeat RowInstruction Gauge PatternSection KnittingPattern --entry-point static:Arbitrary`.
-- Resolved every `TODO_verify_…` line, then wrote 30 test methods (37 cases with the theory rows)
-  over stitch arithmetic, repeats, rows, the fabric, gauge maths, sections and pattern expansion.
-- `[assembly: Reproducible]`, a small `Rows` helper (`K(2)`, `Rep(8, Yo(1), K2Tog(1))`, `Row(5, …)`)
-  so written patterns stay readable; drawn values are titles, section names, gauges the assertion
-  does not read, row contents in the sequencing tests.
-- `dotnet test --project Tests.Regular`: 37/37 green, eight consecutive runs.
+## Frictions and surprises, in order
+1. **`any generate` before `dotnet restore`.** I ran the command right after creating the csproj: `✗ StitchRun: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. The message is clear and I fixed it in one step, but the docs' "Run it from your test project" never mention that the project must be restored (and built?) first. Cost: one round trip. Also, the first call for the nine types printed that error only for the first type and then stopped; fine.
+2. **`dotnet test --project Tests.Regular` does not work out of the box on the .NET 10 SDK.** Exact output: `MSBUILD : error MSB1001: Unknown switch. ... --project Tests.Regular`; the positional form `dotnet test Tests.Regular` then fails with `Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. If you use dotnet test, you should opt-in to the new dotnet test experience`. The fix is a `global.json` containing `{"test": {"runner": "Microsoft.Testing.Platform"}}`, which I put at the root of my workspace. Neither `getting-started` nor `justdummies-xunit` says anything about it, although they require `xunit.v3` 4.0.2 and the docs' own `dotnet test --solution` form is the MTP one. A newcomer on SDK 10 would be stuck for a while.
+3. **A scaffold is a start, not a finish, when the domain ties values together.** Five of nine types (`Gauge`, `RowInstruction`, `ExpandedRow`, `PatternSection`, `KnittingPattern`) have rules between parameters or between list elements (rows within half to twice the stitches, printed count = what the elements produce, stitchesBefore = what the operations consume, consecutive rows, contiguous sections). The tool correctly refuses to guess (`to verify`, "The file will not compile until you resolve it. That is deliberate.") and the docs' four forms helped, but each needed real design work. What cost most: the scaffold keeps generating the `With…(value)` pin and the `With…(Func<…>)` refiner for a parameter I now derive in `Generate()`. I had to delete them by hand (ExpandedRow `stitchesBefore`, RowInstruction `expectedStitchCount`) or they would have been dead API that silently does nothing (the docs warn about it: "WithEnd(…) sets a field your Generate() does not read"). A way to say "this parameter is derived" in the file, or a `--derived stitchesBefore` option, would save the cleanup. For the list-shaped rules (`PatternSection.rows`, `KnittingPattern.sections`) there is no form in the docs: I ended up replacing the list recipe with a small hand-written generator of the whole run.
+4. **No way to choose among generators.** For `IRowElement` the docs show `Any.OneOf<IRowElement>(new Stitch(), new Increase())` with values. I needed to choose between two *generators* (`AnyStitchRun`, `AnyStitchRepeat`); `Any.OneOf` with generators is exactly the JD012 trap. I wrote `Any.Boolean().Generate() ? _run.Generate() : _repeat.Generate()` in `Generate()`. Works, but I wondered for a minute whether there was a `Any.OneOf(IAny<T>, IAny<T>)`-like combinator I had missed; the docs' `enums-and-choices` page does not say either way.
+5. **False "unread guard" on an exception's message.** `StitchCountMismatchException(int rowNumber, int liveStitches, int requiredStitches) : base($"Row {rowNumber} needs ...")` produced `to verify` on all three parameters: `unread guard at StitchCountMismatchException.cs, line 7: $"Row {rowNumber} needs {requiredStitches} stitches but the needle holds {liveStitches}."`, and the generated file would not compile until I deleted three `TODO_verify` pairs. There is no guard and no throw here; the interpolated string passed to `base(...)` is not a rejection. Expected: plain `Any.Int32()` rows with no mark. I just deleted the lines, but a reader of the recap is told a guard exists where none does.
+6. **Scaffolded base for `StitchRepeat` can fail at run time even after I would have deleted the TODO.** `runs` = `Any.ListOf(new AnyStitchRun()).NonEmpty()` (runs up to 500 stitches each, any number of runs) and `times` = `Between(2, 1000)`: almost every draw breaks the 10 000-operation limit. The tool flagged it (`unread guard ... if (operations > MaxOperations)`) so this is the process working; noting that the flag does not hint at the shape of the fix (bound both factors); I worked it out from the "draw a start and a duration" idea. Fine.
+7. **Decimal draws are very precise.** `new Gauge(8.029786315235675785457063572, 4.4784716662105765648947359747)` is what a drawn gauge looks like; correct for a dummy, but the failure messages and the debugging output become unreadable. `WithScale(1)` fixes it in the factory; the scaffold could not know. Minor.
+8. **A drawn, positive `decimal` width reached 6.86e28 and the domain overflowed** (`System.OverflowException : Value was either too large or too small for a Decimal` from `Gauge.StitchesForWidth`, Gauge.cs:42). This is the library doing its job (the "limit of the declared domain" draw) and revealing a domain gap, not a friction of the library; see findings. The report was perfect: the seed was in the output, `[Reproducible(Seed = -315809928)]` replayed it on the first try, and the same seed also reproduced it for `RowsForLength` because both tests draw in the same order.
+9. **Diagnostics.** No JDxxx diagnostic fired on anything I wrote (build without a single warning), including the hand-written generators; I cannot tell whether that is because the code is clean or the analyzers have nothing to say about `Any.Boolean().Generate()` inside a generator.
 
-## Frictions and surprises, in the order I met them
-
-1. **The commonest range guard is not read.** `if (count < 1 || count > MaxCount) throw …` (StitchRun),
-   `if (stitchesPer10Cm < 4m || stitchesPer10Cm > 60m)` (Gauge), `times < 2 || times > MaxTimes`,
-   `castOnCount < 1 || castOnCount > MaxCastOn` all came out as `Any.Int32()` / `Any.Decimal()`
-   marked `to verify, unread guards`. Single comparisons (`rowNumber < 1`, `name.Length > MaxNameLength`)
-   were read fine, constants included. Five of my six generators needed a hand fix for a guard that is
-   a plain `Between`. Safe (the build stops), but it is most of the scaffolding work.
-   The user docs never list which guard shapes are read; they point to the maintainer spec.
-2. **Over-marking.** `RowInstruction.rowNumber` was flagged "first at RowInstruction.cs, line 39:
-   `if (expectedStitchCount is { } expected)`" and `PatternSection.name` at the `for` loop over rows:
-   the parameter appears only inside the exception *message*. The TODO points at a line that does not
-   test the parameter, so I had to read the constructor to decide it was noise.
-3. **An interface parameter is emitted as `new AnyIRowElement()`.** `IReadOnlyList<IRowElement>` gave
-   `Any.ListOf(new AnyIRowElement()).NonEmpty()` with recap word "to verify, guard" — no `TODO`.
-   Following the docs' work list (`any generate IRowElement`) fails with
-   "✗ IRowElement is abstract, so Generate() has nothing to instantiate." (exit 1). The recap should
-   say so up front, as it does for generics.
-4. **No "one of these generators".** I wanted elements to be a run *or* a repeat. There is
-   `Any.OneOf(values)` but nothing choosing between `IAny<T>`s; I settled for runs only in the base
-   and pinned repeats in tests. (`Any.ListOf<IRowElement>(new AnyStitchRun())` compiles: `IAny` is
-   covariant — nice.)
-5. **Cross-parameter guards** (Gauge rows within ½–2× stitches; repeat ops ≤ 10 000; printed count =
-   produced count; consecutive alternating rows; contiguous sections) — all mine to write, as the
-   docs announce. I chose disjoint ranges by construction for Gauge and repeats, derived the printed
-   count in `Generate()` (checking `is FixedValue<int?>` so a pinned wrong count survives — a bit
-   hacky), and built rows/sections with `Any.Combine` in an `AnyPatternSection.Custom.cs`
-   (`StartingAtRow(int)`). The "When a guard ties two parameters" section was exactly the right read.
-6. Replacing a builder base with an `IAny<IReadOnlyList<…>>` meant deleting the refining overload by
-   hand, as documented. Fine, but a hand-edited `Generate()` / factory is lost on `--force`; I moved
-   what I could into the `.Custom.cs` partial.
-7. Small: my first `WithCount(c => …)` on a nested generator (`new AnyStitchRun().WithCount(c => c.LessThanOrEqualTo(10))`)
-   inside another generator's base worked first time — refinements compose well.
-
-## What worked really well
-
-- The recap table + one-line "unread guard at File.cs, line N: <code>" — I never hunted for a guard.
-- A file that refuses to compile until I read it: no silently-invalid dummy ever reached a test.
-- `Arbitrary.Gauge().WithStitchesPer10Cm(22m)` / `.WithStitchesPer10Cm(s => s.GreaterThanOrEqualTo(15m))`:
-  pin what the assertion reads, refine what a pinned neighbour constrains, keep the rest drawn.
-- `static:Arbitrary` entry point across six types, no C# 14 needed, no file written twice.
-- `[assembly: Reproducible]` — one line, then forget about seeds.
-- No analyzer noise at all in this suite.
+## What worked well
+- One `any generate A B C ... --entry-point any` produced a coherent set: the `AnyX` composition (`new AnyGauge()` inside `AnyKnittingPattern`) and the recap table made it obvious which files to go and fix first. Constants were reused by name (`StitchRun.MaxCount`, `KnittingPattern.MaxCastOn`, `PatternSection.MaxNameLength`).
+- The `to verify` / `TODO` mechanism: a stopped build with a message at the exact line meant I could not forget a rule. For `IRowElement` the tool told me exactly what to write.
+- `With…` lambdas and pins composed well in tests: `Any.PatternSection().WithName("Ribbing").WithFirstRow(1).WithRowCount(2)` reads as the sentence I wanted, and `Any.Gauge().WithStitchesPer10Cm(18m)` kept the "rows within half to twice" rule for free.
+- `Any.Int32().LessThan(1)`, `GreaterThan(MaxCastOn)`, `Any.Decimal().LessThan(4m)` etc. gave a very readable "any value outside the range" for refusal tests, with the boundaries as literal `InlineData`.
+- `[assembly: Reproducible]` + the seed in the failure output + `Reproducible(Seed = …)` on a skipped test = a documented, replayable defect in five minutes.
+- Refinements that contradict a base fail loudly; I never met a silent wrong draw.
 
 ## Fluency: 4 / 5
-
-Scaffold → fix → test went fast and nothing ever drew an invalid value. One point off because the
-`a < min || a > max` guard — the most common guard there is — is not inferred, so the "scaffold" step
-turned into "rewrite five recipes by hand", and because of the over-marking and the interface dead end.
+The day-to-day DSL and the xUnit adapter were fast and predictable, and the draw found a real domain gap on its first run, with a replayable seed. The score is not 5 because this domain is dense in cross-value rules, which means about half of the scaffolds needed hand-built generators (and manual deletion of pins for derived parameters); because `dotnet test --project` on the .NET 10 SDK needs an undocumented MTP opt-in; and because of the false `unread guard` on an exception message.

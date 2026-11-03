@@ -1,0 +1,4 @@
+root = true
+[*.cs]
+dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
+dotnet_diagnostic.JD030.severity = warning

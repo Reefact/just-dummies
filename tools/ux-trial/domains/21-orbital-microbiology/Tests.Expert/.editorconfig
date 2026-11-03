@@ -1,0 +1,8 @@
+root = true
+
+[*.cs]
+# Make the Info-level JustDummies rules visible in the build output.
+dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
+dotnet_analyzer_diagnostic.category-JustDummies.Usage.severity = warning
+dotnet_analyzer_diagnostic.category-JustDummies.Reproducibility.severity = warning
+dotnet_analyzer_diagnostic.category-JustDummies.Composition.severity = warning

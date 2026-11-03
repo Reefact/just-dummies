@@ -1,21 +1,15 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
-// `any generate Pitch --entry-point any --force` overwrites it.
-// It needs C# 14: a static extension member is what reaches this spelling without touching the library.
+// `any generate Pitch --entry-point static:Arbitrary --force` overwrites it.
+// The root is partial, so every other type's entry point lands in its own file beside this one.
 
-using JustDummies;
+namespace MusicScore.Domain;
 
-namespace MusicScore.Tests.Expert.Arbitrary;
+/// <summary>Reaches this project's scaffolded generators through one root.</summary>
+public static partial class Arbitrary {
 
-/// <summary>Hangs <c>Any.Pitch()</c> off the library's own entry point.</summary>
-public static class AnyPitchEntry {
-
-    extension(Any) {
-
-        /// <summary>Starts an arbitrary <c>Pitch</c>: constrain it through <c>With…</c>, then <c>Generate()</c>.</summary>
-        public static AnyPitch Pitch() {
-            return new AnyPitch();
-        }
-
+    /// <summary>Starts an arbitrary <c>Pitch</c>: constrain it through <c>With…</c>, then <c>Generate()</c>.</summary>
+    public static AnyPitch Pitch() {
+        return new AnyPitch();
     }
 
 }

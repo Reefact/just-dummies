@@ -15,7 +15,9 @@ namespace GeothermalReservoir.Domain;
 /// </summary>
 public sealed partial class AnyTemperature : IAny<Temperature> {
 
-    private readonly IAny<double> _kelvin;
+    private IAny<double> _kelvin;
+
+    private AnyDouble _kelvinRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyTemperature()
@@ -25,37 +27,43 @@ public sealed partial class AnyTemperature : IAny<Temperature> {
         return Any.Double().GreaterThan(Temperature.FreezingKelvin).LessThanOrEqualTo(Temperature.MaximumKelvin);
     }
 
-    private AnyTemperature(IAny<double> kelvin) {
-        _kelvin = kelvin;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyTemperature(AnyDouble kelvin) {
+        _kelvin       = kelvin;
+        _kelvinRecipe = kelvin;
     }
 
-    /// <summary>Pins <c>kelvin</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyTemperature(AnyTemperature from) {
+        _kelvin       = from._kelvin;
+        _kelvinRecipe = from._kelvinRecipe;
+    }
+
+    /// <summary>Pins <c>kelvin</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyTemperature WithKelvin(double value) {
-        return new AnyTemperature(new FixedValue<double>(value));
+        AnyTemperature copy = new AnyTemperature(this);
+
+        copy._kelvin = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>kelvin</c> from <c>AnyValidKelvin()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>kelvin</c> is drawn from — <c>AnyValidKelvin()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyTemperature WithKelvin(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyTemperature(configure(AnyValidKelvin()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyTemperature copy = new AnyTemperature(this);
+
+        copy._kelvinRecipe = configure(_kelvinRecipe);
+        copy._kelvin       = copy._kelvinRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Temperature" />.</summary>
     public Temperature Generate() {
         return new Temperature(_kelvin.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

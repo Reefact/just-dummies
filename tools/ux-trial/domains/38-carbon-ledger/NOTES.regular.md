@@ -1,56 +1,48 @@
-# 38 carbon ledger — notes from the regular developer
+# Regular notes — 38 carbon ledger
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Created `Tests.Regular`, restored, then one command:
-  `any generate CreditSerial Holder Account RetirementClaim --entry-point static:Arbitrary`.
-- Resolved the 7 `to verify` rows: registry `[A-Z]{2,5}`, holder id `[A-Z0-9]{4,12}`, country `[A-Z]{2}`
-  (all `Any.StringMatching`, so factory + refining overload retyped `AnyString` -> `AnyPattern`),
-  claim texts `NotBlank().WithMaxLength(RetirementClaim.MaxTextLength)`.
-- `Account` has a cross-parameter rule (id prefixed by the holder's country). I followed the CLI page's
-  "derive one draw from another inside `Generate()`": the factory draws only the six digits, `Generate()`
-  writes `{holder.CountryCode}-{digits}`; renamed `WithAccountId` to `WithAccountNumber`.
-- A small test-side `RegistryScenario` (open ledger, open accounts before a fixed first posting, units
-  of the ledger's registry, forward-moving posting moments, a claim whose year covers the vintages).
-- 32 tests: value objects (7), journal entry rules (6), opening (3), issuance (4), transfers (5),
-  retirements (4), derived state / history / consistency (3). `[assembly: Reproducible]`.
-- `dotnet test --project .`: 32/32 passed, and 15 further runs with fresh seeds all passed.
+- Read, in order: `MODEL.md`, `PROJECT-README.md` (skimmed), `guides/getting-started.en.md`, `packages/justdummies-cli.en.md` (the guard table, "Adjusting a parameter", "When a guard ties two parameters"), `packages/justdummies-xunit.en.md`, `generators/README.md`. Then the whole `Domain/` source.
+- Created `Tests.Regular/CarbonLedger.Tests.Regular.csproj` from the template, then `dotnet restore`.
+- `any` commands run (from `Tests.Regular`, `--output Generators`):
+  - `any generate CreditSerial Holder Account RetirementClaim --output Generators`
+  - `any generate HoldingPeriod JournalEntry CarbonRegistryLedger --output Generators`
+- Generators completed by hand (7 files, namespace `CarbonLedger.Domain`):
+  - `AnyCreditSerial`: `registry` retyped to `AnyPattern` with `Any.StringMatching("[A-Z]{2,5}")` (field, recipe ctor, `Func<>` of `WithRegistry`), sentinel removed.
+  - `AnyHolder`: `holderId` -> `[A-Z0-9]{4,12}`, `countryCode` -> `[A-Z]{2}`, same retyping.
+  - `AnyAccount`: `accountId` retyped to `AnyPattern` `[0-9]{6}` and `Generate()` rewritten to draw the holder first and prefix `holder.CountryCode + "-"` (the tie `accountId`/`holder` the tool marks "ties accountId to holder").
+  - `AnyJournalEntry`: sentinels removed; `Generate()` rewritten (kind first, then debit/credit accounts of matching kinds with different ids, distinct serials `Distinct()` with a count of 1..5, claim only for a retirement with `reportingYear >= latest vintage`).
+  - `AnyHoldingPeriod`: sentinels removed; `Generate()` swaps `from`/`until` when drawn in the wrong order.
+  - `AnyCarbonRegistryLedger`: registry pattern, issuance account `WithKind(AccountKind.Issuance)`.
+  - `AnyRetirementClaim`: untouched (all inferred).
+- Support: `Support/LedgerScenario.cs` (ledger + issuance/two holding/retirement accounts opened at one arbitrary instant, `Day(n)`, `NewSerials(n)`, `NewClaim()`), `AssemblyInfo.cs` with `[assembly: Reproducible]`.
+- Tests (140 methods, 222 cases): `CreditSerialTests`, `HolderTests`, `AccountTests`, `RetirementClaimTests`, `HoldingPeriodTests`, `JournalEntryTests` (including a theory over every non-matching entry/account kind combination), `CarbonRegistryLedgerFoundationTests`, `...IssuanceTests`, `...TransferTests`, `...RetirementTests`, `...HistoryTests`, `...ConsistencyTests`, `...StructuralRefusalTests`, `GeneratorContractTests`.
+  Literals stay literal where the test is about them (formats, bounds, counts, vintages 2021/2022, day offsets).
+- Result: green (208 passed, 14 skipped, 0 failed), then 12 more runs with fresh seeds, all green (208 / 0 / 14 each time). 14 skipped cases are the domain defects below.
+- Domain defects recorded (skipped tests, deterministic — no seed involved):
+  1. Trailing newline accepted by every `^...$` validation (`$` matches before a final `\n` in .NET): `new CreditSerial("VCS\n", ...)`, `CreditSerial.Parse("VCS-1234-2019-000000000042\n")`, `new Account("FR-000123\n", ...)`, `new Holder("ACME0001\n", ...)`, country `"FR\n"`, `new CarbonRegistryLedger("VCS\n", ...)`. Fix: end the patterns with `\z` instead of `$`. Leaves an account id that does not round-trip.
+  2. MODEL.md says `LedgerRuleViolationException` is "every refused registry operation", but `Issue`/`Transfer`/`Retire` refuse an empty serial list, a duplicated serial, a null serial, same debit/credit account, and an account of the wrong kind (issue into retirement, transfer into retirement, retire into holding) with a raw `ArgumentException` from `JournalEntry`'s constructor, after the ledger has already looked the accounts up. Consequence for callers: a `catch (LedgerRuleViolationException)` misses these. The state is untouched in each case (pinned by non-skipped sibling tests).
 
 ## Frictions and surprises, in order
-1. Scaffolder: `RetirementClaim` guards `if (string.IsNullOrWhiteSpace(x) || x.Length > MaxTextLength)`
-   came out `to verify, unread guards`, while `Holder` writes the very same two checks as two `if`s and
-   gets `Any.String().NotBlank().WithMaxLength(200)  guard`. A disjunction of two guards the tool reads
-   one by one is not read. Harmless (it blocks the build, as designed) but surprising, and the CLI page
-   does not list this shape among what it cannot read.
-2. Scaffolder inlines constants: `Any.Int32().Positive().LessThanOrEqualTo(999999)` instead of
-   `CreditSerial.MaxProjectId`, `WithMaxLength(200)` instead of `Holder.MaxLegalNameLength`, and
-   `999999999999` without digit separators. If the domain lowers the constant, the generator keeps
-   drawing values the constructor now rejects, on some runs only. I would rather keep the symbol.
-3. Five `Any.StringMatching` replacements = five times the documented retype dance (factory return type
-   + `Func<AnyString, AnyString>` -> `Func<AnyPattern, AnyPattern>`). Documented and the compiler
-   points at it, but it is the most mechanical edit of the session; for a guard the tool already
-   located as a regex, emitting the `AnyPattern` shape with the TODO would save it.
-4. Cross-parameter `Account` rule: the documented fix works, but it is a hand-written `Generate()` plus
-   renamed `With…` methods in the generated file, so `any generate Account --force` would wipe it.
-   The page warns about this; still, my only real customisation lives in the file I must never re-scaffold.
-5. Aggregate tests use drawn entities as handles in assertions (`Assert.Same(anyReceiver,
-   ledger.HolderOf(anyUnit))`, `Assert.Equal(anyUnits, ledger.UnitsHeldBy(...))`). The "an `any` name
-   never reaches the assertion" rule reads as forbidding this, yet the value is not what is verified —
-   only its identity is. The docs never say whether identity-as-handle is fine; I decided it was.
-6. Minor: generated files land in the domain's namespace (`CarbonLedger.Domain`) by default; fine,
-   but my tests live in `CarbonLedger.Tests.Regular` and an `any.json` with `namespace` is the fix.
+1. `dotnet test --project Tests.Regular` (the command the brief gives) failed at once: `MSBUILD : error MSB1001: Unknown switch. ... --project Tests.Regular`. Then `dotnet test Tests.Regular` failed with `Microsoft.Testing.Platform.MSBuild.targets(395,5): error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. If you use dotnet test, you should opt-in to the new dotnet test experience.` Neither the docs nor the project template mention it; I had to know to add `{"test":{"runner":"Microsoft.Testing.Platform"}}` as a `global.json` (I put it in W). The xunit page says nothing about running the tests, and `getting-started` is silent on the SDK-10 requirement. (docs / friction, medium)
+2. `any generate ...` first run in a not-yet-restored project: `✗ CreditSerial: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable, cost one command.
+3. Every regex-validated string (seven parameters here: registry x3, holderId, countryCode x2, accountId) is `to verify, unread guards` and the build is blocked until the sentinel is removed; the retyping (`AnyString` -> `AnyPattern` on the field, the private ctor, the `Func<>`, the factory) is manual and error-prone. I did it with a script because it is 4-5 mechanical edits per parameter in each of 3 files; a one-line fix was possible only because the doc's `[A-Z]{3}` example told me exactly the places. A `--regex-as-pattern`-style assist (or inferring `Any.StringMatching` when the pattern is inside the regular subset, even if unverified) would have saved most of the effort. The comment text is precise, though ("retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithAccountId"). (friction, medium)
+4. The `Account` tie (`accountId` must start with the holder's country) is exactly the "rule between parameters" case: the tool says `holder: ... — ties accountId to holder` and stops. I solved it as the doc suggests (derive in `Generate()`), but then `WithAccountId(string)` pins only the six digits, not the whole id, while its name and XML doc say "accountId". The doc says a pin on a derived parameter "no longer reaches the draw" but the actual trap is the opposite: the pin still works with a different meaning. I kept the hand-written `Generate()` and used the pin as "the digits" in tests (`WithAccountId("000123")` -> `FR-000123`), which reads oddly. A doc paragraph on how to keep pin semantics correct for a derived composite parameter would help; a `Then`-based example for strings exists but nothing for "prefix derived from another parameter". (docs, medium)
+5. `any generate JournalEntry` marks `kind`, `debit`, `credit`, `serials`, `claim` all `to verify`, which is right (kind decides account kinds and claim presence), but the scaffolded shape (one independent `IAny` per parameter, with `With…(value)` pins) cannot express a dependent draw at all. My rewritten `Generate()` ignores the `_debit`, `_credit`, `_claim` pins and uses the recipes only; the generated pins `WithDebit(Account)`, `WithCredit(Account)`, `WithClaim(RetirementClaim?)` are therefore silently dead, and `--force` would wipe my `Generate()`. The doc warns about `--force` and about the pin for one level, but nothing flags a pin that becomes dead. No analyzer fires on it. (friction, medium)
+6. No `Any.CreditSerial()` entry point unless `--entry-point any` is passed; I stayed with `new AnyCreditSerial()` throughout (`Any.ListOf(new AnyCreditSerial()...)`). Not a problem, but my tests mix `Any.Int32()` and `new AnyHolder()` styles, which the doc itself says to avoid for readability. I did not rerun with the entry point to keep the scaffolded files stable. (friction, low)
+7. Distinctness across draws is not expressed anywhere by the tool: `Any.ListOf(new AnyCreditSerial()).NonEmpty()` was scaffolded for `serials` even though the guard `serials.Distinct().Count() != serials.Count` is right there; it was flagged `to verify` ("first unread guard ... and 1 more") but not inferred. `.Distinct()` exists on the list, and I found it in `generators/collections.en.md`-style vocabulary without needing to read the page (compiler/IntelliSense). Likewise two independently drawn `AnyAccount` collide on the six digits with probability 1e-6, so I had to thread `WithAccountId(d => d.Except(...))` through `LedgerScenario` for four accounts to make the ids provably distinct. Fine, but each of these ties costs a helper. (friction, low)
+8. `AnyPattern.Except(params string[])` accepted an array (`digits.Except(_usedNumbers.ToArray())`) and several literal arguments (`d.Except(a, b, c, d)`) — good; I first expected only one value.
+9. Generated `Any.ListOf(...).WithCount(n).Distinct()` on a scaffolded generator worked first time for `CreditSerial` (value equality), no surprise.
+10. `Any.DateTimeOffset()` unconstrained gives a very wide range (I did not measure it); arithmetic on it (`AddDays`, `AddTicks(-1)`) can overflow, so every date I do arithmetic on is drawn with `.Between(...)` (2000-2040 in `LedgerScenario`, 100 years from the epoch in `HoldingPeriodTests`). I never saw a failure but I did not want to find out; the dates-and-times page documents the range, which I did not open. (low, no action)
+11. xUnit adapter: `[assembly: Reproducible]` in a file of the test project worked as documented; failure output carried `[JustDummies] These arbitrary values were seeded with N. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = N)].` in "Standard output" under every failing test, which made the first red run easy to triage. Under Microsoft.Testing.Platform it is printed after the stack trace, which is where I looked for it last.
 
 ## What worked well
-- The recap is excellent: each unread guard printed with file, line and the exact `if`, and the build
-  then stops at the very line. The `holder` row was flagged because of `accountId.StartsWith(holder.CountryCode)`
-  — exactly the cross-parameter rule I had to handle.
-- `--entry-point static:Arbitrary` for four types in one call; `Arbitrary.Account().WithKind(...)
-  .WithOpenedOn(o => o.Before(...))` reads like the domain.
-- Refinements compose naturally: `WithRegistry(r => r.DifferentFrom(registry))` for a foreign unit,
-  `WithReportingYear(y => y.GreaterThanOrEqualTo(latestVintage))` for a valid claim.
-- `Any.ListOf(...).WithCount(3).Distinct()` over a value-equal `CreditSerial` just worked.
-- `[assembly: Reproducible]`: zero ceremony. No analyzer noise at all on the final code.
+- The recap table of `any` (`guard`, `AnyX`, `to verify`, `unread guards`) was accurate on all seven types: guards that reference public constants came out as `CreditSerial.MaxProjectId`, `Holder.MaxLegalNameLength`, `RetirementClaim.MaxTextLength` etc., so nothing was copied from the domain.
+- The TODO sentinel does exactly what it says: the build refused until each regex/tie was handled, and the comments name the line and the retype to perform.
+- `AnyRetirementClaim` and the composed `new AnyHolder()` inside `AnyAccount` needed nothing.
+- `WithRegistry("VCS")`, `WithVintage(v => v.LessThanOrEqualTo(2000))`, `WithKind(AccountKind.Retirement)`, `WithOpenedOn(...)` read naturally; refinements through lambdas carried the base invariants.
+- The domain defects (trailing newline, wrong exception type) were revealed by ordinary boundary tests, not by the draws; the seed output made the one real mistake of mine (retiring a unit Bob did not hold) trivial to diagnose.
+- 12 repeated runs, 222 cases each, all green with fresh seeds.
 
 ## Fluency: 4 / 5
-Scaffold-then-refine took minutes and every test reads as Arrange / Act / Assert with clear dummies.
-Lost a point on the repetitive pattern retyping, inlined constants, and having the one real
-cross-parameter customisation live in a file the tool overwrites.
+The scaffold-complete-test loop is fast and the tool's recap tells you exactly where to look; the real work was in the places the tool honestly cannot cover (ties between parameters in `Account`, `JournalEntry` and `HoldingPeriod`), and there the docs point to the right idea but leave the pins' semantics to you. One point lost for the `dotnet test --project` / `global.json` stumble on .NET 10 and for the five-edits-per-regex-parameter retyping that nothing automates.

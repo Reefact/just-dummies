@@ -15,9 +15,13 @@ namespace GeothermalReservoir.Domain;
 /// </summary>
 public sealed partial class AnyBoundaryCondition : IAny<BoundaryCondition> {
 
-    private readonly IAny<Pressure>    _farFieldPressure;
-    private readonly IAny<Temperature> _farFieldTemperature;
-    private readonly IAny<double>      _transmissibilityMultiplier;
+    private IAny<Pressure>    _farFieldPressure;
+    private IAny<Temperature> _farFieldTemperature;
+    private IAny<double>      _transmissibilityMultiplier;
+
+    private AnyPressure    _farFieldPressureRecipe;
+    private AnyTemperature _farFieldTemperatureRecipe;
+    private AnyDouble      _transmissibilityMultiplierRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyBoundaryCondition()
@@ -34,45 +38,95 @@ public sealed partial class AnyBoundaryCondition : IAny<BoundaryCondition> {
     }
 
     private static AnyDouble AnyValidTransmissibilityMultiplier() {
-        return Any.Double().Between(0.0, BoundaryCondition.MaximumMultiplier);
+        return Any.Double().Between(0d, BoundaryCondition.MaximumMultiplier);
     }
 
-    private AnyBoundaryCondition(IAny<Pressure>    farFieldPressure,
-                                 IAny<Temperature> farFieldTemperature,
-                                 IAny<double>      transmissibilityMultiplier) {
-        _farFieldPressure           = farFieldPressure;
-        _farFieldTemperature        = farFieldTemperature;
-        _transmissibilityMultiplier = transmissibilityMultiplier;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyBoundaryCondition(AnyPressure    farFieldPressure,
+                                 AnyTemperature farFieldTemperature,
+                                 AnyDouble      transmissibilityMultiplier) {
+        _farFieldPressure                 = farFieldPressure;
+        _farFieldPressureRecipe           = farFieldPressure;
+        _farFieldTemperature              = farFieldTemperature;
+        _farFieldTemperatureRecipe        = farFieldTemperature;
+        _transmissibilityMultiplier       = transmissibilityMultiplier;
+        _transmissibilityMultiplierRecipe = transmissibilityMultiplier;
     }
 
-    /// <summary>Pins <c>farFieldPressure</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyBoundaryCondition(AnyBoundaryCondition from) {
+        _farFieldPressure                 = from._farFieldPressure;
+        _farFieldPressureRecipe           = from._farFieldPressureRecipe;
+        _farFieldTemperature              = from._farFieldTemperature;
+        _farFieldTemperatureRecipe        = from._farFieldTemperatureRecipe;
+        _transmissibilityMultiplier       = from._transmissibilityMultiplier;
+        _transmissibilityMultiplierRecipe = from._transmissibilityMultiplierRecipe;
+    }
+
+    /// <summary>Pins <c>farFieldPressure</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyBoundaryCondition WithFarFieldPressure(Pressure value) {
-        return new AnyBoundaryCondition(new FixedValue<Pressure>(value), _farFieldTemperature, _transmissibilityMultiplier);
+        AnyBoundaryCondition copy = new AnyBoundaryCondition(this);
+
+        copy._farFieldPressure = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>farFieldPressure</c> from <c>AnyValidFarFieldPressure()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>farFieldPressure</c> is drawn from — <c>AnyValidFarFieldPressure()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyPressure, AnyPressure&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyBoundaryCondition WithFarFieldPressure(Func<AnyPressure, AnyPressure> configure) {
-        return new AnyBoundaryCondition(configure(AnyValidFarFieldPressure()), _farFieldTemperature, _transmissibilityMultiplier);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyBoundaryCondition copy = new AnyBoundaryCondition(this);
+
+        copy._farFieldPressureRecipe = configure(_farFieldPressureRecipe);
+        copy._farFieldPressure       = copy._farFieldPressureRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>farFieldTemperature</c> to a fixed value.</summary>
+    /// <summary>Pins <c>farFieldTemperature</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyBoundaryCondition WithFarFieldTemperature(Temperature value) {
-        return new AnyBoundaryCondition(_farFieldPressure, new FixedValue<Temperature>(value), _transmissibilityMultiplier);
+        AnyBoundaryCondition copy = new AnyBoundaryCondition(this);
+
+        copy._farFieldTemperature = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>farFieldTemperature</c> from <c>AnyValidFarFieldTemperature()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>farFieldTemperature</c> is drawn from — <c>AnyValidFarFieldTemperature()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTemperature, AnyTemperature&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyBoundaryCondition WithFarFieldTemperature(Func<AnyTemperature, AnyTemperature> configure) {
-        return new AnyBoundaryCondition(_farFieldPressure, configure(AnyValidFarFieldTemperature()), _transmissibilityMultiplier);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyBoundaryCondition copy = new AnyBoundaryCondition(this);
+
+        copy._farFieldTemperatureRecipe = configure(_farFieldTemperatureRecipe);
+        copy._farFieldTemperature       = copy._farFieldTemperatureRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>transmissibilityMultiplier</c> to a fixed value.</summary>
+    /// <summary>Pins <c>transmissibilityMultiplier</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyBoundaryCondition WithTransmissibilityMultiplier(double value) {
-        return new AnyBoundaryCondition(_farFieldPressure, _farFieldTemperature, new FixedValue<double>(value));
+        AnyBoundaryCondition copy = new AnyBoundaryCondition(this);
+
+        copy._transmissibilityMultiplier = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>transmissibilityMultiplier</c> from <c>AnyValidTransmissibilityMultiplier()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>transmissibilityMultiplier</c> is drawn from — <c>AnyValidTransmissibilityMultiplier()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyBoundaryCondition WithTransmissibilityMultiplier(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyBoundaryCondition(_farFieldPressure, _farFieldTemperature, configure(AnyValidTransmissibilityMultiplier()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyBoundaryCondition copy = new AnyBoundaryCondition(this);
+
+        copy._transmissibilityMultiplierRecipe = configure(_transmissibilityMultiplierRecipe);
+        copy._transmissibilityMultiplier       = copy._transmissibilityMultiplierRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="BoundaryCondition" />.</summary>
@@ -80,20 +134,6 @@ public sealed partial class AnyBoundaryCondition : IAny<BoundaryCondition> {
         return new BoundaryCondition(_farFieldPressure.Generate(),
                                      _farFieldTemperature.Generate(),
                                      _transmissibilityMultiplier.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

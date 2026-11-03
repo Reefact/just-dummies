@@ -1,102 +1,155 @@
-// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
-// `any generate ReservoirSimulation --force` overwrites it. This type is partial, so members you add in a
-// neighbouring file survive.
+// Scaffolded by `any` (JustDummies), then completed by hand: the wells must be completed inside the grid that
+// is drawn, in distinct cells, with distinct ids. They cannot be drawn independently of the grid, so the
+// generator draws the grid first and then places 0..3 wells in it.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using JustDummies;
 
 namespace GeothermalReservoir.Domain;
 
-/// <summary>
-///     A generator of arbitrary <see cref="ReservoirSimulation" /> values. It draws from the ambient random
-///     context, so a reproducibility scope pins every draw it makes; outside a test,
-///     <c>Any.UseSeed(...)</c> opens one.
-/// </summary>
 public sealed partial class AnyReservoirSimulation : IAny<ReservoirSimulation> {
 
-    private readonly IAny<GeologicalGrid>            _grid;
-    private readonly IAny<IReadOnlyCollection<Well>> _wells;
-    private readonly IAny<BoundaryCondition>         _boundary;
+    private IAny<GeologicalGrid>    _grid;
+    private IAny<BoundaryCondition> _boundary;
+    private IAny<int>               _wellCount;
 
-    /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
+    private AnyGeologicalGrid    _gridRecipe;
+    private AnyBoundaryCondition _boundaryRecipe;
+    private AnyInt32             _wellCountRecipe;
+
+    private IReadOnlyCollection<Well>? _pinnedWells;
+    private Func<AnyWell, AnyWell>     _wellRefinement = well => well;
+
     public AnyReservoirSimulation()
-        : this(grid:     AnyValidGrid(),
-               wells:    AnyValidWells(),
-               boundary: AnyValidBoundary()) { }
+        : this(grid:      new AnyGeologicalGrid(),
+               boundary:  new AnyBoundaryCondition(),
+               wellCount: Any.Int32().Between(0, 3)) { }
 
-    private static AnyGeologicalGrid AnyValidGrid() {
-        return new AnyGeologicalGrid();
+    private AnyReservoirSimulation(AnyGeologicalGrid    grid,
+                                   AnyBoundaryCondition boundary,
+                                   AnyInt32             wellCount) {
+        _grid            = grid;
+        _gridRecipe      = grid;
+        _boundary        = boundary;
+        _boundaryRecipe  = boundary;
+        _wellCount       = wellCount;
+        _wellCountRecipe = wellCount;
     }
 
-    private static AnyList<Well> AnyValidWells() {
-        // Wells must be completed in distinct cells of *this* grid, which a per-parameter recipe cannot
-        // know: by default the simulation has none, and a test pins the wells it is about.
-        return Any.ListOf(new AnyWell()).Empty();
+    private AnyReservoirSimulation(AnyReservoirSimulation from) {
+        _grid            = from._grid;
+        _gridRecipe      = from._gridRecipe;
+        _boundary        = from._boundary;
+        _boundaryRecipe  = from._boundaryRecipe;
+        _wellCount       = from._wellCount;
+        _wellCountRecipe = from._wellCountRecipe;
+        _pinnedWells     = from._pinnedWells;
+        _wellRefinement  = from._wellRefinement;
     }
 
-    private static AnyBoundaryCondition AnyValidBoundary() {
-        return new AnyBoundaryCondition();
-    }
-
-    private AnyReservoirSimulation(IAny<GeologicalGrid>            grid,
-                                   IAny<IReadOnlyCollection<Well>> wells,
-                                   IAny<BoundaryCondition>         boundary) {
-        _grid     = grid;
-        _wells    = wells;
-        _boundary = boundary;
-    }
-
-    /// <summary>Pins <c>grid</c> to a fixed value.</summary>
     public AnyReservoirSimulation WithGrid(GeologicalGrid value) {
-        return new AnyReservoirSimulation(new FixedValue<GeologicalGrid>(value), _wells, _boundary);
+        AnyReservoirSimulation copy = new AnyReservoirSimulation(this);
+
+        copy._grid = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>grid</c> from <c>AnyValidGrid()</c>, refined by <paramref name="configure" />.</summary>
     public AnyReservoirSimulation WithGrid(Func<AnyGeologicalGrid, AnyGeologicalGrid> configure) {
-        return new AnyReservoirSimulation(configure(AnyValidGrid()), _wells, _boundary);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyReservoirSimulation copy = new AnyReservoirSimulation(this);
+
+        copy._gridRecipe = configure(_gridRecipe);
+        copy._grid       = copy._gridRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>wells</c> to a fixed value.</summary>
+    /// <summary>Pins the wells; the caller is responsible for completing them inside the grid.</summary>
     public AnyReservoirSimulation WithWells(IReadOnlyCollection<Well> value) {
-        return new AnyReservoirSimulation(_grid, new FixedValue<IReadOnlyCollection<Well>>(value), _boundary);
+        AnyReservoirSimulation copy = new AnyReservoirSimulation(this);
+
+        copy._pinnedWells = value;
+
+        return copy;
     }
 
-    /// <summary>Draws <c>wells</c> from <c>AnyValidWells()</c>, refined by <paramref name="configure" />.</summary>
-    public AnyReservoirSimulation WithWells(Func<AnyList<Well>, AnyList<Well>> configure) {
-        return new AnyReservoirSimulation(_grid, configure(AnyValidWells()), _boundary);
+    public AnyReservoirSimulation WithWellCount(int count) {
+        AnyReservoirSimulation copy = new AnyReservoirSimulation(this);
+
+        copy._wellCount = Any.Fixed(count);
+
+        return copy;
     }
 
-    /// <summary>Pins <c>boundary</c> to a fixed value.</summary>
+    public AnyReservoirSimulation WithWellCount(Func<AnyInt32, AnyInt32> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyReservoirSimulation copy = new AnyReservoirSimulation(this);
+
+        copy._wellCountRecipe = configure(_wellCountRecipe);
+        copy._wellCount       = copy._wellCountRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Refines every drawn well; id, kind and completion stay assigned by the simulation generator.</summary>
+    public AnyReservoirSimulation WithWells(Func<AnyWell, AnyWell> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyReservoirSimulation copy     = new AnyReservoirSimulation(this);
+        Func<AnyWell, AnyWell> previous = _wellRefinement;
+
+        copy._wellRefinement = well => configure(previous(well));
+
+        return copy;
+    }
+
     public AnyReservoirSimulation WithBoundary(BoundaryCondition value) {
-        return new AnyReservoirSimulation(_grid, _wells, new FixedValue<BoundaryCondition>(value));
+        AnyReservoirSimulation copy = new AnyReservoirSimulation(this);
+
+        copy._boundary = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>boundary</c> from <c>AnyValidBoundary()</c>, refined by <paramref name="configure" />.</summary>
     public AnyReservoirSimulation WithBoundary(Func<AnyBoundaryCondition, AnyBoundaryCondition> configure) {
-        return new AnyReservoirSimulation(_grid, _wells, configure(AnyValidBoundary()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyReservoirSimulation copy = new AnyReservoirSimulation(this);
+
+        copy._boundaryRecipe = configure(_boundaryRecipe);
+        copy._boundary       = copy._boundaryRecipe;
+
+        return copy;
     }
 
-    /// <summary>Produces one arbitrary <see cref="ReservoirSimulation" />.</summary>
     public ReservoirSimulation Generate() {
-        return new ReservoirSimulation(_grid.Generate(),
-                                       _wells.Generate(),
-                                       _boundary.Generate());
+        GeologicalGrid grid = _grid.Generate();
+
+        IReadOnlyCollection<Well> wells = _pinnedWells ?? DrawWellsIn(grid);
+
+        return new ReservoirSimulation(grid, wells, _boundary.Generate());
     }
 
-    private sealed class FixedValue<TValue> : IAny<TValue> {
+    private IReadOnlyCollection<Well> DrawWellsIn(GeologicalGrid grid) {
+        List<CellCoordinate> coordinates = grid.Cells.Select(c => c.Coordinate).ToList();
+        int                  count       = Math.Min(_wellCount.Generate(), coordinates.Count);
+        List<CellCoordinate> shuffled    = Any.PermutationOf(coordinates).Generate();
 
-        private readonly TValue _value;
+        List<Well> wells = new List<Well>();
+        for (int n = 0; n < count; n++) {
+            string number = (n + 1).ToString("00");
 
-        public FixedValue(TValue value) {
-            _value = value;
+            // The prefix follows whatever kind the well draws or a refinement pins; the number makes the id unique.
+            wells.Add(_wellRefinement(new AnyWell().WithId(digits => digits.OneOf(number)).WithCompletion(shuffled[n])).Generate());
         }
 
-        public TValue Generate() {
-            return _value;
-        }
-
+        return wells;
     }
 
 }

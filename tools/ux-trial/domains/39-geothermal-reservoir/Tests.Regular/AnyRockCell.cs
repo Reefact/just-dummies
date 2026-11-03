@@ -15,12 +15,19 @@ namespace GeothermalReservoir.Domain;
 /// </summary>
 public sealed partial class AnyRockCell : IAny<RockCell> {
 
-    private readonly IAny<CellCoordinate> _coordinate;
-    private readonly IAny<Porosity>       _porosity;
-    private readonly IAny<Permeability>   _permeability;
-    private readonly IAny<double>         _thermalConductivity;
-    private readonly IAny<Pressure>       _pressure;
-    private readonly IAny<Temperature>    _temperature;
+    private IAny<CellCoordinate> _coordinate;
+    private IAny<Porosity>       _porosity;
+    private IAny<Permeability>   _permeability;
+    private IAny<double>         _thermalConductivity;
+    private IAny<Pressure>       _pressure;
+    private IAny<Temperature>    _temperature;
+
+    private AnyCellCoordinate _coordinateRecipe;
+    private AnyPorosity       _porosityRecipe;
+    private AnyPermeability   _permeabilityRecipe;
+    private AnyDouble         _thermalConductivityRecipe;
+    private AnyPressure       _pressureRecipe;
+    private AnyTemperature    _temperatureRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyRockCell()
@@ -55,78 +62,173 @@ public sealed partial class AnyRockCell : IAny<RockCell> {
         return new AnyTemperature();
     }
 
-    private AnyRockCell(IAny<CellCoordinate> coordinate,
-                        IAny<Porosity>       porosity,
-                        IAny<Permeability>   permeability,
-                        IAny<double>         thermalConductivity,
-                        IAny<Pressure>       pressure,
-                        IAny<Temperature>    temperature) {
-        _coordinate          = coordinate;
-        _porosity            = porosity;
-        _permeability        = permeability;
-        _thermalConductivity = thermalConductivity;
-        _pressure            = pressure;
-        _temperature         = temperature;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyRockCell(AnyCellCoordinate coordinate,
+                        AnyPorosity       porosity,
+                        AnyPermeability   permeability,
+                        AnyDouble         thermalConductivity,
+                        AnyPressure       pressure,
+                        AnyTemperature    temperature) {
+        _coordinate                = coordinate;
+        _coordinateRecipe          = coordinate;
+        _porosity                  = porosity;
+        _porosityRecipe            = porosity;
+        _permeability              = permeability;
+        _permeabilityRecipe        = permeability;
+        _thermalConductivity       = thermalConductivity;
+        _thermalConductivityRecipe = thermalConductivity;
+        _pressure                  = pressure;
+        _pressureRecipe            = pressure;
+        _temperature               = temperature;
+        _temperatureRecipe         = temperature;
     }
 
-    /// <summary>Pins <c>coordinate</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyRockCell(AnyRockCell from) {
+        _coordinate                = from._coordinate;
+        _coordinateRecipe          = from._coordinateRecipe;
+        _porosity                  = from._porosity;
+        _porosityRecipe            = from._porosityRecipe;
+        _permeability              = from._permeability;
+        _permeabilityRecipe        = from._permeabilityRecipe;
+        _thermalConductivity       = from._thermalConductivity;
+        _thermalConductivityRecipe = from._thermalConductivityRecipe;
+        _pressure                  = from._pressure;
+        _pressureRecipe            = from._pressureRecipe;
+        _temperature               = from._temperature;
+        _temperatureRecipe         = from._temperatureRecipe;
+    }
+
+    /// <summary>Pins <c>coordinate</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRockCell WithCoordinate(CellCoordinate value) {
-        return new AnyRockCell(new FixedValue<CellCoordinate>(value), _porosity, _permeability, _thermalConductivity, _pressure, _temperature);
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._coordinate = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>coordinate</c> from <c>AnyValidCoordinate()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>coordinate</c> is drawn from — <c>AnyValidCoordinate()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyCellCoordinate, AnyCellCoordinate&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRockCell WithCoordinate(Func<AnyCellCoordinate, AnyCellCoordinate> configure) {
-        return new AnyRockCell(configure(AnyValidCoordinate()), _porosity, _permeability, _thermalConductivity, _pressure, _temperature);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._coordinateRecipe = configure(_coordinateRecipe);
+        copy._coordinate       = copy._coordinateRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>porosity</c> to a fixed value.</summary>
+    /// <summary>Pins <c>porosity</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRockCell WithPorosity(Porosity value) {
-        return new AnyRockCell(_coordinate, new FixedValue<Porosity>(value), _permeability, _thermalConductivity, _pressure, _temperature);
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._porosity = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>porosity</c> from <c>AnyValidPorosity()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>porosity</c> is drawn from — <c>AnyValidPorosity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyPorosity, AnyPorosity&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRockCell WithPorosity(Func<AnyPorosity, AnyPorosity> configure) {
-        return new AnyRockCell(_coordinate, configure(AnyValidPorosity()), _permeability, _thermalConductivity, _pressure, _temperature);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._porosityRecipe = configure(_porosityRecipe);
+        copy._porosity       = copy._porosityRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>permeability</c> to a fixed value.</summary>
+    /// <summary>Pins <c>permeability</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRockCell WithPermeability(Permeability value) {
-        return new AnyRockCell(_coordinate, _porosity, new FixedValue<Permeability>(value), _thermalConductivity, _pressure, _temperature);
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._permeability = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>permeability</c> from <c>AnyValidPermeability()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>permeability</c> is drawn from — <c>AnyValidPermeability()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyPermeability, AnyPermeability&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRockCell WithPermeability(Func<AnyPermeability, AnyPermeability> configure) {
-        return new AnyRockCell(_coordinate, _porosity, configure(AnyValidPermeability()), _thermalConductivity, _pressure, _temperature);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._permeabilityRecipe = configure(_permeabilityRecipe);
+        copy._permeability       = copy._permeabilityRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>thermalConductivity</c> to a fixed value.</summary>
+    /// <summary>Pins <c>thermalConductivity</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRockCell WithThermalConductivity(double value) {
-        return new AnyRockCell(_coordinate, _porosity, _permeability, new FixedValue<double>(value), _pressure, _temperature);
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._thermalConductivity = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>thermalConductivity</c> from <c>AnyValidThermalConductivity()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>thermalConductivity</c> is drawn from — <c>AnyValidThermalConductivity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRockCell WithThermalConductivity(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyRockCell(_coordinate, _porosity, _permeability, configure(AnyValidThermalConductivity()), _pressure, _temperature);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._thermalConductivityRecipe = configure(_thermalConductivityRecipe);
+        copy._thermalConductivity       = copy._thermalConductivityRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>pressure</c> to a fixed value.</summary>
+    /// <summary>Pins <c>pressure</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRockCell WithPressure(Pressure value) {
-        return new AnyRockCell(_coordinate, _porosity, _permeability, _thermalConductivity, new FixedValue<Pressure>(value), _temperature);
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._pressure = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>pressure</c> from <c>AnyValidPressure()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>pressure</c> is drawn from — <c>AnyValidPressure()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyPressure, AnyPressure&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRockCell WithPressure(Func<AnyPressure, AnyPressure> configure) {
-        return new AnyRockCell(_coordinate, _porosity, _permeability, _thermalConductivity, configure(AnyValidPressure()), _temperature);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._pressureRecipe = configure(_pressureRecipe);
+        copy._pressure       = copy._pressureRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>temperature</c> to a fixed value.</summary>
+    /// <summary>Pins <c>temperature</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyRockCell WithTemperature(Temperature value) {
-        return new AnyRockCell(_coordinate, _porosity, _permeability, _thermalConductivity, _pressure, new FixedValue<Temperature>(value));
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._temperature = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>temperature</c> from <c>AnyValidTemperature()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>temperature</c> is drawn from — <c>AnyValidTemperature()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTemperature, AnyTemperature&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyRockCell WithTemperature(Func<AnyTemperature, AnyTemperature> configure) {
-        return new AnyRockCell(_coordinate, _porosity, _permeability, _thermalConductivity, _pressure, configure(AnyValidTemperature()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyRockCell copy = new AnyRockCell(this);
+
+        copy._temperatureRecipe = configure(_temperatureRecipe);
+        copy._temperature       = copy._temperatureRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="RockCell" />.</summary>
@@ -137,20 +239,6 @@ public sealed partial class AnyRockCell : IAny<RockCell> {
                             _thermalConductivity.Generate(),
                             _pressure.Generate(),
                             _temperature.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

@@ -1,9 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate GeologicalGrid --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
-//
-// Hand-edited after scaffolding: the cell list is not an independent parameter. A grid holds exactly
-// one cell per coordinate, so Generate() draws the dimensions first and then one cell per coordinate.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 using System.Collections.Generic;
@@ -19,11 +20,17 @@ namespace GeothermalReservoir.Domain;
 /// </summary>
 public sealed partial class AnyGeologicalGrid : IAny<GeologicalGrid> {
 
-    private readonly IAny<int>    _cellsX;
-    private readonly IAny<int>    _cellsY;
-    private readonly IAny<int>    _cellsZ;
-    private readonly IAny<double> _cellSizeMetres;
-    private readonly AnyRockCell  _cell;
+    private IAny<int>                           _cellsX;
+    private IAny<int>                           _cellsY;
+    private IAny<int>                           _cellsZ;
+    private IAny<double>                        _cellSizeMetres;
+    private AnyRockCell _cells;
+
+    private AnyInt32          _cellsXRecipe;
+    private AnyInt32          _cellsYRecipe;
+    private AnyInt32          _cellsZRecipe;
+    private AnyDouble         _cellSizeMetresRecipe;
+    private AnyRockCell _cellsRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyGeologicalGrid()
@@ -31,10 +38,8 @@ public sealed partial class AnyGeologicalGrid : IAny<GeologicalGrid> {
                cellsY:         AnyValidCellsY(),
                cellsZ:         AnyValidCellsZ(),
                cellSizeMetres: AnyValidCellSizeMetres(),
-               cell:           AnyValidCell()) { }
+               cells:          AnyValidCells()) { }
 
-    // The domain only requires at least one cell per axis. The upper bound is a test-suite choice:
-    // a handful of cells per axis keeps every grid small enough to simulate in a unit test.
     private static AnyInt32 AnyValidCellsX() {
         return Any.Int32().Between(1, 4);
     }
@@ -51,88 +56,161 @@ public sealed partial class AnyGeologicalGrid : IAny<GeologicalGrid> {
         return Any.Double().Between(GeologicalGrid.MinimumCellSizeMetres, GeologicalGrid.MaximumCellSizeMetres);
     }
 
-    // The recipe of every cell; its coordinate is set by Generate().
-    private static AnyRockCell AnyValidCell() {
+    // The cells are not drawn as a list: the grid owns the rule "exactly X*Y*Z cells, one per coordinate",
+    // so Generate() builds them from the dimensions, from this template with only the coordinate replaced.
+    private static AnyRockCell AnyValidCells() {
         return new AnyRockCell();
     }
 
-    private AnyGeologicalGrid(IAny<int>    cellsX,
-                              IAny<int>    cellsY,
-                              IAny<int>    cellsZ,
-                              IAny<double> cellSizeMetres,
-                              AnyRockCell  cell) {
-        _cellsX         = cellsX;
-        _cellsY         = cellsY;
-        _cellsZ         = cellsZ;
-        _cellSizeMetres = cellSizeMetres;
-        _cell           = cell;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyGeologicalGrid(AnyInt32          cellsX,
+                              AnyInt32          cellsY,
+                              AnyInt32          cellsZ,
+                              AnyDouble         cellSizeMetres,
+                              AnyRockCell cells) {
+        _cellsX               = cellsX;
+        _cellsXRecipe         = cellsX;
+        _cellsY               = cellsY;
+        _cellsYRecipe         = cellsY;
+        _cellsZ               = cellsZ;
+        _cellsZRecipe         = cellsZ;
+        _cellSizeMetres       = cellSizeMetres;
+        _cellSizeMetresRecipe = cellSizeMetres;
+        _cells                = cells;
+        _cellsRecipe          = cells;
     }
 
-    /// <summary>Pins <c>cellsX</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyGeologicalGrid(AnyGeologicalGrid from) {
+        _cellsX               = from._cellsX;
+        _cellsXRecipe         = from._cellsXRecipe;
+        _cellsY               = from._cellsY;
+        _cellsYRecipe         = from._cellsYRecipe;
+        _cellsZ               = from._cellsZ;
+        _cellsZRecipe         = from._cellsZRecipe;
+        _cellSizeMetres       = from._cellSizeMetres;
+        _cellSizeMetresRecipe = from._cellSizeMetresRecipe;
+        _cells                = from._cells;
+        _cellsRecipe          = from._cellsRecipe;
+    }
+
+    /// <summary>Pins <c>cellsX</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyGeologicalGrid WithCellsX(int value) {
-        return new AnyGeologicalGrid(new FixedValue<int>(value), _cellsY, _cellsZ, _cellSizeMetres, _cell);
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellsX = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Pins <c>cellsY</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>cellsX</c> is drawn from — <c>AnyValidCellsX()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyGeologicalGrid WithCellsX(Func<AnyInt32, AnyInt32> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellsXRecipe = configure(_cellsXRecipe);
+        copy._cellsX       = copy._cellsXRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>cellsY</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyGeologicalGrid WithCellsY(int value) {
-        return new AnyGeologicalGrid(_cellsX, new FixedValue<int>(value), _cellsZ, _cellSizeMetres, _cell);
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellsY = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Pins <c>cellsZ</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>cellsY</c> is drawn from — <c>AnyValidCellsY()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyGeologicalGrid WithCellsY(Func<AnyInt32, AnyInt32> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellsYRecipe = configure(_cellsYRecipe);
+        copy._cellsY       = copy._cellsYRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>cellsZ</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyGeologicalGrid WithCellsZ(int value) {
-        return new AnyGeologicalGrid(_cellsX, _cellsY, new FixedValue<int>(value), _cellSizeMetres, _cell);
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellsZ = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Pins the three dimensions at once.</summary>
-    public AnyGeologicalGrid WithDimensions(int cellsX, int cellsY, int cellsZ) {
-        return new AnyGeologicalGrid(new FixedValue<int>(cellsX), new FixedValue<int>(cellsY), new FixedValue<int>(cellsZ), _cellSizeMetres, _cell);
+    /// <summary>Refines the recipe <c>cellsZ</c> is drawn from — <c>AnyValidCellsZ()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyGeologicalGrid WithCellsZ(Func<AnyInt32, AnyInt32> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellsZRecipe = configure(_cellsZRecipe);
+        copy._cellsZ       = copy._cellsZRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>cellSizeMetres</c> to a fixed value.</summary>
+    /// <summary>Pins <c>cellSizeMetres</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyGeologicalGrid WithCellSizeMetres(double value) {
-        return new AnyGeologicalGrid(_cellsX, _cellsY, _cellsZ, new FixedValue<double>(value), _cell);
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellSizeMetres = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>cellSizeMetres</c> from <c>AnyValidCellSizeMetres()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>cellSizeMetres</c> is drawn from — <c>AnyValidCellSizeMetres()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyGeologicalGrid WithCellSizeMetres(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyGeologicalGrid(_cellsX, _cellsY, _cellsZ, configure(AnyValidCellSizeMetres()), _cell);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellSizeMetresRecipe = configure(_cellSizeMetresRecipe);
+        copy._cellSizeMetres       = copy._cellSizeMetresRecipe;
+
+        return copy;
     }
 
-    /// <summary>Refines the recipe every cell is drawn from (its coordinate is always set by the grid).</summary>
+    /// <summary>Refines the recipe <c>cells</c> is drawn from — <c>AnyValidCells()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;RockCell&gt;, AnyList&lt;RockCell&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyGeologicalGrid WithCells(Func<AnyRockCell, AnyRockCell> configure) {
-        return new AnyGeologicalGrid(_cellsX, _cellsY, _cellsZ, _cellSizeMetres, configure(AnyValidCell()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyGeologicalGrid copy = new AnyGeologicalGrid(this);
+
+        copy._cellsRecipe = configure(_cellsRecipe);
+        copy._cells       = copy._cellsRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="GeologicalGrid" />.</summary>
     public GeologicalGrid Generate() {
-        int cellsX = _cellsX.Generate();
-        int cellsY = _cellsY.Generate();
-        int cellsZ = _cellsZ.Generate();
+        int x = _cellsX.Generate();
+        int y = _cellsY.Generate();
+        int z = _cellsZ.Generate();
 
-        List<RockCell> cells = new List<RockCell>(cellsX * cellsY * cellsZ);
-        for (int i = 0; i < cellsX; i++) {
-            for (int j = 0; j < cellsY; j++) {
-                for (int k = 0; k < cellsZ; k++) {
-                    cells.Add(_cell.WithCoordinate(new CellCoordinate(i, j, k)).Generate());
+        List<RockCell> cells = new List<RockCell>();
+        for (int i = 0; i < x; i++) {
+            for (int j = 0; j < y; j++) {
+                for (int k = 0; k < z; k++) {
+                    cells.Add(_cellsRecipe.WithCoordinate(new CellCoordinate(i, j, k)).Generate());
                 }
             }
         }
 
-        return new GeologicalGrid(cellsX, cellsY, cellsZ, _cellSizeMetres.Generate(), cells);
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
+        return new GeologicalGrid(x, y, z, _cellSizeMetres.Generate(), cells);
     }
 
 }

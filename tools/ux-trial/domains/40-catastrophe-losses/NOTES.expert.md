@@ -1,70 +1,54 @@
-# Expert crafter notes — 40 catastrophe losses
+# Expert notes — 40 catastrophe losses
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
+Pages read, in order: `PROJECT-README.md`, `guides/getting-started.en.md`, `packages/justdummies-cli.en.md` (twice, the "what the last column means", "adjusting a parameter" and "when a guard ties two parameters" parts), `packages/justdummies-xunit.en.md`, `generators/README.md`, `generators/numbers.en.md`, `generators/collections.en.md` (counts, distinctness, ascending order), `guides/composition.en.md` (`.Then`, `.As`, bound taken from another draw), and the "Arbitrary does not mean dummy" part of `guides/core-concepts.en.md`. I only skimmed strings/enums.
 
-- Scaffolded all ten domain types in one call:
-  `any generate GeoPoint Footprint VulnerabilityCurve InsuredProperty PolicyTerms Exposure CatastropheEvent Portfolio LossDistribution CatastropheModel --entry-point any --output ./Arbitrary`
-  (exit 0, 15 parameters "to verify" across 9 files, build stopped as designed).
-- Resolved every `TODO(any)` in the `AnyValid…()` factories (`Tests.Expert/Arbitrary/`), then added
-  hand-written recipes beside them (`Tests.Expert/Recipes/`): identity comparers for distinct
-  catalogues/portfolios, `AnyPortfolio.Holding/FrozenWith/Frozen` (an aggregate filled after
-  construction, built with `Any.Combine` + `.As`), and reusable refinements (`Scenarios.LinearCurve`).
-- `[assembly: Reproducible]`; 35 test methods (49 cases) over footprint decay, curve interpolation,
-  ground-up/terms arithmetic, exposure cross-field rules, portfolio lifecycle and occurrence loss,
-  risk measures, and the Monte Carlo model (seed replay, zero-loss region, shared severity per
-  occurrence, whole occurrences at zero volatility, AAL ~ rate x loss). All pass on every rerun (a dozen runs).
+`any` commands run (after a `dotnet restore`, which the tool asked for):
+`any generate GeoPoint Footprint VulnerabilityCurve InsuredProperty PolicyTerms Exposure CatastropheEvent Portfolio LossDistribution CatastropheModel --output Generators --namespace CatastropheLosses.Tests.Expert.Generators --entry-point any`
+Result: 10 generators plus 10 `Any.X()` entry points; 5 of them with a non-compiling `TODO_verify_…` sentinel.
 
-## Frictions and surprises, in order met
+Generators completed by hand:
+- `AnyInsuredProperty.id`, `AnyCatastropheEvent.id`, `AnyPortfolio.currency`: regex guard, replaced by `Any.StringMatching("PRP-[0-9]{6}")`, `"EV-[0-9]{4,8}"`, `"[A-Z]{3}"` and retyped `AnyString` to `AnyPattern` in the 4 places the TODO names.
+- `AnyVulnerabilityCurve`: the two lists tied by count, strictly increasing intensities, non-decreasing ratios starting at 0. I fixed the count at 4 for both and wrote `ListOf(Double().Between(0,100)).WithCount(4).Ordered().Distinct()` and `ListOf(Double().Between(0,1)).WithCount(4).Containing(0d).Ordered()`.
+- `AnyLossDistribution`: `Any.Decimal().GreaterThanOrEqualTo(0m)` as element (the scaffold drew any decimal).
+- `AnyCatastropheModel`: `.DistinctBy(e => e.Id)` on the catalogue.
+- `AnyExposure`: rewritten by hand, the terms are drawn after the property (`TermsFitting(insuredValue)` with `Any.Combine`), the terms' `With…` lambda dropped and the pin kept in a private field.
 
-1. **Every `double` guard went "to verify".** `if (double.IsNaN(x) || x < -90.0 || x > 90.0)` and
-   `if (!double.IsFinite(x) || x <= 0.0)` are "unread guards", so latitude, longitude, radius, peak,
-   annual rate and volatility all came out as bare `Any.Double()`. The same shape without the NaN
-   disjunct (`insuredValue <= 0m` -> `Positive()`) is read. The library already guarantees no NaN /
-   infinity, so the NaN disjunct is the one part that needs no translation; it is the idiomatic way to
-   guard a double and it defeats the tool on every such parameter in this domain.
-2. **Three regex guards (`PRP-\d{6}`, `EV-\d{4,8}`, `[A-Z]{3}`)** -> by design not read. The
-   documented retype (factory to `AnyPattern`, refining `Func<AnyString, AnyString>` too) worked;
-   in `AnyPortfolio` both `name` and `currency` have a `Func<AnyString, AnyString>` overload, so the
-   edit must target the right one. Three times the same three-line ritual.
-3. **Cross-parameter guards.** `Exposure` (deductible < value, limit <= value) was flagged on both
-   parameters — good. I honoured it with disjoint bands set in `AnyValidProperty/AnyValidTerms`
-   (`WithInsuredValue(v => v.Between(250_000m, 5_000_000m))`, limits <= 250 000). Works, but a test
-   that pins `p => p.WithInsuredValue(100_000m)` and leaves terms drawn would fail on *some* runs
-   only. Documented ("a lambda guarantees where it starts"), still the sharpest edge of the day.
-4. **`VulnerabilityCurve`'s lists are tied (same count, first ratio 0, ordering).** The recap names
-   only the first unread guard (the count check); the ordering / [0,1] / first-is-zero rules were
-   only discoverable by reading the constructor. I rewrote the generator: intensities from
-   `Any.SetOf(Any.Double().Between(0, 100)).WithCountBetween(2, 8).As(sorted)`, ratios derived in
-   `Generate()` from the drawn count, a nullable field meaning "derive unless pinned". The scaffold
-   has no shape for a derived parameter, so this is hand surgery a `--force` would erase.
-5. **Aggregates (`Portfolio.Add/Freeze`)**: nothing to scaffold beyond name/currency, as expected.
-   `Any.Combine(this, exposures, (p, xs) => { …Add…; return p; })` in a partial file was clean.
-6. **Pinning one specific element set** into a generator-taking API needed
-   `Any.OneOf<IEnumerable<Exposure>>(exposures)` (explicit type to avoid params expansion). A named
-   "constant" generator (`Any.Just(x)`) would read better; the scaffold has one, but private.
-7. **Shuffling**: to test that risk measures ignore simulation order I wrote
-   `Any.ListOf(Any.ElementOf(years)).WithCount(8).Distinct()`. It works and is not flaky (20 000
-   draws of a full 8-permutation, 2 000 of a 20-permutation, no failure), but a permutation is
-   spelled indirectly; `Any.PermutationOf(list)` would say it.
-8. Scaffolded generators land in the **domain's namespace** (`CatastropheLosses.Domain`) inside
-   the test project by default; fine, but surprising for a test assembly (`--namespace` exists).
+Tests (Tests.Expert, 11 files, 192 test methods, 299 cases, 11 skipped as domain defects): GeoPoint (bounds, haversine against literals, equality, ToString), Footprint (every refusal, linear decay, edge), VulnerabilityCurve (every refusal rule, interpolation, tails), InsuredProperty (id format, ground-up loss, cent rounding), PolicyTerms (deductible/limit boundaries), Exposure (cross-field refusals, loss through the curve and the terms, severity), CatastropheEvent (id, peril, rate, return period), Portfolio (name/currency, state machine open→frozen, duplicates, totals, event loss), LossDistribution (mean, SD, quantile, TVaR, return period, exceedance), CatastropheModel (refusals, `Simulate` determinism, years bounds, Poisson mean, severity mean 1, shared severity between exposures, terms per occurrence). `Scenes.cs` holds hand-computable small worlds. `[assembly: Reproducible]` makes every test replayable.
+
+Result: green with 288 passed, 11 skipped (`Skip = "domain defect: …, seed …"`). After the first green run I ran it 12 more times with fresh seeds, all green (before that, 3 of my own mistakes showed up on drawn values, see frictions 8 to 10). Bin/obj deleted.
+
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Expert` does not work out of the box.** Exact output: `MSBUILD : error MSB1001: Unknown switch. … --project .`. The .NET 10 SDK needs a `global.json` with `{ "test": { "runner": "Microsoft.Testing.Platform" } }`. Neither the xUnit page nor the README says so (they only say xUnit v3 4.0.2 and `Exe`). Expected the documented command to run. I created `W/global.json`. Class: docs.
+2. **`any generate` before restore.** `✗ GeoPoint: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear message, I ran `dotnet restore`. Nothing to change, noted as worked well.
+3. **The `AnyString` to `AnyPattern` retype is a manual four-place edit, three times.** For `^PRP-\d{6}$`, `^EV-\d{4,8}$`, `^[A-Z]{3}$` the TODO says exactly what to retype (field, factory return, ctor parameter, `Func` of `WithX`), and it was accurate. But the three patterns are inside the library's own regular subset and trivial. An expert pays the edit on every re-scaffold (`--force` loses it). I used `perl -0pi` on the file. Idea: an opt-in flag (or a `to verify` hint line showing the literal `Any.StringMatching("PRP-[0-9]{6}")` for patterns the subset accepts) to remove the mechanical part. Class: idea, low.
+4. **Cross-field guards cannot be expressed in the scaffolded shape; I rewrote `AnyExposure` entirely.** Scaffold marks both `property` and `terms` `to verify` ("ties terms to property, and 1 more"). The docs offer "derive one draw from another inside `Generate()`", but doing so makes `WithTerms(Func)` and `WithTerms(value)` lie (a pin written after the tie is silently replaced, a refinement that pins a deductible is overridden by my own `LessThan(value)`). I had to delete the lambda overload and keep only a pin whose consistency is the caller's job. The docs warn about exactly this ("Pin both, or write the tie in `Generate()`"), and I still tripped over it in friction 9. A first-class `Any.Combine`-shaped way to declare "terms depend on property" while keeping `With…` honest would help a lot. Class: friction, medium.
+5. **"Same count" guard between two lists (`intensities.Count != damageRatios.Count`) has no expression either.** I fixed the count at 4 in both `AnyValid…` factories, which hides the variable-length dimension of the curve from every dummy. A shared count would need `Then` and a hand-written `Generate()` with the same pin problem. Class: friction, low (tests for interpolation pin literal curves anyway).
+6. **Scaffolded money is not money.** `Any.Decimal().Positive()` (and `GreaterThanOrEqualTo(0m)`) draw, by documented design, values like `675263.36912712842662088444780` and, one draw in ten, up to `4.8e28`. I printed 15 exposures/distributions: about a third of the `LossDistribution`s had a loss near 5e28. The scaffolder cannot know it is money, and the domain declares no scale and no upper bound, so I did not add `WithScale(2)` (not an invariant of the domain). Result: draws revealed domain defect D2 below. A hint in the recap (`decimal` named `…Value`/`…Loss` → "consider `WithScale`") would be welcome. Class: idea, low.
+7. **Default collection size is not documented.** To know how big `Any.ListOf(x).NonEmpty()` is I had to print it (1 to 9 elements in 15 draws). The strings page has "What an unconstrained string looks like"; the collections page has no counterpart. Class: docs, low.
+8. **Own mistake on a drawn value: `StandardDeviation` of identical years is not exactly 0.** Failed with `Expected: 0 Actual: 5.8207660913467407E-11` (seed 1712897349) on `[anyLoss, anyLoss, anyLoss]`. The domain converts each decimal to double and subtracts a decimal mean divided by 3; the error is 1e-17 relative. I judged my exact comparison too strict and compared to 6 digits. Not a finding. The draw earned its keep: a literal `1000m` would have hidden it.
+9. **Own mistake on a drawn value: a literal term on a drawn property.** `Any.Exposure().WithProperty(drawn).WithTerms(new PolicyTerms(1_000m, 200_000m))` failed with `Limit 200000 exceeds the insured value 86747.32310155972332524368540 of PRP-549039: over-insurance is not written.` (seed 1506253422): the literal limit was significant, the property value was not a dummy for it. Fixed by pinning the value in the test (`Scenes.ExposureOf(id, place, 100_000m, terms, curve)`). The generator's doc comment warned me and I still wrote it, which says something about how easy it is to write the invalid combination.
+10. **A seed is printed for tests that draw nothing relevant.** For the literal-geometry tests the report `[JustDummies] These arbitrary values were seeded with …` appears on failure although the failure cannot depend on it (e.g. the `Covers` edge test). Harmless, but for the "domain defect" skips the brief asks for a seed, which is meaningless for those; I wrote "seed n/a (literal)". Class: friction, low.
+11. **`any` output location and namespace.** `--output Generators --namespace …` worked on first try; the default namespace would be the *domain's* (`CatastropheLosses.Domain`), which is surprising for a test project. I overrode it. Noted for the docs only: the example in the CLI page does not show a test-project-sized invocation. Class: docs, low.
+12. **Analyzers never spoke.** Zero warnings in `dotnet build --no-incremental` for the whole project (the scaffolded `Any.String()` JD030 is Info, hidden, as documented). Nothing to report, but also no feedback on my own misuse; I could not tell whether the analyzers were running except by the docs.
+
+Domain findings (kept as skipped tests, each reproduced by un-skipping it):
+- D1 **`GeoPoint.DistanceKmTo` returns NaN for some antipodal pairs** (haversine `a` rounds above 1, `Math.Sqrt(1 - a)`): `(77.35488929196956, -65.17134279253489)` to `(-77.35488929196956, 114.82865720746511)`. About 4 % of the antipodes I drew gave NaN (11 363 of 300 000). Consequence: `Footprint.IntensityAt` gives NaN, so `Exposure.InsuredLoss` throws `ArgumentOutOfRangeException` from the curve for a property on the other side of the Earth instead of returning 0. Tests `GeoPointTests.The_distance_between_antipodal_points_is_a_number`, `ExposureTests.A_property_on_the_other_side_of_the_earth_is_not_hurt`.
+- D2 **`LossDistribution.Mean` throws `OverflowException`** when the losses add beyond `decimal.MaxValue`; nothing bounds a loss or an insured value, and a drawn `Any.LossDistribution()` hits it about one run in six. Test `The_mean_of_an_arbitrary_distribution_can_be_read`, seed -655678700 (replays red).
+- D3 **`LossDistribution.Quantile` is pushed one rank up on floating-point rank boundaries**: `ceil(0.07 * 100)` is 8 (`7.000000000000001`), so the 7th smallest of 1..100 is reported as 8; same for 0.14, 0.28, 0.55. Test `A_quantile_on_a_rank_boundary_is_not_pushed_to_the_next_rank`.
+- D4 **`ReturnPeriodLoss(+infinity)`** computes probability 1 and the refusal blames `probability`, not `years`. Test `An_infinite_return_period_is_the_worst_year` (arguably a design choice, low).
+- D5 **`$` in the id/currency regexes accepts a trailing line break** (`"PRP-123456\n"`, `"EV-1234\n"`, `"USD\n"`), and **`\d` accepts non-ASCII digits** (`"PRP-٠٠٠١٢٣"`). Four skipped tests.
+- D6 **`GeoPoint.ToString` depends on the current culture**: `(48,8566, 2,3522)` under fr-FR. Test `A_point_is_written_the_same_way_whatever_the_culture_of_the_machine`.
+- D7 `Footprint.Covers` is inclusive of the radius while `IntensityAt` is 0 there: a covered location feels nothing (low, design question). Test `A_location_covered_by_the_footprint_feels_a_strictly_positive_intensity`.
 
 ## What worked well
-
-- `IAny<T>` covariance: `AnyList<Exposure>` flows into `IAny<IEnumerable<Exposure>>` with no cast.
-- Nested refinements read like the domain: `WithFootprint(f => f.WithCenter(c => c.WithLatitude(l =>
-  l.Between(-10, 10))).WithRadiusKm(r => r.LessThanOrEqualTo(500)))`.
-- `WithId(id => id.DifferentFrom(other))` on an `AnyPattern`; `Distinct(comparer)` with
-  `EqualityComparer<T>.Create` for entity identity (no JD028 noise once a comparer is given).
-- `TODO` lines that stop the build: I could not forget a single guard.
-- Seed report + replay: a failing test printed `[Reproducible(Seed = -852001438)]`; pinning it
-  replayed the identical value through the whole scaffolded graph, derived draws included.
-- Analyzers stayed quiet and relevant: a single JD030 note (curve name with no length: correct,
-  the domain declares none).
+- `any generate` on ten types at once, with `--entry-point any`: ten generators and `Any.X()` entry points in one command; composed types (`new AnyGeoPoint()` inside `AnyFootprint`) wired themselves; guards with constants were read (`Positive().LessThanOrEqualTo(Footprint.MaxRadiusKm)`, `Between(-90d, 90d)`). The "build stops at the line" philosophy is honest: nothing was drawn silently wrong.
+- The `With…(value)` / `With…(Func)` pair gave readable tests: `Any.Footprint().WithPeakIntensity(7.5d)` says that the peak is the subject and the rest is arbitrary; `Any.InsuredProperty().WithInsuredValue(1_000_000m).WithVulnerability(curve)`.
+- The collection vocabulary solved the hard curve invariants declaratively: `Ordered().Distinct()` for strictly increasing, `Containing(0d).Ordered()` for "first ratio exactly 0".
+- `Any.Int32().Except(0, 1, 2, 3)` cast to `Peril` is a one-line "any undeclared enum value"; `Any.StringMatching(...).DifferentFrom(first)` for a second distinct id; `DistinctBy` to build unique-id lists.
+- `[assembly: Reproducible]` plus the seed in the failure output turned my three mistakes and the D2 defect into replayable facts in one command; D2 reproduced from its seed.
+- The draws earned their keep: D1, D2 and friction 8/9 came from drawn values, not from literals.
 
 ## Fluency: 4 / 5
-
-The library surface did everything a real test asked for, and composition / refinement is a
-pleasure. One point off for the scaffolder's blind spot on NaN-guarded doubles (6 of 6 double
-parameters to hand-fix) and for cross-parameter invariants, which always end as hand surgery in
-`Generate()` that a re-scaffold overwrites.
+The scaffold plus the `With…` API got me to readable, intention-revealing tests quickly, and the docs are good on the philosophy (what is a dummy, when to pin). I lost points for the three places where the domain's real shape (cross-field and same-count guards, regex-as-subset, money) pushes the author out of the scaffolded structure into hand-written `Generate()` and lost `With…` guarantees, and for the undocumented `global.json` requirement of the very command the brief gives.

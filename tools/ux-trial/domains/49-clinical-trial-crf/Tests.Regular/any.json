@@ -1,0 +1,1 @@
+{ "output": "./Generators", "entryPoint": "any", "namespace": "ClinicalTrial.Domain.Tests.Regular.Generators" }

@@ -1,0 +1,8 @@
+root = false
+[*.cs]
+dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
+dotnet_analyzer_diagnostic.category-JustDummies.Usage.severity = warning
+dotnet_analyzer_diagnostic.category-JustDummies.Reproducibility.severity = warning
+dotnet_analyzer_diagnostic.category-JustDummies.Style.severity = warning
+dotnet_diagnostic.JD019.severity = warning
+dotnet_diagnostic.JD011.severity = warning

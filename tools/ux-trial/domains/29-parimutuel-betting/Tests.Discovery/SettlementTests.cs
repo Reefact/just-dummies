@@ -1,190 +1,115 @@
-using System.Collections.Generic;
-
-using JustDummies;
-
-using ParimutuelBetting.Domain;
-
-using Xunit;
-
-using static ParimutuelBetting.Tests.Discovery.Tickets;
-
 namespace ParimutuelBetting.Tests.Discovery;
 
 public sealed class SettlementTests {
 
-    private static StakePool AnyClosedPool(BetType betType, decimal unitStake, AnyPoolRules rules, IEnumerable<Stake> stakes) {
-        // The race only has to field every horse the stakes name (horse 8 at most in this class).
-        StakePool anyPool = Any.StakePool()
-                               .WithRace(r => r.WithFieldSize(f => f.GreaterThanOrEqualTo(8)))
-                               .WithBetType(betType)
-                               .WithUnitStake(unitStake)
-                               .WithRules(rules.Generate())
-                               .Generate();
-        foreach (Stake stake in stakes) {
-            anyPool.Accept(stake);
-        }
-
-        anyPool.Close();
-
-        return anyPool;
+    private static Dividend DividendOf(decimal amountPerUnit, int winningUnits) {
+        return Any.Dividend().WithAmountPerUnit(amountPerUnit).WithWinningUnits(winningUnits).Generate();
     }
 
     [Fact]
-    public void The_net_pool_is_shared_among_the_winning_units() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0.15m).WithBreakageStep(0.10m).WithMinimumReturnRatio(1.00m);
-        StakePool anyWinPool = AnyClosedPool(BetType.Win, 1.00m, anyRules, [On(BetType.Win, 10, 3), On(BetType.Win, 30, 5)]);
+    public void The_net_pool_is_what_remains_after_refunds_and_deductions() {
+        Settlement settlement = new Settlement(1000m, 100m, 135m, Array.Empty<Dividend>(), 0m);
 
-        // Act
-        Settlement settlement = anyWinPool.Settle(new RaceResult(anyWinPool.Race, Horses(3, 5), NobodyScratched));
-
-        // Assert
-        Assert.Equal(40.00m, settlement.GrossPool);
-        Assert.Equal(6.00m, settlement.Deductions);
-        Assert.Equal(34.00m, settlement.NetPool);
-        Dividend dividend = Assert.Single(settlement.Dividends);
-        Assert.Equal(new Combination(BetType.Win, Horses(3)), dividend.Combination);
-        Assert.Equal(3.40m, dividend.AmountPerUnit);
-        Assert.Equal(10, dividend.WinningUnits);
+        Assert.Equal(765m, settlement.NetPool);
+        Assert.Equal(1000m, settlement.GrossPool);
+        Assert.Equal(100m, settlement.Refunded);
+        Assert.Equal(135m, settlement.Deductions);
     }
 
     [Fact]
-    public void The_dividend_is_rounded_down_to_the_breakage_step_and_the_remainder_is_breakage() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0.15m).WithBreakageStep(0.10m).WithMinimumReturnRatio(1.00m);
-        StakePool anyWinPool = AnyClosedPool(BetType.Win, 1.00m, anyRules, [On(BetType.Win, 10, 3), On(BetType.Win, 30, 5)]);
+    public void A_pool_nobody_won_carries_its_whole_net_pool_over() {
+        Settlement settlement = new Settlement(1000m, 100m, 135m, Array.Empty<Dividend>(), 765m);
 
-        // Act
-        Settlement settlement = anyWinPool.Settle(new RaceResult(anyWinPool.Race, Horses(5, 3), NobodyScratched));
-
-        // Assert
-        Dividend dividend = Assert.Single(settlement.Dividends);
-        Assert.Equal(1.10m, dividend.AmountPerUnit);   // 34.00 / 30 = 1.133..., down to 0.10
-        Assert.Equal(33.00m, settlement.TotalPayout);
-        Assert.Equal(1.00m, settlement.Breakage);
-    }
-
-    [Fact]
-    public void A_dividend_below_the_minimum_return_is_topped_up_at_the_operators_expense() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0.20m).WithBreakageStep(0.10m).WithMinimumReturnRatio(1.05m);
-        StakePool anyWinPool = AnyClosedPool(BetType.Win, 1.00m, anyRules, [On(BetType.Win, 100, 3), On(BetType.Win, 1, 5)]);
-
-        // Act
-        Settlement settlement = anyWinPool.Settle(new RaceResult(anyWinPool.Race, Horses(3), NobodyScratched));
-
-        // Assert
-        Dividend dividend = Assert.Single(settlement.Dividends);
-        Assert.Equal(1.05m, dividend.AmountPerUnit);   // 80.80 / 100 = 0.80 after breakage, raised to 1.05
-        Assert.Equal(-24.20m, settlement.Breakage);
-    }
-
-    [Fact]
-    public void When_nobody_backed_the_winner_the_whole_net_pool_is_carried_over() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0.15m);
-        StakePool anyWinPool = AnyClosedPool(BetType.Win, 1.00m, anyRules, [On(BetType.Win, 10, 3)]);
-
-        // Act
-        Settlement settlement = anyWinPool.Settle(new RaceResult(anyWinPool.Race, Horses(7, 3), NobodyScratched));
-
-        // Assert
-        Assert.Empty(settlement.Dividends);
-        Assert.Equal(8.50m, settlement.Carryover);
+        Assert.Equal(765m, settlement.Carryover);
+        Assert.Equal(0m, settlement.TotalPayout);
         Assert.Equal(0m, settlement.Breakage);
     }
 
     [Fact]
-    public void Stakes_naming_a_scratched_horse_are_refunded_before_the_takeout() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0.10m).WithBreakageStep(0.10m).WithMinimumReturnRatio(1.00m);
-        StakePool anyWinPool = AnyClosedPool(BetType.Win, 1.00m, anyRules, [On(BetType.Win, 10, 3), On(BetType.Win, 20, 5), On(BetType.Win, 5, 4)]);
+    public void A_pool_that_carried_over_only_part_of_its_net_pool_keeps_the_rest_as_breakage() {
+        Settlement settlement = new Settlement(1000m, 0m, 100m, Array.Empty<Dividend>(), 800m);
 
-        // Act
-        Settlement settlement = anyWinPool.Settle(new RaceResult(anyWinPool.Race, Horses(3, 5), scratched: Horses(4)));
-
-        // Assert
-        Assert.Equal(35.00m, settlement.GrossPool);
-        Assert.Equal(5.00m, settlement.Refunded);
-        Assert.Equal(3.00m, settlement.Deductions);
-        Assert.Equal(2.70m, Assert.Single(settlement.Dividends).AmountPerUnit);
+        Assert.Equal(100m, settlement.Breakage);
     }
 
     [Fact]
-    public void A_place_pool_shares_the_net_pool_equally_among_the_placed_horses() {
+    public void The_total_payout_adds_every_dividend_and_breakage_is_what_rounding_kept() {
         // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0m).WithBreakageStep(0.01m).WithMinimumReturnRatio(1.00m).WithPlacesPaid(3);
-        StakePool anyPlacePool = AnyClosedPool(BetType.Place, 1.00m, anyRules,
-                                               [On(BetType.Place, 10, 1), On(BetType.Place, 20, 2), On(BetType.Place, 30, 3), On(BetType.Place, 40, 6)]);
+        List<Dividend> dividends = new List<Dividend> { DividendOf(25.70m, 7), DividendOf(3.10m, 20) };
 
         // Act
-        Settlement settlement = anyPlacePool.Settle(new RaceResult(anyPlacePool.Race, Horses(2, 3, 1, 6), NobodyScratched));
+        Settlement settlement = new Settlement(300m, 0m, 30m, dividends, 0m);
 
-        // Assert: 100.00 shared in three, each third divided by that horse's units.
-        Assert.Collection(settlement.Dividends,
-                          second => Assert.Equal(1.66m, second.AmountPerUnit),
-                          third => Assert.Equal(1.11m, third.AmountPerUnit),
-                          first => Assert.Equal(3.33m, first.AmountPerUnit));
+        // Assert
+        Assert.Equal(25.70m * 7 + 3.10m * 20, settlement.TotalPayout);
+        Assert.Equal(270m - 241.9m, settlement.Breakage);
     }
 
     [Fact]
-    public void A_place_pool_shares_only_among_the_placed_horses_that_were_backed() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0m).WithBreakageStep(0.01m).WithMinimumReturnRatio(1.00m).WithPlacesPaid(2);
-        StakePool anyPlacePool = AnyClosedPool(BetType.Place, 1.00m, anyRules, [On(BetType.Place, 10, 1), On(BetType.Place, 40, 6)]);
+    public void Breakage_is_negative_when_the_minimum_return_was_topped_up() {
+        Settlement settlement = new Settlement(100m, 0m, 20m, new[] { DividendOf(1.00m, 100) }, 0m);
 
-        // Act
-        Settlement settlement = anyPlacePool.Settle(new RaceResult(anyPlacePool.Race, Horses(1, 5, 6), NobodyScratched));
-
-        // Assert
-        Dividend dividend = Assert.Single(settlement.Dividends);
-        Assert.Equal(new Combination(BetType.Place, Horses(1)), dividend.Combination);
-        Assert.Equal(5.00m, dividend.AmountPerUnit);
+        Assert.Equal(-20m, settlement.Breakage);
     }
 
     [Fact]
-    public void A_quinella_wins_whatever_the_order_its_two_horses_finish_in() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0.10m).WithBreakageStep(0.10m).WithMinimumReturnRatio(1.00m);
-        StakePool anyQuinellaPool = AnyClosedPool(BetType.Quinella, 1.00m, anyRules, [On(BetType.Quinella, 10, 5, 3), On(BetType.Quinella, 10, 1, 2)]);
+    public void A_settlement_does_not_follow_the_list_of_dividends_it_was_built_from() {
+        List<Dividend> dividends = new List<Dividend> { DividendOf(2.00m, 5) };
 
-        // Act
-        Settlement settlement = anyQuinellaPool.Settle(new RaceResult(anyQuinellaPool.Race, Horses(3, 5, 1), NobodyScratched));
+        Settlement settlement = new Settlement(100m, 0m, 0m, dividends, 0m);
+        dividends.Clear();
 
-        // Assert
-        Dividend dividend = Assert.Single(settlement.Dividends);
-        Assert.Equal(new Combination(BetType.Quinella, Horses(3, 5)), dividend.Combination);
-        Assert.Equal(1.80m, dividend.AmountPerUnit);
+        Assert.Single(settlement.Dividends);
     }
 
     [Fact]
-    public void An_exacta_in_the_reverse_order_does_not_win() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0.10m);
-        StakePool anyExactaPool = AnyClosedPool(BetType.Exacta, 1.00m, anyRules, [On(BetType.Exacta, 10, 5, 3)]);
+    public void A_negative_gross_pool_is_refused() {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Settlement(-0.01m, 0m, 0m, Array.Empty<Dividend>(), 0m));
+    }
 
-        // Act
-        Settlement settlement = anyExactaPool.Settle(new RaceResult(anyExactaPool.Race, Horses(3, 5), NobodyScratched));
+    [Theory]
+    [InlineData("-1")]
+    [InlineData("100.01")]
+    public void Refunds_lie_between_nothing_and_the_gross_pool(string refunded) {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Settlement(100m, decimal.Parse(refunded, System.Globalization.CultureInfo.InvariantCulture), 0m, Array.Empty<Dividend>(), 0m));
+    }
 
-        // Assert
-        Assert.Empty(settlement.Dividends);
-        Assert.Equal(9.00m, settlement.Carryover);
+    [Theory]
+    [InlineData("-1")]
+    [InlineData("60.01")]
+    public void Deductions_lie_between_nothing_and_the_pool_left_after_refunds(string deductions) {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Settlement(100m, 40m, decimal.Parse(deductions, System.Globalization.CultureInfo.InvariantCulture), Array.Empty<Dividend>(), 0m));
+    }
+
+    [Theory]
+    [InlineData("-0.01")]
+    [InlineData("50.01")]
+    public void The_carryover_lies_between_nothing_and_the_net_pool(string carryover) {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Settlement(100m, 40m, 10m, Array.Empty<Dividend>(), decimal.Parse(carryover, System.Globalization.CultureInfo.InvariantCulture)));
     }
 
     [Fact]
-    public void A_trifecta_pays_the_first_three_in_exact_order() {
-        // Arrange
-        AnyPoolRules anyRules = Any.PoolRules().WithTakeoutRate(0.25m).WithBreakageStep(0.05m).WithMinimumReturnRatio(1.00m);
-        StakePool anyTrifectaPool = AnyClosedPool(BetType.Trifecta, 2.00m, anyRules, [On(BetType.Trifecta, 4, 1, 2, 3), On(BetType.Trifecta, 6, 3, 2, 1)]);
+    public void Everything_may_be_refunded_or_deducted() {
+        Settlement allRefunded = new Settlement(100m, 100m, 0m, Array.Empty<Dividend>(), 0m);
+        Settlement allDeducted = new Settlement(100m, 0m, 100m, Array.Empty<Dividend>(), 0m);
+        Settlement empty       = new Settlement(0m, 0m, 0m, Array.Empty<Dividend>(), 0m);
 
-        // Act
-        Settlement settlement = anyTrifectaPool.Settle(new RaceResult(anyTrifectaPool.Race, Horses(1, 2, 3, 4), NobodyScratched));
+        Assert.Equal(0m, allRefunded.NetPool);
+        Assert.Equal(0m, allDeducted.NetPool);
+        Assert.Equal(0m, empty.NetPool);
+    }
 
-        // Assert
-        Dividend dividend = Assert.Single(settlement.Dividends);
-        Assert.Equal(new Combination(BetType.Trifecta, Horses(1, 2, 3)), dividend.Combination);
-        Assert.Equal(3.75m, dividend.AmountPerUnit);
-        Assert.Equal(15.00m, settlement.TotalPayout);
+    [Fact]
+    public void A_settlement_without_a_list_of_dividends_or_with_a_null_dividend_is_refused() {
+        Assert.Throws<ArgumentNullException>(() => new Settlement(100m, 0m, 0m, null!, 0m));
+        Assert.Throws<ArgumentException>(() => new Settlement(100m, 0m, 0m, new Dividend[] { null! }, 0m));
+    }
+
+    [Fact]
+    public void A_pool_that_declares_dividends_carries_nothing_over() {
+        Dividend[] dividends = { DividendOf(2.00m, 5) };
+
+        Assert.Throws<ArgumentException>(() => new Settlement(100m, 0m, 0m, dividends, 1m));
     }
 
 }

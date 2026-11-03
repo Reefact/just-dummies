@@ -1,51 +1,49 @@
-# Expert crafter notes: 29 parimutuel betting
+# Expert notes — 29 Parimutuel betting
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Test project `Tests.Expert` (32 tests, all green; also 200 consecutive runs of the built executable, no failure).
-- Scaffolded 7 generators in one call: `any generate HorseNumber Combination Race PoolRules Stake RaceResult StakePool --entry-point any --output ./Arbitrary`.
-- Resolved every `to verify` from the constructors: ranges, `Any.StringMatching("[A-Z]{3}-R([1-9]|1[0-6])")` for the
-  race code (retyped the factory and the `Func<AnyPattern, AnyPattern>` refinement, as the CLI page says), `WithScale(2)` for cents.
-- Reshaped two generators by hand, because their invariants live between parameters:
-  `AnyCombination` derives the horse count from the bet type in `Generate()` (`Any.ListOf(_horse).WithCount(arity).Distinct()`);
-  `AnyRaceResult` deals a shuffled card (`ListOf(runner).WithCount(fieldSize).Distinct()`) into scratched and finishers.
-- Partial file `AnyHorseNumber.Custom.cs` adds `RunnerOf(race)`; `AnyCombination.For(betType, race)` says "a stake this pool accepts".
-- `AnyStakePool`'s base race is narrowed to >= 4 runners (every bet type under every rules), with the reason in a comment;
-  a test about a small field pins its own race. `[assembly: Reproducible]` for the whole suite.
-- Test style: amounts, unit stakes and the rules a dividend depends on are literals; which horse wins, the race, and
-  the rules an assertion provably cannot reach (minimum return far below the dividend, breakage step dividing it) are drawn.
+Pages read, in order: `PROJECT-README.md`, `README.md` (index), `guides/getting-started`, `guides/core-concepts`, `guides/composition`, `packages/justdummies-cli` (whole page: guards table, `AnyValid…` bases, "when a guard ties two parameters", "adding the overload yourself"), `packages/justdummies-xunit`, `guides/reproducibility`, then `generators/collections` (distinctness, counts), and the pattern/decimal/enum sections of `strings`, `numbers`, `enums-and-choices`. I read `MODEL.md` and the whole `Domain/` before writing anything (the guard analysis is only worth trusting once the domain is known).
+
+Commands run:
+- `dotnet restore` in `Tests.Expert`, then
+  `any generate HorseNumber Combination Race PoolRules Stake RaceResult Dividend Settlement StakePool --output Generators --namespace ParimutuelBetting.Domain.Tests.Expert.Generators --entry-point any`
+  (`any` refused the first attempt until the project was restored; message was clear).
+- Added `W/global.json` (`"test": { "runner": "Microsoft.Testing.Platform" }`) so that `dotnet test --project Tests.Expert` works (see friction 1).
+
+Scaffold outcome (9 types): 4 generators resolved by themselves (`HorseNumber`, `PoolRules`, `Stake`, `Dividend`); 5 stopped the build with `TODO_verify_…` (`Combination`, `Race`, `RaceResult`, `StakePool`, `Settlement`).
+Hand-completed:
+- `AnyRace`: regex guard -> `Any.StringMatching("[A-Z]{3}-R([1-9]|1[0-6])")`, retyped `AnyString` -> `AnyPattern` in 5 places as the TODO told me; added an `internal static ValidCode()` so a test can get a well-formed code without a race.
+- `AnyCombination`: `horses.Count != betType.Arity()` ties the two parameters. `Generate()` now draws the bet type, then `_horsesRecipe.WithCount(betType.Arity())` (distinct). I deleted the `WithHorses(IReadOnlyList)` pin (it could not honour the tie) and the dead `_horses` field. `AnyCombination.Custom.cs` adds `AmongRunnersOf(fieldSize)` (the race owns "1..fieldSize", as in the docs' `WithHorsesAmong` sample).
+- `AnyRaceResult`: three parameters tied by four guards; rewrote the file: one shuffled permutation of the field cut into scratched / finishers; pins are `WithRace`, `WithScratchedCount`, `WithFinishersCount`. A test that needs a given order builds the `RaceResult` itself.
+- `AnyStakePool`: base race = `new AnyRace().WithFieldSize(f => f.GreaterThanOrEqualTo(4))` ("smallest field every bet type and every PoolRules accepts"); other TODOs deleted.
+- `AnySettlement`: deleted (both files). Nothing in the domain takes a `Settlement` as input and every test of its invariants needs literals.
+
+Tests written (139 methods, 262 cases, in `Tests.Expert/`, assembly-wide `[Reproducible]`):
+`HorseNumberTests` (8), `CombinationTests` (20: arity/order table, wrong counts, duplicates, null, normalisation, equality, defensive copy, `ToString`, `Involves`), `RaceTests` (8: code grammar incl. 17 malformed codes, field size, `IsRunner`), `PoolRulesTests` (8, boundaries of the four parameters), `StakeTests` (3), `DividendTests` (5), `SettlementTests` (17: derived amounts, breakage sign, every refusal and its boundary), `RaceResultTests` (17: refusals, defensive copies, `WinningCombination`), `StakePoolCreationTests` (11), `StakePoolLifecycleTests` (16), `StakePoolSettlementTests` (25: takeout rounding on a half cent, takeout after refunds, breakage steps, minimum return incl. rounding and top-up, carry-over, refunds in every position, Exacta/Quinella/Trifecta ordering, Place sharing/one backed/fewer finishers/minimum return), `StakePoolArbitrarySettlementTests` (1 theory x 5 bet types, fully drawn pools).
+
+Result: green (260 passed, 2 skipped = 2 domain defects below). First run green; then **14 more runs** (fresh seeds each), all green.
 
 ## Frictions and surprises, in order
-1. **`any` does not read a disjunctive range guard.** 9 of the 13 scalar parameters came out `to verify, unread guards`, e.g.
-   `placesPaid: unread guard at PoolRules.cs, line 23: if (placesPaid < 1 || placesPaid > 3)`.
-   A 2-minute probe showed the same bounds split into two `if`s are read (`Any.Int32().Positive().LessThanOrEqualTo(3)  guard`).
-   `x < lo || x > hi` is the most common guard shape in C#, and the CLI page does not say it is out of reach.
-   The fallback is safe (the build stops), but the recipe I then wrote by hand is exactly what the tool could have inferred.
-2. `decimal.Round(x, 2) != x` (whole cents) is not read either; it maps naturally to `.WithScale(2)`. Lower stakes.
-3. For `Combination.horses`, the TODO points at `horses.Any(horse => horse is null)`, a guard irrelevant to a generator that never
-   yields null, rather than the arity/distinct guards that actually decide validity. It sent me to the wrong line first.
-4. Scaffolded `AnyHorseNumber` (single parameter) raises `CA1822 Member 'WithValue' does not access instance data and can be
-   marked as static` on both `With…` methods. Harmless note, but it is noise in code the tool claims is mine to commit.
-5. The `AnyValid…()` factories are `private static`. A test calling `new StakePool(...)` directly (to test the constructor's
-   refusals) needed the same unit-stake recipe; I made `AnyValidUnitStake()` internal rather than duplicate the rule.
-6. No permutation/shuffle generator; a whole card in arbitrary order is `ListOf(...).WithCount(n).Distinct()` over all n runners.
-   It works (even over my own `AnyHorseNumber`, not cardinality-gated) and never failed in 200 runs, but a named
-   `Any.PermutationOf(items)` would say the intent directly.
+1. **`dotnet test --project Tests.Expert` does not work out of the box.** Output: `MSBUILD : error MSB1001: Unknown switch. ... --project Tests.Expert`. On the .NET 10 SDK `--project` belongs to the Microsoft.Testing.Platform mode of `dotnet test`; it needs `{"test":{"runner":"Microsoft.Testing.Platform"}}` in a `global.json`. Neither the xUnit adapter page nor getting-started mention it (xunit.v3 4.0.2 + `Microsoft.NET.Test.Sdk` project). I expected the documented command to run; I added `W/global.json`.
+2. **`any generate` on an unrestored project**: `✗ HorseNumber: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable; just worth a line in the CLI page's "run it from your test project" paragraph.
+3. **No `using Xunit` / `using JustDummies` in the project**: `ImplicitUsings` does not add them, first build gave ~60 `CS0246 ... 'Fact'/'InlineData' could not be found`. I added a `GlobalUsings.cs` (`global using JustDummies; global using Xunit; ...`). The docs' samples all show `using` lines for the adapter only; a "recommended GlobalUsings" snippet in getting-started would save the first minute.
+4. **Five of nine types stop the build, four of them on guards that tie parameters (the fifth is the regex)** (`horses.Count != betType.Arity()`, `finishingOrder.Concat(scratched).Any(h => !race.IsRunner(h))`, `betType.Arity() > race.FieldSize`, Settlement's `deductions > grossPool - refunded` family). This is by design and the recap names the guard and the parameters ("ties horses to betType"), which is precise. What hurt was the *shape of the way out*: the scaffold gives each parameter a pin (`WithHorses(value)`) and a refine lambda, and a tie makes some of those meaningless. The docs' "Derive one draw from another inside `Generate()`" says so ("its `With…` pin no longer reaches the draw") but leaves the cleanup to me: I removed a pin, a field and three assignments by hand for `Combination`, and rewrote `RaceResult` from scratch (the per-parameter machinery had nothing left to say). I would have liked the tool to offer, for a tie it cannot read, a scaffold where the tied parameters are marked once (or only the untied ones get `With…`).
+5. **A tie between a drawn parameter and a pinned one is seed-dependent, and nothing warns.** `Any.StakePool().WithRace(twoRunnerRace).Generate()` leaves `betType` drawn: it throws `ArgumentException` (Trifecta on 2 runners, or Place paying >= field) on some draws only. The docs state the principle ("pinning one side of a tie while the other is still drawn ... the test then depends on the seed") but only in the CLI page's last section, far from `With…` where one meets it. My workaround is the base race of >= 4 runners plus pinning `betType` in every small-field test; it is a convention a reader of the test cannot see. No diagnostic could know, so this is documentation weight, not a bug.
+6. **The scaffold wrote `AnySettlement` (5 params, 5 `to verify`) for a type that nothing consumes.** The tool cannot know which types a test needs as input; I deleted the two files. Not a defect, but when scaffolding a whole namespace in one command (as the docs invite) the dead generator is the one that blocks `dotnet build` until deleted. An expert learns to scaffold only types that appear as arguments.
+7. **Regex guard: `to verify` was right, and the library cannot see the real defect inside the regex.** `Race.CodeFormat()` is `^[A-Z]{3}-R([1-9]|1[0-6])$`. I replaced the base with `Any.StringMatching("[A-Z]{3}-R([1-9]|1[0-6])")` as documented (one line, then 5 retypes: `AnyString` -> `AnyPattern` on the base, the field, the private constructor, the `Func` of `WithCode`, plus the doc `remarks`; it compiled the first time, the checklist in the TODO comment was exact). The `$` of .NET's regex also matches before a final `\n`, so `new Race("LCH-R4\n", 8)` is accepted: **domain defect**, found by reading, confirmed by a skipped test (see findings). No generator could surface it since the generator emits the pattern's intent, not the engine's quirks.
+8. **JD007 caught a mistake of mine**: I wrote `private readonly Race _tenRunners = Any.Race().WithFieldSize(10).Generate();` in a test class. Build warning: `JD007: Draw this value inside the test body: a field initializer runs before [Reproducible] opens the seed scope, so the seed the failure reports does not replay it`. It fires with the assembly-level `[Reproducible]` too (I probed a class with no attribute of its own and a constructor draw: also flagged). I replaced the field by a `private static Race TenRunners()` factory. Exactly the right moment for an analyzer.
+9. **`Any.Dividend()` as scaffolded can overflow `Payout`.** `amountPerUnit` is scaffolded `Any.Decimal().Positive().WithScale(2)` (faithful to the guard: positive whole cents, no upper bound). In a throw-away probe of 20 000 draws, 1 929 (about 10 %, the documented "limit draw") had `Payout` throwing `OverflowException` (max drawn amount 79150759423630871229518636141 x units). I did not constrain the generator: the right reading is that the *domain* declares no ceiling (see findings), and my tests that read `Payout` use literals. A test that drew `Any.Dividend()` and summed payouts would fail one run in ten, correctly.
+10. **Theory data for money**: C# attributes cannot hold `decimal` constants (CS0182), so I used `TheoryData<decimal>` members. Not the library's issue; noted because the Settlement/Rules boundary tables are decimal-heavy and the `[Reproducible]`/`JD008` guidance ("do not draw in a data provider") pushes towards literals there anyway, which is the right call.
+11. Failure report text: `[JustDummies] These arbitrary values were seeded with 65077927. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 65077927)].` The snippet is correct for a method, but my attribute is assembly-level; the reader has to know to put it on the test method. Minor.
 
 ## What worked well
-- The `to verify` lines that stop the build are a good contract: nothing compiled until I had read each guard, and the
-  recap names file and line.
-- `--entry-point any` + `partial`: `Any.StakePool().WithUnitStake(2.50m).WithRules(r => r.WithTakeoutRate(0.175m))` reads
-  like the business sentence. Refinement lambdas compose across levels: `WithRace(race => race.WithFieldSize(size => size.LessThan(24)))`
-  on top of a base that already says >= 4, and `WithCode(code => code.DifferentFrom(other))` on an `AnyPattern`.
-- The CLI page's "When a guard ties two parameters" section is exactly the guidance I needed for Combination and RaceResult.
-- `Distinct()` on a list of HorseNumber (value equality) and `Any.Enum<BetType>().DifferentFrom(pool.BetType)` made role
-  assignment (winner / loser / scratched, "another bet type") a one-liner each.
-- `[assembly: Reproducible]`: a deliberately broken assertion printed
-  `[JustDummies] These arbitrary values were seeded with 1910654154. Reproduce this run with [Reproducible(Seed = 1910654154)].`
-  and pinning that seed on the method replayed the same race code and horses twice (`OUW-R15`, 6/5/4). Then reverted.
-- Analyzers stayed silent on the final code; nothing to suppress.
+- The entry point (`--entry-point any`, C# 14 extension): `Any.Race().WithFieldSize(8)`, `Any.PoolRules().WithTakeoutRate(0.5m)`, `Any.Stake().WithCombination(c => c.WithBetType(BetType.Win).AmongRunnersOf(8))` read like the sentence the test means.
+- **Pinned literal through a scaffolded generator as a refusal test**: `Assert.Throws<ArgumentOutOfRangeException>(() => Any.PoolRules().WithTakeoutRate(0.5m).Generate())` - the other three constructor arguments are dummies, the pinned one is the literal under test, `ParamName` comes through unwrapped. This pattern did most of the work of 40 boundary tests and every one of them states only what it is about.
+- Guard reading was accurate where it applied: `HorseNumber` -> `.Positive().LessThanOrEqualTo(HorseNumber.Maximum)` (it even references the public constant), `PoolRules` ranges, `breakageStep` -> `.Between(0.01m, 1m).WithScale(2)`, `Stake.MaximumUnits`, `Race.MinimumFieldSize..HorseNumber.Maximum`.
+- The `to verify` recap is honest and specific ("ties horses to betType", the line number, the guard text, "and 1 more"); the sentinel `_ = TODO_verify_…` made the build name every gap.
+- `Any.ListOf(...).WithCount(n).Distinct()` for "n distinct horses", `.Except(code)` on an `AnyPattern` to get "another race", `Any.PermutationOf` for the shuffled field: the collection and pattern vocabulary covered everything I needed without a workaround.
+- `[assembly: Reproducible]` is one line and silent when green; the seed line appeared exactly when I un-skipped the two defect tests, and the failure was reproducible by construction.
+- Analyzers: no false positives in 139 tests; JD007 found a real mistake.
 
 ## Fluency: 4 / 5
-The library surface (refine vs pin, Distinct, DifferentFrom, entry points, seeds) let me express every domain role with
-no workaround. One point off for the scaffolder: on this domain it inferred almost nothing by itself because every
-range guard is written as `x < lo || x > hi`, so most of the "scaffolding" was hand-writing the recipes it flagged.
+The day-to-day loop (scaffold, name the dummy, pin the literal that the test is about, assert) is fast and the result reads well; the pinned-literal-as-refusal pattern and the entry point are the best ergonomics I met. Points were lost on the part every non-trivial aggregate hits: parameters tied by guards. The tool diagnoses these precisely but then hands over a scaffold whose pins/lambdas partly no longer apply, and the cleanup (and the seed-dependence of a pin against a drawn partner) is manual and documented only at the end of the CLI page. The `dotnet test --project` / global usings first-minute stumbles are small but real.

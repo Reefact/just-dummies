@@ -108,6 +108,7 @@ public class Jd012GeneratorPooledAsValueTests {
     [InlineData("IAny<int> anyLeaf = Any.ElementOf(leaves).Then(leaf => leaf);")]
     [InlineData("IAny<int> anyLeaf = Any.OneOf(leaves[0], leaves[1]).Then(leaf => leaf);")]
     [InlineData("IAny<int> anyLeaf = Any.WithSeed(1234).ElementOf(leaves).Then(leaf => leaf);")]
+    [InlineData("IAny<int> anyLeaf = (Any.ElementOf(leaves)).Then(leaf => leaf);")]
     public async Task Does_not_report_a_pool_that_Then_flattens_into_values(string statement) {
         string source = $$"""
             using JustDummies;

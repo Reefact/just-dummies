@@ -33,16 +33,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   where a generator is required, and `Any.TimeOnly()` on a time of day if the whole day was meant. A
   value pinned by name, `Zero()`, is not reported. Warning severity, no code fix; this repository's own
   suites decline it, since the drawn value is their subject (issue #356, ADR-0129).
-- **`Any.OrderedPair(first, second)` draws two values tied by an order.** A span's start and end, a
-  range's minimum and maximum, on every ordered builder — integers, floats, `decimal`, dates, durations.
-  By construction, never by redraw: the first is drawn from its base kept at or below the largest value
-  the second base can produce, then the second at or above it, so disjoint bands never fail where two
-  independent draws broke the order half the time. `WithFirst(v)` and `WithSecond(v)` pin one side and
-  bound the other the same way, so pinning the end constrains the start; `strict: true` makes the first
-  strictly below. Two pins in the wrong order, or a pin no value of the other base can follow, are refused
-  at the call naming both sides. `TimeOnly` has no pair, its order being cyclic across midnight; three
-  ordered values are a pair and a `Then` drawing the middle one. JD034 and JD035 read a pin declared
-  twice (issue #404, ADR-0126).
+- **`Any.Pair(item1, item2)` draws two values of one ordered type, each from a base of its own.** On
+  every ordered builder — integers, floats, `decimal`, dates, durations. Declared alone, the two are drawn
+  independently; `Having` declares the order between them in the builder's own words —
+  `Having.Item1LessThanItem2()` and its three siblings on the numbers and durations,
+  `Having.Item1BeforeItem2()` and its three on the dates. The order holds by construction, never by
+  redraw: the side below is drawn from its base kept within what the other base can follow, then the
+  other on the right side of it, so disjoint bands never fail where two independent draws broke the
+  order half the time. An order no value can hold is refused where it is declared, naming both sides,
+  and a pair declares one relation. A side the test fixes needs no pair: it stays a literal, and the
+  other side takes it as a bound on its own builder. A `DateTime` base supplied a `Local` value is
+  refused once an order makes a drawn value a bound. `TimeOnly` has no pair, its order being cyclic
+  across midnight (issues #404, #428 and #430, ADR-0131).
 
 - **`Any.TimeOnly().Between(start, end)` crosses midnight when the start is after the end.**
   `Between(22:00, 06:00)` is the night, as `TimeOnly.IsBetween` reads it, drawn uniformly over its two

@@ -100,6 +100,51 @@ public sealed class CompositionProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "Pair: every order holds by construction, inside both bases, for every pair of ranges, order and seed — or is refused where it is declared.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    public void PairIsOrderedByConstruction() {
+        Prop.ForAll((from item1 in Generators.OrderedPair(Gen.Choose(-100, 100))
+                     from item2 in Generators.OrderedPair(Gen.Choose(-100, 100))
+                     from relation in Gen.Elements(0, 1, 2, 3)
+                     from seed in Generators.Seed()
+                     select (item1, item2, relation, seed)).ToArbitrary(),
+                    testCase => {
+                        AnyContext   any  = Any.WithSeed(testCase.seed);
+                        AnyPair<int> pair = Any.Pair(any.Int32().Between(testCase.item1.Min, testCase.item1.Max), any.Int32().Between(testCase.item2.Min, testCase.item2.Max));
+
+                        // Relations 0 and 1 put Item1 below, 2 and 3 put Item2 below; 0 and 2 are strict.
+                        bool               item1Below = testCase.relation < 2;
+                        bool               strict     = testCase.relation % 2 == 0;
+                        (int Min, int Max) lower      = item1Below ? testCase.item1 : testCase.item2;
+                        (int Min, int Max) upper      = item1Below ? testCase.item2 : testCase.item1;
+
+                        // No value of the side below precedes the largest value above: the refusal is owed where the order is declared.
+                        bool orderable = strict ? lower.Min < upper.Max : lower.Min <= upper.Max;
+                        if (!orderable) { return Expect.Throws<ConflictingAnyConstraintException>(() => Declare(pair, testCase.relation)); }
+
+                        return Expect.EveryDraw(Declare(pair, testCase.relation), drawn => IsOrderedInside(drawn, item1Below, strict, testCase.item1, testCase.item2));
+                    })
+            .QuickCheckThrowOnFailure();
+
+        static AnyPair<int> Declare(AnyPair<int> pair, int relation) {
+            return relation switch {
+                0 => pair.Having.Item1LessThanItem2(),
+                1 => pair.Having.Item1LessThanOrEqualToItem2(),
+                2 => pair.Having.Item1GreaterThanItem2(),
+                _ => pair.Having.Item1GreaterThanOrEqualToItem2()
+            };
+        }
+
+        static bool IsOrderedInside((int Item1, int Item2) drawn, bool item1Below, bool strict, (int Min, int Max) item1, (int Min, int Max) item2) {
+            int below = item1Below ? drawn.Item1 : drawn.Item2;
+            int above = item1Below ? drawn.Item2 : drawn.Item1;
+
+            return (strict ? below < above : below <= above)
+                && drawn.Item1 >= item1.Min && drawn.Item1 <= item1.Max
+                && drawn.Item2 >= item2.Min && drawn.Item2 <= item2.Max;
+        }
+    }
+
     [Fact(DisplayName = "As projects every draw: the composed value is the factory's image of a value the source constraint allows.")]
     public void AsProjectsEveryDrawThroughTheFactory() {
         // Doubling is invertible, so the projected value can be mapped back and checked against the source interval —

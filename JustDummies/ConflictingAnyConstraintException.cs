@@ -88,6 +88,24 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     }
 
     /// <summary>
+    ///     Builds the exception for a pair whose order leaves the side below with no value — none at or below the
+    ///     largest value the other base can produce — quoting the refusal that side's base raised, so both sides are
+    ///     named (ADR-0131).
+    /// </summary>
+    internal static ConflictingAnyConstraintException PairHasNoValue(ConstraintCall applying, string missing, ConflictingAnyConstraintException refusal) {
+        return Sentence(applying, $"{missing}: {refusal.Reason ?? refusal.Message}");
+    }
+
+    /// <summary>
+    ///     Builds the exception for an ordered <c>DateTime</c> pair whose base was supplied a <c>Local</c> value. Once
+    ///     drawn, a value of a pair bounds the other side, and a <c>Local</c> bound is ambiguous — a clock time or an
+    ///     instant — which is why the library refuses one (ADR-0114, ADR-0131).
+    /// </summary>
+    internal static ConflictingAnyConstraintException LocalValueInAPair(ConstraintCall applying, string side, string value) {
+        return Sentence(applying, $"{side}'s base holds {value}, whose DateTimeKind.Local may represent a local clock time or an instant, and in an ordered pair a drawn value bounds the other side; supply a Utc or Unspecified value, or use Any.DateTimeOffset() when the instant is what matters");
+    }
+
+    /// <summary>
     ///     Builds the exception for a second, different <c>OneOf(...)</c> on a generator whose value set the first
     ///     has already settled, pointing at the route that does narrow it.
     /// </summary>

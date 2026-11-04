@@ -384,6 +384,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A message prints a date or a time in the format of the bounds beside it.** A value quoted in a
+  refusal or a failure went through the invariant culture's general format, so one sentence could read
+  `lies below 12/31/2024 10:00:00` next to `Between(2026-01-01T00:00:00.0000000Z, …)`, and two values
+  that differ by less than a second rendered the same. `DateTime`, `DateTimeOffset`, `DateOnly` and
+  `TimeOnly` values now print in the round-trip `"O"` format the generators already use for their
+  bounds — in `Any.Pair`'s refusals, the `Combine`, `As` and `Then` failures, `DifferentFrom` and a
+  collection's `Containing`. A script matching the old text needs the new format.
 - **A second `OneOf` is refused with the way out.** The refusal, `Cannot apply OneOf(…) because OneOf(…)
   is already defined`, was right and documented, but the route that does narrow the first set —
   `Except(…)` on it — was named only on the scaffolder page. The message now ends `; to narrow the first

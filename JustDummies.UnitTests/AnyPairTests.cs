@@ -121,6 +121,22 @@ public sealed class AnyPairTests {
              .WhichMember(caught => caught.Message).Contains("Having.Item1LessThanItem2()", "below 5");
     }
 
+    [Fact(DisplayName = "A refusal prints a temporal value in the round-trip format of the bounds beside it, sub-seconds included (issue #429).")]
+    public void ARefusalPrintsATemporalValueInTheRoundTripFormat() {
+        DateTime latest = new DateTime(2024, 12, 31, 10, 0, 0, DateTimeKind.Utc).AddTicks(1_234_567);
+
+        Check.ThatCode(() => Any.Pair(Any.DateTime().Between(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc)),
+                                      Any.DateTime().Between(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), latest)).Having.Item1BeforeItem2())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(caught => caught.Message).Contains("lies below 2024-12-31T10:00:00.1234567Z,").And.Not.Contains("12/31/2024");
+#if NET8_0_OR_GREATER
+        Check.ThatCode(() => Any.Pair(Any.DateOnly().Between(new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31)),
+                                      Any.DateOnly().Between(new DateOnly(2015, 1, 1), new DateOnly(2024, 12, 31))).Having.Item1BeforeItem2())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(caught => caught.Message).Contains("lies below 2024-12-31,").And.Not.Contains("12/31/2024");
+#endif
+    }
+
     [Fact(DisplayName = "A pair declares one relation: the same again changes nothing, another is refused naming the first.")]
     public void APairDeclaresOneRelation() {
         AnyPair<int> ordered = Dating().Having.Item1LessThanItem2();

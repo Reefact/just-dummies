@@ -411,8 +411,6 @@ public sealed class NullArgumentGuardConventionTests {
         Try(() => Any.SequenceOf(strings));
         Try(() => Any.ArrayOf(strings));
         Try(() => Any.ListOf(strings).OrderedBy(value => value.Length));
-        Try(() => Any.OrderedPair(Any.Int32(), Any.Int32()));
-        Try(() => new OrderedPairBounds<string>(_ => strings, _ => strings, _ => strings, _ => strings, "z"));
         Try(() => Any.Pair(Any.Int32(), Any.Int32()).Having.Item1LessThanItem2());
         Try(() => new PairSide<string>(strings, _ => strings, _ => strings, _ => strings, _ => strings, () => "z"));
         Try(() => AnyPair<string>.Create(new PairSide<string>(strings, _ => strings, _ => strings, _ => strings, _ => strings, () => "z"),

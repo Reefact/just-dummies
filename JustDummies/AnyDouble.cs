@@ -76,7 +76,7 @@ public sealed class AnyDouble : IAny<double>, IHasRandomSource, ICardinalityHint
 
     bool ICardinalityHint<double>.Contains(double value) => _spec.Contains(value);
 
-    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    /// <summary>The largest value this generator can produce, for a pair to bound the side its order puts below (ADR-0131).</summary>
     internal double Largest() {
         return _spec.Largest();
     }

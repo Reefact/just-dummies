@@ -243,7 +243,7 @@ public sealed partial class AnySpecies : IAny<Species> {
     }
 
     private (double Min, double Optimum, double Max) DrawCardinalTemperatures() {
-        (double min, double max) = Any.OrderedPair(_minTemperatureCelsiusRecipe, _maxTemperatureCelsiusRecipe, strict: true).Generate();
+        (double min, double max) = Any.Pair(_minTemperatureCelsiusRecipe, _maxTemperatureCelsiusRecipe).Having.Item1LessThanItem2().Generate();
         double optimum = _optimalTemperatureCelsiusRecipe.GreaterThan(min).LessThan(max).Generate();
 
         return (min, optimum, max);

@@ -19,7 +19,6 @@ namespace Laboratory.Domain;
 /// </summary>
 public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
 
-    private AnyOrderedPair<double> _lowerAndUpper;
     private IAny<MeasurementUnit>  _unit;
     private IAny<double?>          _criticalLow;
     private IAny<double?>          _criticalHigh;
@@ -79,12 +78,10 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
         _criticalLowRecipe  = criticalLow;
         _criticalHigh       = criticalHigh.OrNull();
         _criticalHighRecipe = criticalHigh;
-        _lowerAndUpper      = LowerAndUpper();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyReferenceRange(AnyReferenceRange from) {
-        _lowerAndUpper      = from._lowerAndUpper;
         _lowerRecipe        = from._lowerRecipe;
         _lowerPin           = from._lowerPin;
         _upperRecipe        = from._upperRecipe;
@@ -99,14 +96,12 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
         _criticalHighPinned = from._criticalHighPinned;
     }
 
-    /// <summary>Draws <c>lower</c> and <c>upper</c> together, <c>lower</c> always before <c>upper</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<double> LowerAndUpper() {
-        AnyOrderedPair<double> pair = Any.OrderedPair(_lowerRecipe, _upperRecipe, strict: true);
+    /// <summary>Draws <c>lower</c> and <c>upper</c>, <c>lower</c> always before <c>upper</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (double Lower, double Upper) LowerAndUpper() {
+        if (_lowerPin is { } lower) { return (lower, _upperPin ?? _upperRecipe.GreaterThan(lower).Generate()); }
+        if (_upperPin is { } upper) { return (_lowerRecipe.LessThan(upper).Generate(), upper); }
 
-        if (_lowerPin is { } lower) { pair = pair.WithFirst(lower); }
-        if (_upperPin is { } upper) { pair = pair.WithSecond(upper); }
-
-        return pair;
+        return Any.Pair(_lowerRecipe, _upperRecipe).Having.Item1LessThanItem2().Generate();
     }
 
     /// <summary>Pins <c>lower</c> to a fixed value, which bounds <c>upper</c>; its recipe is kept for a later refinement.</summary>
@@ -114,7 +109,6 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
         AnyReferenceRange copy = new AnyReferenceRange(this);
 
         copy._lowerPin      = value;
-        copy._lowerAndUpper = copy.LowerAndUpper();
 
         return copy;
     }
@@ -128,7 +122,6 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
 
         copy._lowerRecipe   = configure(_lowerRecipe);
         copy._lowerPin      = null;
-        copy._lowerAndUpper = copy.LowerAndUpper();
 
         return copy;
     }
@@ -138,7 +131,6 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
         AnyReferenceRange copy = new AnyReferenceRange(this);
 
         copy._upperPin      = value;
-        copy._lowerAndUpper = copy.LowerAndUpper();
 
         return copy;
     }
@@ -152,7 +144,6 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
 
         copy._upperRecipe   = configure(_upperRecipe);
         copy._upperPin      = null;
-        copy._lowerAndUpper = copy.LowerAndUpper();
 
         return copy;
     }
@@ -249,7 +240,7 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
 
     /// <summary>Produces one arbitrary <see cref="ReferenceRange" />.</summary>
     public ReferenceRange Generate() {
-        (double lower, double upper) = _lowerAndUpper.Generate();
+        (double lower, double upper) = LowerAndUpper();
 
         double? criticalLow  = _criticalLowPinned  ? _criticalLow.Generate()  : _criticalLowRecipe.LessThanOrEqualTo(lower).OrNull().Generate();
         double? criticalHigh = _criticalHighPinned ? _criticalHigh.Generate() : _criticalHighRecipe.GreaterThanOrEqualTo(upper).OrNull().Generate();

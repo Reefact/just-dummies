@@ -149,7 +149,7 @@ public sealed class MoneyTests {
     [Fact]
     public void Minus_subtracts_a_smaller_amount() {
         // Arrange
-        (decimal anySmaller, decimal anyLarger) = Any.OrderedPair(AnyAmount(), AnyAmount()).Generate();
+        (decimal anySmaller, decimal anyLarger) = Any.Pair(AnyAmount(), AnyAmount()).Having.Item1LessThanOrEqualToItem2().Generate();
 
         // Act
         Money difference = new Money(anyLarger).Minus(new Money(anySmaller));
@@ -168,7 +168,7 @@ public sealed class MoneyTests {
     [Fact]
     public void Minus_refuses_a_larger_amount() {
         // Arrange
-        (decimal anySmaller, decimal anyLarger) = Any.OrderedPair(AnyAmount(), AnyAmount(), strict: true).Generate();
+        (decimal anySmaller, decimal anyLarger) = Any.Pair(AnyAmount(), AnyAmount()).Having.Item1LessThanItem2().Generate();
 
         // Act
         Exception? thrown = Record.Exception(() => new Money(anySmaller).Minus(new Money(anyLarger)));
@@ -180,7 +180,7 @@ public sealed class MoneyTests {
     [Fact]
     public void MinusOrZero_subtracts_a_smaller_amount_and_floors_a_larger_one_at_zero() {
         // Arrange
-        (decimal anySmaller, decimal anyLarger) = Any.OrderedPair(AnyAmount(), AnyAmount(), strict: true).Generate();
+        (decimal anySmaller, decimal anyLarger) = Any.Pair(AnyAmount(), AnyAmount()).Having.Item1LessThanItem2().Generate();
         Money smaller = new Money(anySmaller);
         Money larger  = new Money(anyLarger);
 
@@ -255,7 +255,7 @@ public sealed class MoneyTests {
     [Fact]
     public void Min_and_Max_pick_the_smaller_and_the_larger() {
         // Arrange
-        (decimal anySmaller, decimal anyLarger) = Any.OrderedPair(AnyAmount(), AnyAmount(), strict: true).Generate();
+        (decimal anySmaller, decimal anyLarger) = Any.Pair(AnyAmount(), AnyAmount()).Having.Item1LessThanItem2().Generate();
         Money smaller = new Money(anySmaller);
         Money larger  = new Money(anyLarger);
 
@@ -269,7 +269,7 @@ public sealed class MoneyTests {
     [Fact]
     public void Comparison_follows_the_amount() {
         // Arrange
-        (decimal anySmaller, decimal anyLarger) = Any.OrderedPair(AnyAmount(), AnyAmount(), strict: true).Generate();
+        (decimal anySmaller, decimal anyLarger) = Any.Pair(AnyAmount(), AnyAmount()).Having.Item1LessThanItem2().Generate();
         Money smaller = new Money(anySmaller);
         Money larger  = new Money(anyLarger);
 

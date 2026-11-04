@@ -121,7 +121,7 @@ public sealed class KinshipCoefficientTests {
     [Fact]
     public void Kinships_compare_by_value() {
         // Arrange
-        (double anyLow, double anyHigh) = Any.OrderedPair(Any.Double().Between(0d, 1d), Any.Double().Between(0d, 1d), strict: true).Generate();
+        (double anyLow, double anyHigh) = Any.Pair(Any.Double().Between(0d, 1d), Any.Double().Between(0d, 1d)).Having.Item1LessThanItem2().Generate();
 
         KinshipCoefficient low  = new KinshipCoefficient(anyLow);
         KinshipCoefficient high = new KinshipCoefficient(anyHigh);
@@ -157,7 +157,7 @@ public sealed class KinshipCoefficientTests {
     [Fact]
     public void Kinships_with_different_values_are_not_equal() {
         // Arrange
-        (double anyFirst, double anySecond) = Any.OrderedPair(Any.Double().Between(0d, 1d), Any.Double().Between(0d, 1d), strict: true).Generate();
+        (double anyFirst, double anySecond) = Any.Pair(Any.Double().Between(0d, 1d), Any.Double().Between(0d, 1d)).Having.Item1LessThanItem2().Generate();
 
         // Act / Assert
         Assert.False(new KinshipCoefficient(anyFirst).Equals(new KinshipCoefficient(anySecond)));

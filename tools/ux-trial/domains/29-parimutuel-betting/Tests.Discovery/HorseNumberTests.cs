@@ -37,9 +37,8 @@ public sealed class HorseNumberTests {
     [Fact]
     public void Two_horses_wearing_different_numbers_are_not_equal() {
         // Arrange
-        (int anyLowNumber, int anyHighNumber) = Any.OrderedPair(Any.Int32().Between(1, HorseNumber.Maximum),
-                                                                Any.Int32().Between(1, HorseNumber.Maximum),
-                                                                strict: true).Generate();
+        (int anyLowNumber, int anyHighNumber) = Any.Pair(Any.Int32().Between(1, HorseNumber.Maximum),
+                                                                Any.Int32().Between(1, HorseNumber.Maximum)).Having.Item1LessThanItem2().Generate();
 
         // Act
         HorseNumber low  = new HorseNumber(anyLowNumber);
@@ -60,9 +59,8 @@ public sealed class HorseNumberTests {
     [Fact]
     public void Horses_are_ordered_by_their_number() {
         // Arrange
-        (int anyLowNumber, int anyHighNumber) = Any.OrderedPair(Any.Int32().Between(1, HorseNumber.Maximum),
-                                                                Any.Int32().Between(1, HorseNumber.Maximum),
-                                                                strict: true).Generate();
+        (int anyLowNumber, int anyHighNumber) = Any.Pair(Any.Int32().Between(1, HorseNumber.Maximum),
+                                                                Any.Int32().Between(1, HorseNumber.Maximum)).Having.Item1LessThanItem2().Generate();
         HorseNumber low  = new HorseNumber(anyLowNumber);
         HorseNumber high = new HorseNumber(anyHighNumber);
 

@@ -75,8 +75,8 @@ public sealed partial class AnySpecies : IAny<Species> {
     }
 
     private static IAny<(double Min, double Optimum, double Max)> AnyValidCardinalTemperatures() {
-        return Any.OrderedPair(Any.Double().Between(-20d, 80d), Any.Double().Between(-20d, 80d), strict: true)
-                  .Then(pair => Any.Double().GreaterThan(pair.First).LessThan(pair.Second).As(optimum => (pair.First, optimum, pair.Second)));
+        return Any.Pair(Any.Double().Between(-20d, 80d), Any.Double().Between(-20d, 80d)).Having.Item1LessThanItem2()
+                  .Then(pair => Any.Double().GreaterThan(pair.Item1).LessThan(pair.Item2).As(optimum => (pair.Item1, optimum, pair.Item2)));
     }
 
     /// <summary>Draws every parameter from the recipe given for it.</summary>

@@ -12,12 +12,12 @@ public sealed partial class AnyVitalSigns {
     public AnyVitalSigns FullyResolved() {
         AnyVitalSigns copy = new AnyVitalSigns(this);
 
-        copy._bloodPressure = Any.Combine(Any.OrderedPair(Any.Int32().Between(20, 200), Any.Int32().Between(50, 300), strict: true),
+        copy._bloodPressure = Any.Combine(Any.Pair(Any.Int32().Between(20, 200), Any.Int32().Between(50, 300)).Having.Item1LessThanItem2(),
                                           Any.Enum<MissingReason>(),
                                           Any.Enum<MissingReason>(),
                                           Any.Boolean(),
                                           (pair, reasonA, reasonB, observed) => observed
-                                                                                    ? ((Observed<int>?)Observed<int>.Of(pair.Second), (Observed<int>?)Observed<int>.Of(pair.First))
+                                                                                    ? ((Observed<int>?)Observed<int>.Of(pair.Item2), (Observed<int>?)Observed<int>.Of(pair.Item1))
                                                                                     : (Observed<int>.Missing(reasonA), Observed<int>.Missing(reasonB)));
         copy._heartRateBpm       = Observations.Resolved(Any.Int32().Between(20, 250)).As(sign => (Observed<int>?)sign);
         copy._temperatureCelsius = Observations.Resolved(Any.Decimal().Between(30m, 45m).WithScale(1)).As(sign => (Observed<decimal>?)sign);

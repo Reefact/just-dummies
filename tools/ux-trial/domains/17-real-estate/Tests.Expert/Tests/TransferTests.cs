@@ -8,7 +8,7 @@ public sealed class TransferTests {
 
     // Two dates a transfer accepts: registered on or after the day it was signed.
     private static (DateOnly SignedOn, DateOnly RegisteredOn) AnyDatesInOrder() {
-        return Any.OrderedPair(Any.DateOnly(), Any.DateOnly()).Generate();
+        return Any.Pair(Any.DateOnly(), Any.DateOnly()).Having.Item1BeforeOrEqualToItem2().Generate();
     }
 
     // A signing date far enough from the end of the calendar to add a delay to it.

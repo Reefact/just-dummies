@@ -46,7 +46,7 @@ public sealed class GeofenceTests {
     [Fact]
     public void A_south_west_corner_north_of_the_north_east_one_is_refused() {
         // Arrange: the latitudes are inverted; the longitudes are in the right order and do not matter.
-        (double anyWestLongitude, double anyEastLongitude) = Any.OrderedPair(Any.Double().Between(-180d, 179d), Any.Double().Between(-180d, 179d)).Generate();
+        (double anyWestLongitude, double anyEastLongitude) = Any.Pair(Any.Double().Between(-180d, 179d), Any.Double().Between(-180d, 179d)).Having.Item1LessThanOrEqualToItem2().Generate();
 
         // Act
         ArgumentException exception = Assert.Throws<ArgumentException>(() => new Geofence(new GeoCoordinate(30.0, anyWestLongitude), new GeoCoordinate(29.9999999, anyEastLongitude)));
@@ -58,7 +58,7 @@ public sealed class GeofenceTests {
     [Fact]
     public void A_south_west_corner_east_of_the_north_east_one_is_refused() {
         // Arrange: the longitudes are inverted; the latitudes are in the right order and do not matter.
-        (double anySouthLatitude, double anyNorthLatitude) = Any.OrderedPair(Any.Double().Between(-90d, 90d), Any.Double().Between(-90d, 90d)).Generate();
+        (double anySouthLatitude, double anyNorthLatitude) = Any.Pair(Any.Double().Between(-90d, 90d), Any.Double().Between(-90d, 90d)).Having.Item1LessThanOrEqualToItem2().Generate();
 
         // Act
         ArgumentException exception = Assert.Throws<ArgumentException>(() => new Geofence(new GeoCoordinate(anySouthLatitude, 40.0), new GeoCoordinate(anyNorthLatitude, 39.9999999)));

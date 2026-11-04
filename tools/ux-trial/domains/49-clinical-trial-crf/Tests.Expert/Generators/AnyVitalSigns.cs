@@ -122,7 +122,7 @@ public sealed partial class AnyVitalSigns : IAny<VitalSigns> {
     // Blood pressure is a pair: both observed (systolic above diastolic), both missing, or a blank side.
     private IAny<(Observed<int>? Systolic, Observed<int>? Diastolic)> BloodPressure() {
         IAny<(Observed<int>? Systolic, Observed<int>? Diastolic)> observed =
-            Any.OrderedPair(Any.Int32().Between(20, 200), Any.Int32().Between(50, 300), strict: true)
+            Any.Pair(Any.Int32().Between(20, 200), Any.Int32().Between(50, 300)).Having.Item1LessThanItem2()
                .As(pair => ((Observed<int>?)Observed<int>.Of(pair.Item2), (Observed<int>?)Observed<int>.Of(pair.Item1)));
 
         IAny<(Observed<int>? Systolic, Observed<int>? Diastolic)> missing =

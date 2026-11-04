@@ -21,7 +21,6 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
 
     private IAny<string>             _code;
     private IAny<decimal>            _percentOff;
-    private AnyOrderedPair<DateOnly> _validFromAndValidUntil;
     private IAny<decimal>            _minimumBasket;
     private IAny<int>                _maxUses;
 
@@ -85,7 +84,6 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
         _minimumBasketRecipe    = minimumBasket;
         _maxUses                = maxUses;
         _maxUsesRecipe          = maxUses;
-        _validFromAndValidUntil = ValidFromAndValidUntil();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -94,7 +92,6 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
         _codeRecipe             = from._codeRecipe;
         _percentOff             = from._percentOff;
         _percentOffRecipe       = from._percentOffRecipe;
-        _validFromAndValidUntil = from._validFromAndValidUntil;
         _validFromRecipe        = from._validFromRecipe;
         _validFromPin           = from._validFromPin;
         _validUntilRecipe       = from._validUntilRecipe;
@@ -105,14 +102,12 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
         _maxUsesRecipe          = from._maxUsesRecipe;
     }
 
-    /// <summary>Draws <c>validFrom</c> and <c>validUntil</c> together, <c>validFrom</c> never after <c>validUntil</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateOnly> ValidFromAndValidUntil() {
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(_validFromRecipe, _validUntilRecipe);
+    /// <summary>Draws <c>validFrom</c> and <c>validUntil</c>, <c>validFrom</c> never after <c>validUntil</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateOnly ValidFrom, DateOnly ValidUntil) ValidFromAndValidUntil() {
+        if (_validFromPin is { } validFrom) { return (validFrom, _validUntilPin ?? _validUntilRecipe.AfterOrEqualTo(validFrom).Generate()); }
+        if (_validUntilPin is { } validUntil) { return (_validFromRecipe.BeforeOrEqualTo(validUntil).Generate(), validUntil); }
 
-        if (_validFromPin is { } validFrom) { pair = pair.WithFirst(validFrom); }
-        if (_validUntilPin is { } validUntil) { pair = pair.WithSecond(validUntil); }
-
-        return pair;
+        return Any.Pair(_validFromRecipe, _validUntilRecipe).Having.Item1BeforeOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>code</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -164,7 +159,6 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
         AnyPromoCode copy = new AnyPromoCode(this);
 
         copy._validFromPin           = value;
-        copy._validFromAndValidUntil = copy.ValidFromAndValidUntil();
 
         return copy;
     }
@@ -178,7 +172,6 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
 
         copy._validFromRecipe        = configure(_validFromRecipe);
         copy._validFromPin           = null;
-        copy._validFromAndValidUntil = copy.ValidFromAndValidUntil();
 
         return copy;
     }
@@ -188,7 +181,6 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
         AnyPromoCode copy = new AnyPromoCode(this);
 
         copy._validUntilPin          = value;
-        copy._validFromAndValidUntil = copy.ValidFromAndValidUntil();
 
         return copy;
     }
@@ -202,7 +194,6 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
 
         copy._validUntilRecipe       = configure(_validUntilRecipe);
         copy._validUntilPin          = null;
-        copy._validFromAndValidUntil = copy.ValidFromAndValidUntil();
 
         return copy;
     }
@@ -253,7 +244,7 @@ public sealed partial class AnyPromoCode : IAny<PromoCode> {
 
     /// <summary>Produces one arbitrary <see cref="PromoCode" />.</summary>
     public PromoCode Generate() {
-        (DateOnly validFrom, DateOnly validUntil) = _validFromAndValidUntil.Generate();
+        (DateOnly validFrom, DateOnly validUntil) = ValidFromAndValidUntil();
 
         return new PromoCode(_code.Generate(),
                              _percentOff.Generate(),

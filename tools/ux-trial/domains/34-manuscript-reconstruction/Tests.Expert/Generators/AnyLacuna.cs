@@ -128,11 +128,10 @@ public sealed partial class AnyLacuna : IAny<Lacuna> {
 
     /// <summary>Produces one arbitrary <see cref="Lacuna" />.</summary>
     public Lacuna Generate() {
-        AnyOrderedPair<int> span = Any.OrderedPair(Any.Int32().Between(0, PassageCount - 1), Any.Int32().Between(0, PassageCount - 1));
-        if (_fromPin is not null) { span = span.WithFirst(PositionOf(_fromPin)); }
-        if (_toPin is not null) { span = span.WithSecond(PositionOf(_toPin)); }
-
-        (int from, int to) = span.Generate();
+        AnyInt32 position = Any.Int32().Between(0, PassageCount - 1);
+        (int from, int to) = _fromPin is not null ? (PositionOf(_fromPin), _toPin is not null ? PositionOf(_toPin) : position.GreaterThanOrEqualTo(PositionOf(_fromPin)).Generate())
+                           : _toPin is not null ? (position.LessThanOrEqualTo(PositionOf(_toPin)).Generate(), PositionOf(_toPin))
+                           : Any.Pair(position, position).Having.Item1LessThanOrEqualToItem2().Generate();
 
         return new Lacuna(_witness.Generate(),
                           _fromPin ?? PassageAt(from),

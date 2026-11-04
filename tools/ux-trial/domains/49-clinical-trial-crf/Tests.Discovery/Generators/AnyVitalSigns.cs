@@ -35,13 +35,13 @@ public sealed partial class AnyVitalSigns : IAny<VitalSigns> {
     // Systolic above diastolic when both are observed, and "a pair": an observed side never meets a missing one
     // (a blank side is fine).
     private static IAny<(Observed<int>?, Observed<int>?)> AnyValidBloodPressure() {
-        return Any.Combine(Any.OrderedPair(Any.Int32().Between(20, 200), Any.Int32().Between(50, 300), strict: true),
+        return Any.Combine(Any.Pair(Any.Int32().Between(20, 200), Any.Int32().Between(50, 300)).Having.Item1LessThanItem2(),
                            Any.Int32().Between(0, 6),
                            Any.Enum<MissingReason>(),
                            Any.Enum<MissingReason>(),
                            (pair, shape, reasonA, reasonB) => {
-                               Observed<int>  diastolic = Observed<int>.Of(pair.First);
-                               Observed<int>  systolic  = Observed<int>.Of(pair.Second);
+                               Observed<int>  diastolic = Observed<int>.Of(pair.Item1);
+                               Observed<int>  systolic  = Observed<int>.Of(pair.Item2);
                                Observed<int>? missingA  = Observed<int>.Missing(reasonA);
                                Observed<int>? missingB  = Observed<int>.Missing(reasonB);
 

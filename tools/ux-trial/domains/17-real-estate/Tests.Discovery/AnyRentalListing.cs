@@ -175,11 +175,11 @@ public sealed partial class AnyRentalListing : IAny<RentalListing> {
         // CanBeLetOn(availableFrom) requires the diagnosis to be valid that day: the start is drawn inside its validity.
         AnyDateOnly from = _availableFromPin is null ? _availableFromRecipe.Between(property.Diagnosis.IssuedOn, property.Diagnosis.ValidUntil.AddDays(-1)) : _availableFromRecipe;
 
-        AnyOrderedPair<DateOnly> window = Any.OrderedPair(from, _availableUntilRecipe, strict: true);
-        if (_availableFromPin is { } availableFrom) { window = window.WithFirst(availableFrom); }
-        if (_availableUntilPin is { } availableUntil) { window = window.WithSecond(availableUntil); }
+        (DateOnly, DateOnly) window = _availableFromPin is { } availableFrom ? (availableFrom, _availableUntilPin ?? _availableUntilRecipe.After(availableFrom).Generate())
+                                      : _availableUntilPin is { } availableUntil ? (from.Before(availableUntil).Generate(), availableUntil)
+                                      : Any.Pair(from, _availableUntilRecipe).Having.Item1BeforeItem2().Generate();
 
-        (DateOnly start, DateOnly end) = window.Generate();
+        (DateOnly start, DateOnly end) = window;
 
         return new RentalListing(property,
                                  _monthlyRent.Generate(),

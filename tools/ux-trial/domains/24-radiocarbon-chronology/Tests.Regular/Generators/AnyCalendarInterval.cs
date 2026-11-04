@@ -16,7 +16,6 @@ namespace RadiocarbonChronology.Tests.Regular.Generators;
 /// </summary>
 public sealed partial class AnyCalendarInterval : IAny<CalendarInterval> {
 
-    private AnyOrderedPair<int> _startYearAndEndYear;
 
     private AnyInt32 _startYearRecipe;
     private AnyInt32 _endYearRecipe;
@@ -42,26 +41,22 @@ public sealed partial class AnyCalendarInterval : IAny<CalendarInterval> {
                                 AnyInt32 endYear) {
         _startYearRecipe     = startYear;
         _endYearRecipe       = endYear;
-        _startYearAndEndYear = StartYearAndEndYear();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyCalendarInterval(AnyCalendarInterval from) {
-        _startYearAndEndYear = from._startYearAndEndYear;
         _startYearRecipe     = from._startYearRecipe;
         _startYearPin        = from._startYearPin;
         _endYearRecipe       = from._endYearRecipe;
         _endYearPin          = from._endYearPin;
     }
 
-    /// <summary>Draws <c>startYear</c> and <c>endYear</c> together, <c>startYear</c> never after <c>endYear</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<int> StartYearAndEndYear() {
-        AnyOrderedPair<int> pair = Any.OrderedPair(_startYearRecipe, _endYearRecipe);
+    /// <summary>Draws <c>startYear</c> and <c>endYear</c>, <c>startYear</c> never after <c>endYear</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (int StartYear, int EndYear) StartYearAndEndYear() {
+        if (_startYearPin is { } startYear) { return (startYear, _endYearPin ?? _endYearRecipe.GreaterThanOrEqualTo(startYear).Generate()); }
+        if (_endYearPin is { } endYear) { return (_startYearRecipe.LessThanOrEqualTo(endYear).Generate(), endYear); }
 
-        if (_startYearPin is { } startYear) { pair = pair.WithFirst(startYear); }
-        if (_endYearPin is { } endYear) { pair = pair.WithSecond(endYear); }
-
-        return pair;
+        return Any.Pair(_startYearRecipe, _endYearRecipe).Having.Item1LessThanOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>startYear</c> to a fixed value, which bounds <c>endYear</c>; its recipe is kept for a later refinement.</summary>
@@ -69,7 +64,6 @@ public sealed partial class AnyCalendarInterval : IAny<CalendarInterval> {
         AnyCalendarInterval copy = new AnyCalendarInterval(this);
 
         copy._startYearPin        = value;
-        copy._startYearAndEndYear = copy.StartYearAndEndYear();
 
         return copy;
     }
@@ -83,7 +77,6 @@ public sealed partial class AnyCalendarInterval : IAny<CalendarInterval> {
 
         copy._startYearRecipe     = configure(_startYearRecipe);
         copy._startYearPin        = null;
-        copy._startYearAndEndYear = copy.StartYearAndEndYear();
 
         return copy;
     }
@@ -93,7 +86,6 @@ public sealed partial class AnyCalendarInterval : IAny<CalendarInterval> {
         AnyCalendarInterval copy = new AnyCalendarInterval(this);
 
         copy._endYearPin          = value;
-        copy._startYearAndEndYear = copy.StartYearAndEndYear();
 
         return copy;
     }
@@ -107,14 +99,13 @@ public sealed partial class AnyCalendarInterval : IAny<CalendarInterval> {
 
         copy._endYearRecipe       = configure(_endYearRecipe);
         copy._endYearPin          = null;
-        copy._startYearAndEndYear = copy.StartYearAndEndYear();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="CalendarInterval" />.</summary>
     public CalendarInterval Generate() {
-        (int startYear, int endYear) = _startYearAndEndYear.Generate();
+        (int startYear, int endYear) = StartYearAndEndYear();
 
         return new CalendarInterval(startYear,
                                     endYear);

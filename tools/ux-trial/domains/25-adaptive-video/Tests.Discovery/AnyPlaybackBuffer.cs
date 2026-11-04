@@ -15,7 +15,6 @@ namespace AdaptiveVideo.Domain;
 /// </summary>
 public sealed partial class AnyPlaybackBuffer : IAny<PlaybackBuffer> {
 
-    private AnyOrderedPair<double> _levelSecondsAndCapacitySeconds;
 
     private AnyDouble _levelSecondsRecipe;
     private AnyDouble _capacitySecondsRecipe;
@@ -41,26 +40,22 @@ public sealed partial class AnyPlaybackBuffer : IAny<PlaybackBuffer> {
                               AnyDouble capacitySeconds) {
         _levelSecondsRecipe             = levelSeconds;
         _capacitySecondsRecipe          = capacitySeconds;
-        _levelSecondsAndCapacitySeconds = LevelSecondsAndCapacitySeconds();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyPlaybackBuffer(AnyPlaybackBuffer from) {
-        _levelSecondsAndCapacitySeconds = from._levelSecondsAndCapacitySeconds;
         _levelSecondsRecipe             = from._levelSecondsRecipe;
         _levelSecondsPin                = from._levelSecondsPin;
         _capacitySecondsRecipe          = from._capacitySecondsRecipe;
         _capacitySecondsPin             = from._capacitySecondsPin;
     }
 
-    /// <summary>Draws <c>levelSeconds</c> and <c>capacitySeconds</c> together, <c>levelSeconds</c> never after <c>capacitySeconds</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<double> LevelSecondsAndCapacitySeconds() {
-        AnyOrderedPair<double> pair = Any.OrderedPair(_levelSecondsRecipe, _capacitySecondsRecipe);
+    /// <summary>Draws <c>levelSeconds</c> and <c>capacitySeconds</c>, <c>levelSeconds</c> never after <c>capacitySeconds</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (double LevelSeconds, double CapacitySeconds) LevelSecondsAndCapacitySeconds() {
+        if (_levelSecondsPin is { } levelSeconds) { return (levelSeconds, _capacitySecondsPin ?? _capacitySecondsRecipe.GreaterThanOrEqualTo(levelSeconds).Generate()); }
+        if (_capacitySecondsPin is { } capacitySeconds) { return (_levelSecondsRecipe.LessThanOrEqualTo(capacitySeconds).Generate(), capacitySeconds); }
 
-        if (_levelSecondsPin is { } levelSeconds) { pair = pair.WithFirst(levelSeconds); }
-        if (_capacitySecondsPin is { } capacitySeconds) { pair = pair.WithSecond(capacitySeconds); }
-
-        return pair;
+        return Any.Pair(_levelSecondsRecipe, _capacitySecondsRecipe).Having.Item1LessThanOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>levelSeconds</c> to a fixed value, which bounds <c>capacitySeconds</c>; its recipe is kept for a later refinement.</summary>
@@ -68,7 +63,6 @@ public sealed partial class AnyPlaybackBuffer : IAny<PlaybackBuffer> {
         AnyPlaybackBuffer copy = new AnyPlaybackBuffer(this);
 
         copy._levelSecondsPin                = value;
-        copy._levelSecondsAndCapacitySeconds = copy.LevelSecondsAndCapacitySeconds();
 
         return copy;
     }
@@ -82,7 +76,6 @@ public sealed partial class AnyPlaybackBuffer : IAny<PlaybackBuffer> {
 
         copy._levelSecondsRecipe             = configure(_levelSecondsRecipe);
         copy._levelSecondsPin                = null;
-        copy._levelSecondsAndCapacitySeconds = copy.LevelSecondsAndCapacitySeconds();
 
         return copy;
     }
@@ -92,7 +85,6 @@ public sealed partial class AnyPlaybackBuffer : IAny<PlaybackBuffer> {
         AnyPlaybackBuffer copy = new AnyPlaybackBuffer(this);
 
         copy._capacitySecondsPin             = value;
-        copy._levelSecondsAndCapacitySeconds = copy.LevelSecondsAndCapacitySeconds();
 
         return copy;
     }
@@ -106,14 +98,13 @@ public sealed partial class AnyPlaybackBuffer : IAny<PlaybackBuffer> {
 
         copy._capacitySecondsRecipe          = configure(_capacitySecondsRecipe);
         copy._capacitySecondsPin             = null;
-        copy._levelSecondsAndCapacitySeconds = copy.LevelSecondsAndCapacitySeconds();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="PlaybackBuffer" />.</summary>
     public PlaybackBuffer Generate() {
-        (double levelSeconds, double capacitySeconds) = _levelSecondsAndCapacitySeconds.Generate();
+        (double levelSeconds, double capacitySeconds) = LevelSecondsAndCapacitySeconds();
 
         return new PlaybackBuffer(levelSeconds,
                                   capacitySeconds);

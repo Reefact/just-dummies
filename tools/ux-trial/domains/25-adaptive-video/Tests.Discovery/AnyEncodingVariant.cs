@@ -20,7 +20,6 @@ namespace AdaptiveVideo.Domain;
 public sealed partial class AnyEncodingVariant : IAny<EncodingVariant> {
 
     private IAny<int>           _framesPerSecond;
-    private AnyOrderedPair<int> _heightAndWidth;
     private IAny<Bitrate>       _bitrate;
 
     private AnyInt32   _framesPerSecondRecipe;
@@ -68,14 +67,12 @@ public sealed partial class AnyEncodingVariant : IAny<EncodingVariant> {
         _heightRecipe   = height;
         _bitrate        = bitrate;
         _bitrateRecipe  = bitrate;
-        _heightAndWidth = HeightAndWidth();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyEncodingVariant(AnyEncodingVariant from) {
         _framesPerSecond       = from._framesPerSecond;
         _framesPerSecondRecipe = from._framesPerSecondRecipe;
-        _heightAndWidth = from._heightAndWidth;
         _widthRecipe    = from._widthRecipe;
         _widthPin       = from._widthPin;
         _heightRecipe   = from._heightRecipe;
@@ -84,14 +81,12 @@ public sealed partial class AnyEncodingVariant : IAny<EncodingVariant> {
         _bitrateRecipe  = from._bitrateRecipe;
     }
 
-    /// <summary>Draws <c>height</c> and <c>width</c> together, <c>height</c> never after <c>width</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<int> HeightAndWidth() {
-        AnyOrderedPair<int> pair = Any.OrderedPair(_heightRecipe, _widthRecipe);
+    /// <summary>Draws <c>height</c> and <c>width</c>, <c>height</c> never after <c>width</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (int Height, int Width) HeightAndWidth() {
+        if (_heightPin is { } height) { return (height, _widthPin ?? _widthRecipe.GreaterThanOrEqualTo(height).Generate()); }
+        if (_widthPin is { } width) { return (_heightRecipe.LessThanOrEqualTo(width).Generate(), width); }
 
-        if (_heightPin is { } height) { pair = pair.WithFirst(height); }
-        if (_widthPin is { } width) { pair = pair.WithSecond(width); }
-
-        return pair;
+        return Any.Pair(_heightRecipe, _widthRecipe).Having.Item1LessThanOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins the frame rate (the <c>fps</c> of the id) to <paramref name="value" />.</summary>
@@ -120,7 +115,6 @@ public sealed partial class AnyEncodingVariant : IAny<EncodingVariant> {
         AnyEncodingVariant copy = new AnyEncodingVariant(this);
 
         copy._widthPin       = value;
-        copy._heightAndWidth = copy.HeightAndWidth();
 
         return copy;
     }
@@ -134,7 +128,6 @@ public sealed partial class AnyEncodingVariant : IAny<EncodingVariant> {
 
         copy._widthRecipe    = configure(_widthRecipe);
         copy._widthPin       = null;
-        copy._heightAndWidth = copy.HeightAndWidth();
 
         return copy;
     }
@@ -144,7 +137,6 @@ public sealed partial class AnyEncodingVariant : IAny<EncodingVariant> {
         AnyEncodingVariant copy = new AnyEncodingVariant(this);
 
         copy._heightPin      = value;
-        copy._heightAndWidth = copy.HeightAndWidth();
 
         return copy;
     }
@@ -158,7 +150,6 @@ public sealed partial class AnyEncodingVariant : IAny<EncodingVariant> {
 
         copy._heightRecipe   = configure(_heightRecipe);
         copy._heightPin      = null;
-        copy._heightAndWidth = copy.HeightAndWidth();
 
         return copy;
     }
@@ -187,7 +178,7 @@ public sealed partial class AnyEncodingVariant : IAny<EncodingVariant> {
 
     /// <summary>Produces one arbitrary <see cref="EncodingVariant" />.</summary>
     public EncodingVariant Generate() {
-        (int height, int width) = _heightAndWidth.Generate();
+        (int height, int width) = HeightAndWidth();
 
         return new EncodingVariant($"{height}p{_framesPerSecond.Generate()}",
                                    width,

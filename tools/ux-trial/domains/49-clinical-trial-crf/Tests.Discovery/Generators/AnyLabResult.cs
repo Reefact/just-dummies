@@ -31,13 +31,13 @@ public sealed partial class AnyLabResult : IAny<LabResult> {
 
     // None, one side, or both sides (lower strictly below upper), all not negative.
     private static IAny<(decimal? Lower, decimal? Upper)> AnyValidRange() {
-        return Any.Combine(Any.OrderedPair(Any.Decimal().Between(0m, 500m).WithScale(2), Any.Decimal().Between(0m, 500m).WithScale(2), strict: true),
+        return Any.Combine(Any.Pair(Any.Decimal().Between(0m, 500m).WithScale(2), Any.Decimal().Between(0m, 500m).WithScale(2)).Having.Item1LessThanItem2(),
                            Any.Int32().Between(0, 3),
                            (pair, shape) => shape switch {
                                0 => ((decimal?)null, (decimal?)null),
-                               1 => (pair.First, null),
-                               2 => (null, pair.Second),
-                               _ => (pair.First, pair.Second)
+                               1 => (pair.Item1, null),
+                               2 => (null, pair.Item2),
+                               _ => (pair.Item1, pair.Item2)
                            });
     }
 

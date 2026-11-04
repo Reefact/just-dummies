@@ -164,13 +164,11 @@ public sealed partial class AnySupplementaryPolicy : IAny<SupplementaryPolicy> {
 
     public SupplementaryPolicy Generate() {
         // The deductible lies strictly below the ceiling: the one tie the scaffolder cannot see, since the two
-        // parameters are a Deductible and a Money. Any.OrderedPair draws them in that order by construction.
-        AnyOrderedPair<decimal> deductibleAndCeiling = Any.OrderedPair(Any.Decimal().Between(0m, Deductible.Ceiling).WithScale(2),
-                                                                       Any.Decimal().Between(0.01m, SupplementaryPolicy.MaximumAnnualCeiling).WithScale(2),
-                                                                       strict: true);
-        if (_deductible is { } deductibleEuros) { deductibleAndCeiling = deductibleAndCeiling.WithFirst(deductibleEuros); }
-        if (_annualCeiling is { } ceilingEuros) { deductibleAndCeiling = deductibleAndCeiling.WithSecond(ceilingEuros); }
-        (decimal deductible, decimal ceiling) = deductibleAndCeiling.Generate();
+        // parameters are a Deductible and a Money. Any.Pair draws them in that order by construction.
+        (decimal, decimal) deductibleAndCeiling = _deductible is { } deductibleEuros ? (deductibleEuros, _annualCeiling ?? Any.Decimal().Between(0.01m, SupplementaryPolicy.MaximumAnnualCeiling).WithScale(2).GreaterThan(deductibleEuros).Generate())
+                                                  : _annualCeiling is { } ceilingEuros ? (Any.Decimal().Between(0m, Deductible.Ceiling).WithScale(2).LessThan(ceilingEuros).Generate(), ceilingEuros)
+                                                  : Any.Pair(Any.Decimal().Between(0m, Deductible.Ceiling).WithScale(2), Any.Decimal().Between(0.01m, SupplementaryPolicy.MaximumAnnualCeiling).WithScale(2)).Having.Item1LessThanItem2().Generate();
+        (decimal deductible, decimal ceiling) = deductibleAndCeiling;
 
         return new SupplementaryPolicy(_number.Generate(),
                                        _insured.Generate(),

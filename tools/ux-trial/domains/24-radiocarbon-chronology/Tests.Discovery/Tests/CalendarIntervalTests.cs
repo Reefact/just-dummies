@@ -47,9 +47,8 @@ public sealed class CalendarIntervalTests {
     [Fact]
     public void An_interval_that_starts_after_it_ends_is_refused() {
         // Arrange
-        (int anyEarlierYear, int anyLaterYear) = Any.OrderedPair(Any.Int32().Between(CalendarInterval.EarliestYear, CalendarInterval.LatestYear),
-                                                                 Any.Int32().Between(CalendarInterval.EarliestYear, CalendarInterval.LatestYear),
-                                                                 strict: true).Generate();
+        (int anyEarlierYear, int anyLaterYear) = Any.Pair(Any.Int32().Between(CalendarInterval.EarliestYear, CalendarInterval.LatestYear),
+                                                                 Any.Int32().Between(CalendarInterval.EarliestYear, CalendarInterval.LatestYear)).Having.Item1LessThanItem2().Generate();
 
         // Act
         ArgumentException refusal = Assert.Throws<ArgumentException>(() => new CalendarInterval(anyLaterYear, anyEarlierYear));

@@ -15,7 +15,6 @@ namespace NetworkAcl.Domain;
 /// </summary>
 public sealed partial class AnyPortRange : IAny<PortRange> {
 
-    private AnyOrderedPair<ushort> _lowAndHigh;
 
     private AnyUInt16 _lowRecipe;
     private AnyUInt16 _highRecipe;
@@ -41,26 +40,22 @@ public sealed partial class AnyPortRange : IAny<PortRange> {
                          AnyUInt16 high) {
         _lowRecipe  = low;
         _highRecipe = high;
-        _lowAndHigh = LowAndHigh();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyPortRange(AnyPortRange from) {
-        _lowAndHigh = from._lowAndHigh;
         _lowRecipe  = from._lowRecipe;
         _lowPin     = from._lowPin;
         _highRecipe = from._highRecipe;
         _highPin    = from._highPin;
     }
 
-    /// <summary>Draws <c>low</c> and <c>high</c> together, <c>low</c> never after <c>high</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<ushort> LowAndHigh() {
-        AnyOrderedPair<ushort> pair = Any.OrderedPair(_lowRecipe, _highRecipe);
+    /// <summary>Draws <c>low</c> and <c>high</c>, <c>low</c> never after <c>high</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (ushort Low, ushort High) LowAndHigh() {
+        if (_lowPin is { } low) { return (low, _highPin ?? _highRecipe.GreaterThanOrEqualTo(low).Generate()); }
+        if (_highPin is { } high) { return (_lowRecipe.LessThanOrEqualTo(high).Generate(), high); }
 
-        if (_lowPin is { } low) { pair = pair.WithFirst(low); }
-        if (_highPin is { } high) { pair = pair.WithSecond(high); }
-
-        return pair;
+        return Any.Pair(_lowRecipe, _highRecipe).Having.Item1LessThanOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>low</c> to a fixed value, which bounds <c>high</c>; its recipe is kept for a later refinement.</summary>
@@ -68,7 +63,6 @@ public sealed partial class AnyPortRange : IAny<PortRange> {
         AnyPortRange copy = new AnyPortRange(this);
 
         copy._lowPin     = value;
-        copy._lowAndHigh = copy.LowAndHigh();
 
         return copy;
     }
@@ -82,7 +76,6 @@ public sealed partial class AnyPortRange : IAny<PortRange> {
 
         copy._lowRecipe  = configure(_lowRecipe);
         copy._lowPin     = null;
-        copy._lowAndHigh = copy.LowAndHigh();
 
         return copy;
     }
@@ -92,7 +85,6 @@ public sealed partial class AnyPortRange : IAny<PortRange> {
         AnyPortRange copy = new AnyPortRange(this);
 
         copy._highPin    = value;
-        copy._lowAndHigh = copy.LowAndHigh();
 
         return copy;
     }
@@ -106,14 +98,13 @@ public sealed partial class AnyPortRange : IAny<PortRange> {
 
         copy._highRecipe = configure(_highRecipe);
         copy._highPin    = null;
-        copy._lowAndHigh = copy.LowAndHigh();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="PortRange" />.</summary>
     public PortRange Generate() {
-        (ushort low, ushort high) = _lowAndHigh.Generate();
+        (ushort low, ushort high) = LowAndHigh();
 
         return new PortRange(low,
                              high);

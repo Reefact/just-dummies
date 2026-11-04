@@ -1,5 +1,5 @@
 // Scaffolded by `any`, then rewritten by hand: StayPeriod is a start plus a duration of 1 to MaxNights,
-// which the scaffolded OrderedPair could not express (it left the 30-night guard to verify).
+// which the scaffolded pair could not express (it left the 30-night guard to verify).
 using System;
 
 using JustDummies;

@@ -22,7 +22,6 @@ public sealed partial class AnyLot : IAny<Lot> {
     private IAny<LotNumber>          _number;
     private IAny<MaterialCode>       _material;
     private IAny<Quantity>           _initialQuantity;
-    private AnyOrderedPair<DateOnly> _manufacturedOnAndExpiresOn;
 
     private AnyLotNumber    _numberRecipe;
     private AnyMaterialCode _materialRecipe;
@@ -77,7 +76,6 @@ public sealed partial class AnyLot : IAny<Lot> {
         _initialQuantityRecipe      = initialQuantity;
         _manufacturedOnRecipe       = manufacturedOn;
         _expiresOnRecipe            = expiresOn;
-        _manufacturedOnAndExpiresOn = ManufacturedOnAndExpiresOn();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -88,21 +86,18 @@ public sealed partial class AnyLot : IAny<Lot> {
         _materialRecipe             = from._materialRecipe;
         _initialQuantity            = from._initialQuantity;
         _initialQuantityRecipe      = from._initialQuantityRecipe;
-        _manufacturedOnAndExpiresOn = from._manufacturedOnAndExpiresOn;
         _manufacturedOnRecipe       = from._manufacturedOnRecipe;
         _manufacturedOnPin          = from._manufacturedOnPin;
         _expiresOnRecipe            = from._expiresOnRecipe;
         _expiresOnPin               = from._expiresOnPin;
     }
 
-    /// <summary>Draws <c>manufacturedOn</c> and <c>expiresOn</c> together, <c>manufacturedOn</c> always before <c>expiresOn</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateOnly> ManufacturedOnAndExpiresOn() {
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(_manufacturedOnRecipe, _expiresOnRecipe, strict: true);
+    /// <summary>Draws <c>manufacturedOn</c> and <c>expiresOn</c>, <c>manufacturedOn</c> always before <c>expiresOn</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateOnly ManufacturedOn, DateOnly ExpiresOn) ManufacturedOnAndExpiresOn() {
+        if (_manufacturedOnPin is { } manufacturedOn) { return (manufacturedOn, _expiresOnPin ?? _expiresOnRecipe.After(manufacturedOn).Generate()); }
+        if (_expiresOnPin is { } expiresOn) { return (_manufacturedOnRecipe.Before(expiresOn).Generate(), expiresOn); }
 
-        if (_manufacturedOnPin is { } manufacturedOn) { pair = pair.WithFirst(manufacturedOn); }
-        if (_expiresOnPin is { } expiresOn) { pair = pair.WithSecond(expiresOn); }
-
-        return pair;
+        return Any.Pair(_manufacturedOnRecipe, _expiresOnRecipe).Having.Item1BeforeItem2().Generate();
     }
 
     /// <summary>Pins <c>number</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -176,7 +171,6 @@ public sealed partial class AnyLot : IAny<Lot> {
         AnyLot copy = new AnyLot(this);
 
         copy._manufacturedOnPin          = value;
-        copy._manufacturedOnAndExpiresOn = copy.ManufacturedOnAndExpiresOn();
 
         return copy;
     }
@@ -190,7 +184,6 @@ public sealed partial class AnyLot : IAny<Lot> {
 
         copy._manufacturedOnRecipe       = configure(_manufacturedOnRecipe);
         copy._manufacturedOnPin          = null;
-        copy._manufacturedOnAndExpiresOn = copy.ManufacturedOnAndExpiresOn();
 
         return copy;
     }
@@ -200,7 +193,6 @@ public sealed partial class AnyLot : IAny<Lot> {
         AnyLot copy = new AnyLot(this);
 
         copy._expiresOnPin               = value;
-        copy._manufacturedOnAndExpiresOn = copy.ManufacturedOnAndExpiresOn();
 
         return copy;
     }
@@ -214,14 +206,13 @@ public sealed partial class AnyLot : IAny<Lot> {
 
         copy._expiresOnRecipe            = configure(_expiresOnRecipe);
         copy._expiresOnPin               = null;
-        copy._manufacturedOnAndExpiresOn = copy.ManufacturedOnAndExpiresOn();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Lot" />.</summary>
     public Lot Generate() {
-        (DateOnly manufacturedOn, DateOnly expiresOn) = _manufacturedOnAndExpiresOn.Generate();
+        (DateOnly manufacturedOn, DateOnly expiresOn) = ManufacturedOnAndExpiresOn();
 
         return new Lot(_number.Generate(),
                        _material.Generate(),

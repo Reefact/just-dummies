@@ -25,7 +25,6 @@ public sealed partial class AnyOrder : IAny<Order> {
     private IAny<ShippingAddress>          _shippingAddress;
     private IAny<DiscountPercentage>       _discount;
     private IAny<ShippingMethod>           _shippingMethod;
-    private AnyOrderedPair<DateTime>       _placedAtAndDeliveryDeadline;
 
     private AnyGuid                 _idRecipe;
     private AnyShippingAddress      _shippingAddressRecipe;
@@ -98,7 +97,6 @@ public sealed partial class AnyOrder : IAny<Order> {
         _shippingMethodRecipe        = shippingMethod;
         _placedAtRecipe              = placedAt;
         _deliveryDeadlineRecipe      = deliveryDeadline;
-        _placedAtAndDeliveryDeadline = PlacedAtAndDeliveryDeadline();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -112,21 +110,18 @@ public sealed partial class AnyOrder : IAny<Order> {
         _discountRecipe              = from._discountRecipe;
         _shippingMethod              = from._shippingMethod;
         _shippingMethodRecipe        = from._shippingMethodRecipe;
-        _placedAtAndDeliveryDeadline = from._placedAtAndDeliveryDeadline;
         _placedAtRecipe              = from._placedAtRecipe;
         _placedAtPin                 = from._placedAtPin;
         _deliveryDeadlineRecipe      = from._deliveryDeadlineRecipe;
         _deliveryDeadlinePin         = from._deliveryDeadlinePin;
     }
 
-    /// <summary>Draws <c>placedAt</c> and <c>deliveryDeadline</c> together, <c>placedAt</c> always before <c>deliveryDeadline</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateTime> PlacedAtAndDeliveryDeadline() {
-        AnyOrderedPair<DateTime> pair = Any.OrderedPair(_placedAtRecipe, _deliveryDeadlineRecipe, strict: true);
+    /// <summary>Draws <c>placedAt</c> and <c>deliveryDeadline</c>, <c>placedAt</c> always before <c>deliveryDeadline</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateTime PlacedAt, DateTime DeliveryDeadline) PlacedAtAndDeliveryDeadline() {
+        if (_placedAtPin is { } placedAt) { return (placedAt, _deliveryDeadlinePin ?? _deliveryDeadlineRecipe.After(placedAt).Generate()); }
+        if (_deliveryDeadlinePin is { } deliveryDeadline) { return (_placedAtRecipe.Before(deliveryDeadline).Generate(), deliveryDeadline); }
 
-        if (_placedAtPin is { } placedAt) { pair = pair.WithFirst(placedAt); }
-        if (_deliveryDeadlinePin is { } deliveryDeadline) { pair = pair.WithSecond(deliveryDeadline); }
-
-        return pair;
+        return Any.Pair(_placedAtRecipe, _deliveryDeadlineRecipe).Having.Item1BeforeItem2().Generate();
     }
 
     /// <summary>Pins <c>id</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -231,7 +226,6 @@ public sealed partial class AnyOrder : IAny<Order> {
         AnyOrder copy = new AnyOrder(this);
 
         copy._placedAtPin                 = value;
-        copy._placedAtAndDeliveryDeadline = copy.PlacedAtAndDeliveryDeadline();
 
         return copy;
     }
@@ -245,7 +239,6 @@ public sealed partial class AnyOrder : IAny<Order> {
 
         copy._placedAtRecipe              = configure(_placedAtRecipe);
         copy._placedAtPin                 = null;
-        copy._placedAtAndDeliveryDeadline = copy.PlacedAtAndDeliveryDeadline();
 
         return copy;
     }
@@ -255,7 +248,6 @@ public sealed partial class AnyOrder : IAny<Order> {
         AnyOrder copy = new AnyOrder(this);
 
         copy._deliveryDeadlinePin         = value;
-        copy._placedAtAndDeliveryDeadline = copy.PlacedAtAndDeliveryDeadline();
 
         return copy;
     }
@@ -269,14 +261,13 @@ public sealed partial class AnyOrder : IAny<Order> {
 
         copy._deliveryDeadlineRecipe      = configure(_deliveryDeadlineRecipe);
         copy._deliveryDeadlinePin         = null;
-        copy._placedAtAndDeliveryDeadline = copy.PlacedAtAndDeliveryDeadline();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Order" />.</summary>
     public Order Generate() {
-        (DateTime placedAt, DateTime deliveryDeadline) = _placedAtAndDeliveryDeadline.Generate();
+        (DateTime placedAt, DateTime deliveryDeadline) = PlacedAtAndDeliveryDeadline();
 
         return new Order(_id.Generate(),
                          _lines.Generate(),

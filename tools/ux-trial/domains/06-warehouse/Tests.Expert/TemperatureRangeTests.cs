@@ -143,7 +143,7 @@ public sealed class TemperatureRangeTests {
     [Fact]
     public void A_minimum_above_the_maximum_is_refused_as_an_invalid_range() {
         // Arrange
-        (decimal anyLower, decimal anyHigher) = Any.OrderedPair(Any.Decimal().Between(-40m, 40m), Any.Decimal().Between(-40m, 40m), strict: true).Generate();
+        (decimal anyLower, decimal anyHigher) = Any.Pair(Any.Decimal().Between(-40m, 40m), Any.Decimal().Between(-40m, 40m)).Having.Item1LessThanItem2().Generate();
 
         // Act
         Exception? thrown = Record.Exception(() => new TemperatureRange(anyHigher, anyLower));

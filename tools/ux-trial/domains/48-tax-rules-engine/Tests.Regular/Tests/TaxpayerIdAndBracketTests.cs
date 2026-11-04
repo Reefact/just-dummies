@@ -178,8 +178,8 @@ public sealed class TaxBracketTests {
     [Fact]
     public void An_upper_bound_below_the_lower_bound_is_refused() {
         // Arrange
-        (decimal anySmaller, decimal anyLarger) = Any.OrderedPair(Any.Decimal().Between(0m, 1_000_000m).WithScale(2),
-                                                                  Any.Decimal().Between(0m, 1_000_000m).WithScale(2), strict: true).Generate();
+        (decimal anySmaller, decimal anyLarger) = Any.Pair(Any.Decimal().Between(0m, 1_000_000m).WithScale(2),
+                                                                  Any.Decimal().Between(0m, 1_000_000m).WithScale(2)).Having.Item1LessThanItem2().Generate();
         Rate anyRate = new AnyRate().Generate();
 
         // Act

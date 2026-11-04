@@ -208,12 +208,11 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
 
     /// <summary>Produces one arbitrary <see cref="RecallNotice" />.</summary>
     public RecallNotice Generate() {
-        AnyOrderedPair<DateOnly> dates = Any.OrderedPair(_issuedOnRecipe, _effectiveFromRecipe);
+        (DateOnly, DateOnly) dates = _issuedOnPin is { } issuedOnPin ? (issuedOnPin, _effectiveFromPin ?? _effectiveFromRecipe.AfterOrEqualTo(issuedOnPin).Generate())
+                                     : _effectiveFromPin is { } effectiveFromPin ? (_issuedOnRecipe.BeforeOrEqualTo(effectiveFromPin).Generate(), effectiveFromPin)
+                                     : Any.Pair(_issuedOnRecipe, _effectiveFromRecipe).Having.Item1BeforeOrEqualToItem2().Generate();
 
-        if (_issuedOnPin is { } issuedOnPin) { dates = dates.WithFirst(issuedOnPin); }
-        if (_effectiveFromPin is { } effectiveFromPin) { dates = dates.WithSecond(effectiveFromPin); }
-
-        (DateOnly issuedOn, DateOnly effectiveFrom) = dates.Generate();
+        (DateOnly issuedOn, DateOnly effectiveFrom) = dates;
 
         return new RecallNotice(_batch.Generate(),
                                 issuedOn,

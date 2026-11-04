@@ -79,15 +79,14 @@ public sealed partial class AnySemester : IAny<Semester> {
     }
 
     /// <summary>Draws <c>start</c> and <c>end</c> together, <c>start</c> always before <c>end</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateOnly> StartAndEnd(int startYear) {
+    private (DateOnly, DateOnly) StartAndEnd(int startYear) {
         // The constructor ties the start's year to the academic year and the term: an autumn semester starts in
         // the academic year itself, a spring one in the next.
         AnyDateOnly startInItsYear = _startRecipe.Between(new DateOnly(startYear, 1, 1), new DateOnly(startYear, 12, 31));
 
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(startInItsYear, _endRecipe, strict: true);
-
-        if (_startPin is { } start) { pair = pair.WithFirst(start); }
-        if (_endPin is { } end) { pair = pair.WithSecond(end); }
+        (DateOnly, DateOnly) pair = _startPin is { } start ? (start, _endPin ?? _endRecipe.After(start).Generate())
+                                    : _endPin is { } end ? (startInItsYear.Before(end).Generate(), end)
+                                    : Any.Pair(startInItsYear, _endRecipe).Having.Item1BeforeItem2().Generate();
 
         return pair;
     }
@@ -186,7 +185,7 @@ public sealed partial class AnySemester : IAny<Semester> {
         Term term         = _term.Generate();
         int  startYear    = term == Term.Spring ? academicYear + 1 : academicYear;
 
-        (DateOnly start, DateOnly end) = StartAndEnd(startYear).Generate();
+        (DateOnly start, DateOnly end) = StartAndEnd(startYear);
 
         return new Semester(academicYear,
                             term,

@@ -63,7 +63,7 @@ public sealed class RoleAssignmentTests {
         // Arrange
         Guid anySubject = Any.Guid().NonEmpty().Generate();
         Role anyRole    = Any.Enum<Role>().Generate();
-        (DateOnly earlier, DateOnly later) = Any.OrderedPair(Any.DateOnly(), Any.DateOnly(), strict: true).Generate();
+        (DateOnly earlier, DateOnly later) = Any.Pair(Any.DateOnly(), Any.DateOnly()).Having.Item1BeforeItem2().Generate();
 
         // Act
         ArgumentException exception = Assert.Throws<ArgumentException>(() => new RoleAssignment(anySubject, anyRole, later, earlier));

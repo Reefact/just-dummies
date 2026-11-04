@@ -16,7 +16,6 @@ namespace ColdChain.Tests.Expert.Generators;
 /// </summary>
 public sealed partial class AnyStabilityBudget : IAny<StabilityBudget> {
 
-    private AnyOrderedPair<int> _maxSingleExcursionMinutesAndCumulativeMinutes;
 
     private AnyInt32 _cumulativeMinutesRecipe;
     private AnyInt32 _maxSingleExcursionMinutesRecipe;
@@ -42,26 +41,22 @@ public sealed partial class AnyStabilityBudget : IAny<StabilityBudget> {
                                AnyInt32 maxSingleExcursionMinutes) {
         _cumulativeMinutesRecipe                       = cumulativeMinutes;
         _maxSingleExcursionMinutesRecipe               = maxSingleExcursionMinutes;
-        _maxSingleExcursionMinutesAndCumulativeMinutes = MaxSingleExcursionMinutesAndCumulativeMinutes();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyStabilityBudget(AnyStabilityBudget from) {
-        _maxSingleExcursionMinutesAndCumulativeMinutes = from._maxSingleExcursionMinutesAndCumulativeMinutes;
         _cumulativeMinutesRecipe                       = from._cumulativeMinutesRecipe;
         _cumulativeMinutesPin                          = from._cumulativeMinutesPin;
         _maxSingleExcursionMinutesRecipe               = from._maxSingleExcursionMinutesRecipe;
         _maxSingleExcursionMinutesPin                  = from._maxSingleExcursionMinutesPin;
     }
 
-    /// <summary>Draws <c>maxSingleExcursionMinutes</c> and <c>cumulativeMinutes</c> together, <c>maxSingleExcursionMinutes</c> never after <c>cumulativeMinutes</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<int> MaxSingleExcursionMinutesAndCumulativeMinutes() {
-        AnyOrderedPair<int> pair = Any.OrderedPair(_maxSingleExcursionMinutesRecipe, _cumulativeMinutesRecipe);
+    /// <summary>Draws <c>maxSingleExcursionMinutes</c> and <c>cumulativeMinutes</c>, <c>maxSingleExcursionMinutes</c> never after <c>cumulativeMinutes</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (int MaxSingleExcursionMinutes, int CumulativeMinutes) MaxSingleExcursionMinutesAndCumulativeMinutes() {
+        if (_maxSingleExcursionMinutesPin is { } maxSingleExcursionMinutes) { return (maxSingleExcursionMinutes, _cumulativeMinutesPin ?? _cumulativeMinutesRecipe.GreaterThanOrEqualTo(maxSingleExcursionMinutes).Generate()); }
+        if (_cumulativeMinutesPin is { } cumulativeMinutes) { return (_maxSingleExcursionMinutesRecipe.LessThanOrEqualTo(cumulativeMinutes).Generate(), cumulativeMinutes); }
 
-        if (_maxSingleExcursionMinutesPin is { } maxSingleExcursionMinutes) { pair = pair.WithFirst(maxSingleExcursionMinutes); }
-        if (_cumulativeMinutesPin is { } cumulativeMinutes) { pair = pair.WithSecond(cumulativeMinutes); }
-
-        return pair;
+        return Any.Pair(_maxSingleExcursionMinutesRecipe, _cumulativeMinutesRecipe).Having.Item1LessThanOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>cumulativeMinutes</c> to a fixed value, which bounds <c>maxSingleExcursionMinutes</c>; its recipe is kept for a later refinement.</summary>
@@ -69,7 +64,6 @@ public sealed partial class AnyStabilityBudget : IAny<StabilityBudget> {
         AnyStabilityBudget copy = new AnyStabilityBudget(this);
 
         copy._cumulativeMinutesPin                          = value;
-        copy._maxSingleExcursionMinutesAndCumulativeMinutes = copy.MaxSingleExcursionMinutesAndCumulativeMinutes();
 
         return copy;
     }
@@ -83,7 +77,6 @@ public sealed partial class AnyStabilityBudget : IAny<StabilityBudget> {
 
         copy._cumulativeMinutesRecipe                       = configure(_cumulativeMinutesRecipe);
         copy._cumulativeMinutesPin                          = null;
-        copy._maxSingleExcursionMinutesAndCumulativeMinutes = copy.MaxSingleExcursionMinutesAndCumulativeMinutes();
 
         return copy;
     }
@@ -93,7 +86,6 @@ public sealed partial class AnyStabilityBudget : IAny<StabilityBudget> {
         AnyStabilityBudget copy = new AnyStabilityBudget(this);
 
         copy._maxSingleExcursionMinutesPin                  = value;
-        copy._maxSingleExcursionMinutesAndCumulativeMinutes = copy.MaxSingleExcursionMinutesAndCumulativeMinutes();
 
         return copy;
     }
@@ -107,14 +99,13 @@ public sealed partial class AnyStabilityBudget : IAny<StabilityBudget> {
 
         copy._maxSingleExcursionMinutesRecipe               = configure(_maxSingleExcursionMinutesRecipe);
         copy._maxSingleExcursionMinutesPin                  = null;
-        copy._maxSingleExcursionMinutesAndCumulativeMinutes = copy.MaxSingleExcursionMinutesAndCumulativeMinutes();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="StabilityBudget" />.</summary>
     public StabilityBudget Generate() {
-        (int maxSingleExcursionMinutes, int cumulativeMinutes) = _maxSingleExcursionMinutesAndCumulativeMinutes.Generate();
+        (int maxSingleExcursionMinutes, int cumulativeMinutes) = MaxSingleExcursionMinutesAndCumulativeMinutes();
 
         return new StabilityBudget(cumulativeMinutes,
                                    maxSingleExcursionMinutes);

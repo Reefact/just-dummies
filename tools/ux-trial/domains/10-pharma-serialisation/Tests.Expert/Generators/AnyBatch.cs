@@ -17,7 +17,6 @@ public sealed partial class AnyBatch : IAny<Batch> {
 
     private IAny<Gtin>               _gtin;
     private IAny<BatchNumber>        _number;
-    private AnyOrderedPair<DateOnly> _manufacturedOnAndExpiresOn;
     private IAny<int>                _plannedQuantity;
     private IAny<ReimbursementPrice> _price;
 
@@ -81,7 +80,6 @@ public sealed partial class AnyBatch : IAny<Batch> {
         _plannedQuantityRecipe      = plannedQuantity;
         _price                      = price;
         _priceRecipe                = price;
-        _manufacturedOnAndExpiresOn = ManufacturedOnAndExpiresOn();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -90,7 +88,6 @@ public sealed partial class AnyBatch : IAny<Batch> {
         _gtinRecipe                 = from._gtinRecipe;
         _number                     = from._number;
         _numberRecipe               = from._numberRecipe;
-        _manufacturedOnAndExpiresOn = from._manufacturedOnAndExpiresOn;
         _manufacturedOnRecipe       = from._manufacturedOnRecipe;
         _manufacturedOnPin          = from._manufacturedOnPin;
         _expiresOnRecipe            = from._expiresOnRecipe;
@@ -101,14 +98,12 @@ public sealed partial class AnyBatch : IAny<Batch> {
         _priceRecipe                = from._priceRecipe;
     }
 
-    /// <summary>Draws <c>manufacturedOn</c> and <c>expiresOn</c> together, <c>manufacturedOn</c> always before <c>expiresOn</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateOnly> ManufacturedOnAndExpiresOn() {
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(_manufacturedOnRecipe, _expiresOnRecipe, strict: true);
+    /// <summary>Draws <c>manufacturedOn</c> and <c>expiresOn</c>, <c>manufacturedOn</c> always before <c>expiresOn</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateOnly ManufacturedOn, DateOnly ExpiresOn) ManufacturedOnAndExpiresOn() {
+        if (_manufacturedOnPin is { } manufacturedOn) { return (manufacturedOn, _expiresOnPin ?? _expiresOnRecipe.After(manufacturedOn).Generate()); }
+        if (_expiresOnPin is { } expiresOn) { return (_manufacturedOnRecipe.Before(expiresOn).Generate(), expiresOn); }
 
-        if (_manufacturedOnPin is { } manufacturedOn) { pair = pair.WithFirst(manufacturedOn); }
-        if (_expiresOnPin is { } expiresOn) { pair = pair.WithSecond(expiresOn); }
-
-        return pair;
+        return Any.Pair(_manufacturedOnRecipe, _expiresOnRecipe).Having.Item1BeforeItem2().Generate();
     }
 
     /// <summary>Pins <c>gtin</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -160,7 +155,6 @@ public sealed partial class AnyBatch : IAny<Batch> {
         AnyBatch copy = new AnyBatch(this);
 
         copy._manufacturedOnPin          = value;
-        copy._manufacturedOnAndExpiresOn = copy.ManufacturedOnAndExpiresOn();
 
         return copy;
     }
@@ -174,7 +168,6 @@ public sealed partial class AnyBatch : IAny<Batch> {
 
         copy._manufacturedOnRecipe       = configure(_manufacturedOnRecipe);
         copy._manufacturedOnPin          = null;
-        copy._manufacturedOnAndExpiresOn = copy.ManufacturedOnAndExpiresOn();
 
         return copy;
     }
@@ -184,7 +177,6 @@ public sealed partial class AnyBatch : IAny<Batch> {
         AnyBatch copy = new AnyBatch(this);
 
         copy._expiresOnPin               = value;
-        copy._manufacturedOnAndExpiresOn = copy.ManufacturedOnAndExpiresOn();
 
         return copy;
     }
@@ -198,7 +190,6 @@ public sealed partial class AnyBatch : IAny<Batch> {
 
         copy._expiresOnRecipe            = configure(_expiresOnRecipe);
         copy._expiresOnPin               = null;
-        copy._manufacturedOnAndExpiresOn = copy.ManufacturedOnAndExpiresOn();
 
         return copy;
     }
@@ -249,7 +240,7 @@ public sealed partial class AnyBatch : IAny<Batch> {
 
     /// <summary>Produces one arbitrary <see cref="Batch" />.</summary>
     public Batch Generate() {
-        (DateOnly manufacturedOn, DateOnly expiresOn) = _manufacturedOnAndExpiresOn.Generate();
+        (DateOnly manufacturedOn, DateOnly expiresOn) = ManufacturedOnAndExpiresOn();
 
         return new Batch(_gtin.Generate(),
                          _number.Generate(),

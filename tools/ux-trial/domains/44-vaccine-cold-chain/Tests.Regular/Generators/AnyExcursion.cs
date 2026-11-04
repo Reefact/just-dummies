@@ -22,7 +22,6 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
 
     private IAny<ExcursionKind>            _kind;
     private IAny<TemperatureRange>         _labelledRange;
-    private AnyOrderedPair<DateTimeOffset> _startedAtAndEndedAt;
     private IAny<decimal>                  _extremeCelsius;
     private IAny<bool>                     _isOpen;
 
@@ -89,7 +88,6 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
         _extremeCelsiusRecipe = extremeCelsius;
         _isOpen               = isOpen;
         _isOpenRecipe         = isOpen;
-        _startedAtAndEndedAt  = StartedAtAndEndedAt();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -98,7 +96,6 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
         _kindRecipe           = from._kindRecipe;
         _labelledRange        = from._labelledRange;
         _labelledRangeRecipe  = from._labelledRangeRecipe;
-        _startedAtAndEndedAt  = from._startedAtAndEndedAt;
         _startedAtRecipe      = from._startedAtRecipe;
         _startedAtPin         = from._startedAtPin;
         _endedAtRecipe        = from._endedAtRecipe;
@@ -109,14 +106,12 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
         _isOpenRecipe         = from._isOpenRecipe;
     }
 
-    /// <summary>Draws <c>startedAt</c> and <c>endedAt</c> together, <c>startedAt</c> never after <c>endedAt</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateTimeOffset> StartedAtAndEndedAt() {
-        AnyOrderedPair<DateTimeOffset> pair = Any.OrderedPair(_startedAtRecipe, _endedAtRecipe);
+    /// <summary>Draws <c>startedAt</c> and <c>endedAt</c>, <c>startedAt</c> never after <c>endedAt</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateTimeOffset StartedAt, DateTimeOffset EndedAt) StartedAtAndEndedAt() {
+        if (_startedAtPin is { } startedAt) { return (startedAt, _endedAtPin ?? _endedAtRecipe.AfterOrEqualTo(startedAt).Generate()); }
+        if (_endedAtPin is { } endedAt) { return (_startedAtRecipe.BeforeOrEqualTo(endedAt).Generate(), endedAt); }
 
-        if (_startedAtPin is { } startedAt) { pair = pair.WithFirst(startedAt); }
-        if (_endedAtPin is { } endedAt) { pair = pair.WithSecond(endedAt); }
-
-        return pair;
+        return Any.Pair(_startedAtRecipe, _endedAtRecipe).Having.Item1BeforeOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>kind</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -168,7 +163,6 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
         AnyExcursion copy = new AnyExcursion(this);
 
         copy._startedAtPin        = value;
-        copy._startedAtAndEndedAt = copy.StartedAtAndEndedAt();
 
         return copy;
     }
@@ -182,7 +176,6 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
 
         copy._startedAtRecipe     = configure(_startedAtRecipe);
         copy._startedAtPin        = null;
-        copy._startedAtAndEndedAt = copy.StartedAtAndEndedAt();
 
         return copy;
     }
@@ -192,7 +185,6 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
         AnyExcursion copy = new AnyExcursion(this);
 
         copy._endedAtPin          = value;
-        copy._startedAtAndEndedAt = copy.StartedAtAndEndedAt();
 
         return copy;
     }
@@ -206,7 +198,6 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
 
         copy._endedAtRecipe       = configure(_endedAtRecipe);
         copy._endedAtPin          = null;
-        copy._startedAtAndEndedAt = copy.StartedAtAndEndedAt();
 
         return copy;
     }
@@ -257,7 +248,7 @@ public sealed partial class AnyExcursion : IAny<Excursion> {
 
     /// <summary>Produces one arbitrary <see cref="Excursion" />.</summary>
     public Excursion Generate() {
-        (DateTimeOffset startedAt, DateTimeOffset endedAt) = _startedAtAndEndedAt.Generate();
+        (DateTimeOffset startedAt, DateTimeOffset endedAt) = StartedAtAndEndedAt();
 
         ExcursionKind    kind  = _kind.Generate();
         TemperatureRange range = _labelledRange.Generate();

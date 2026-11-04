@@ -21,7 +21,6 @@ public sealed partial class AnySemester : IAny<Semester> {
 
     private IAny<int>                _academicYear;
     private IAny<Term>               _term;
-    private AnyOrderedPair<DateOnly> _startAndEnd;
 
     private AnyInt32      _academicYearRecipe;
     private AnyEnum<Term> _termRecipe;
@@ -65,7 +64,6 @@ public sealed partial class AnySemester : IAny<Semester> {
         _termRecipe         = term;
         _startRecipe        = start;
         _endRecipe          = end;
-        _startAndEnd        = StartAndEnd();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -74,21 +72,18 @@ public sealed partial class AnySemester : IAny<Semester> {
         _academicYearRecipe = from._academicYearRecipe;
         _term               = from._term;
         _termRecipe         = from._termRecipe;
-        _startAndEnd        = from._startAndEnd;
         _startRecipe        = from._startRecipe;
         _startPin           = from._startPin;
         _endRecipe          = from._endRecipe;
         _endPin             = from._endPin;
     }
 
-    /// <summary>Draws <c>start</c> and <c>end</c> together, <c>start</c> always before <c>end</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateOnly> StartAndEnd() {
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(_startRecipe, _endRecipe, strict: true);
+    /// <summary>Draws <c>start</c> and <c>end</c>, <c>start</c> always before <c>end</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateOnly Start, DateOnly End) StartAndEnd() {
+        if (_startPin is { } start) { return (start, _endPin ?? _endRecipe.After(start).Generate()); }
+        if (_endPin is { } end) { return (_startRecipe.Before(end).Generate(), end); }
 
-        if (_startPin is { } start) { pair = pair.WithFirst(start); }
-        if (_endPin is { } end) { pair = pair.WithSecond(end); }
-
-        return pair;
+        return Any.Pair(_startRecipe, _endRecipe).Having.Item1BeforeItem2().Generate();
     }
 
     /// <summary>Pins <c>academicYear</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -140,7 +135,6 @@ public sealed partial class AnySemester : IAny<Semester> {
         AnySemester copy = new AnySemester(this);
 
         copy._startPin    = value;
-        copy._startAndEnd = copy.StartAndEnd();
 
         return copy;
     }
@@ -154,7 +148,6 @@ public sealed partial class AnySemester : IAny<Semester> {
 
         copy._startRecipe = configure(_startRecipe);
         copy._startPin    = null;
-        copy._startAndEnd = copy.StartAndEnd();
 
         return copy;
     }
@@ -164,7 +157,6 @@ public sealed partial class AnySemester : IAny<Semester> {
         AnySemester copy = new AnySemester(this);
 
         copy._endPin      = value;
-        copy._startAndEnd = copy.StartAndEnd();
 
         return copy;
     }
@@ -178,7 +170,6 @@ public sealed partial class AnySemester : IAny<Semester> {
 
         copy._endRecipe   = configure(_endRecipe);
         copy._endPin      = null;
-        copy._startAndEnd = copy.StartAndEnd();
 
         return copy;
     }

@@ -32,7 +32,7 @@ public sealed class OrderConstructionTests {
         ShippingAddress                      anyAddress  = Any.ShippingAddress().Generate();
         DiscountPercentage                   anyDiscount = Any.DiscountPercentage().Generate();
         ShippingMethod                       anyMethod   = Any.Enum<ShippingMethod>().Generate();
-        (DateTime anyPlacedAt, DateTime anyDeadline) = Any.OrderedPair(AnyMoment, AnyMoment, strict: true).Generate();
+        (DateTime anyPlacedAt, DateTime anyDeadline) = Any.Pair(AnyMoment, AnyMoment).Having.Item1BeforeItem2().Generate();
 
         // Act
         Order order = new Order(anyId, anyOrder.Lines, anyAddress, anyDiscount, anyMethod, anyPlacedAt, anyDeadline);
@@ -170,7 +170,7 @@ public sealed class OrderConstructionTests {
     public void A_delivery_deadline_before_the_placement_is_refused() {
         // Arrange
         Order anyOrder = AnyValidOrder();
-        (DateTime anyEarlier, DateTime anyLater) = Any.OrderedPair(AnyMoment, AnyMoment, strict: true).Generate();
+        (DateTime anyEarlier, DateTime anyLater) = Any.Pair(AnyMoment, AnyMoment).Having.Item1BeforeItem2().Generate();
 
         // Act / Assert
         ArgumentException error = Assert.Throws<ArgumentException>(() => new Order(anyOrder.Id, anyOrder.Lines, anyOrder.ShippingAddress, anyOrder.Discount, anyOrder.ShippingMethod, anyLater, anyEarlier));

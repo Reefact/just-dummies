@@ -25,8 +25,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
     private IAny<int>               _holdTiers;
     private IAny<int>               _deckTiers;
     private IAny<decimal>           _maxStackWeightTonnes;
-    private AnyOrderedPair<decimal> _lightshipTonnesAndMaxDisplacementTonnes;
-    private AnyOrderedPair<double>  _lightshipVcgMetresAndMaxVcgMetres;
     private IAny<double>            _maxTcgMetres;
 
     private AnyString  _nameRecipe;
@@ -134,8 +132,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
         _maxVcgMetresRecipe                      = maxVcgMetres;
         _maxTcgMetres                            = maxTcgMetres;
         _maxTcgMetresRecipe                      = maxTcgMetres;
-        _lightshipTonnesAndMaxDisplacementTonnes = LightshipTonnesAndMaxDisplacementTonnes();
-        _lightshipVcgMetresAndMaxVcgMetres       = LightshipVcgMetresAndMaxVcgMetres();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -152,11 +148,9 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
         _deckTiersRecipe                         = from._deckTiersRecipe;
         _maxStackWeightTonnes                    = from._maxStackWeightTonnes;
         _maxStackWeightTonnesRecipe              = from._maxStackWeightTonnesRecipe;
-        _lightshipTonnesAndMaxDisplacementTonnes = from._lightshipTonnesAndMaxDisplacementTonnes;
         _lightshipTonnesRecipe                   = from._lightshipTonnesRecipe;
         _lightshipTonnesPin                      = from._lightshipTonnesPin;
         _lightshipVcgMetresPin                   = from._lightshipVcgMetresPin;
-        _lightshipVcgMetresAndMaxVcgMetres       = from._lightshipVcgMetresAndMaxVcgMetres;
         _lightshipVcgMetresRecipe                = from._lightshipVcgMetresRecipe;
         _maxDisplacementTonnesRecipe             = from._maxDisplacementTonnesRecipe;
         _maxDisplacementTonnesPin                = from._maxDisplacementTonnesPin;
@@ -166,24 +160,20 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
         _maxTcgMetresRecipe                      = from._maxTcgMetresRecipe;
     }
 
-    /// <summary>Draws <c>lightshipTonnes</c> and <c>maxDisplacementTonnes</c> together, <c>lightshipTonnes</c> always before <c>maxDisplacementTonnes</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<decimal> LightshipTonnesAndMaxDisplacementTonnes() {
-        AnyOrderedPair<decimal> pair = Any.OrderedPair(_lightshipTonnesRecipe, _maxDisplacementTonnesRecipe, strict: true);
+    /// <summary>Draws <c>lightshipTonnes</c> and <c>maxDisplacementTonnes</c>, <c>lightshipTonnes</c> always before <c>maxDisplacementTonnes</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (decimal LightshipTonnes, decimal MaxDisplacementTonnes) LightshipTonnesAndMaxDisplacementTonnes() {
+        if (_lightshipTonnesPin is { } lightshipTonnes) { return (lightshipTonnes, _maxDisplacementTonnesPin ?? _maxDisplacementTonnesRecipe.GreaterThan(lightshipTonnes).Generate()); }
+        if (_maxDisplacementTonnesPin is { } maxDisplacementTonnes) { return (_lightshipTonnesRecipe.LessThan(maxDisplacementTonnes).Generate(), maxDisplacementTonnes); }
 
-        if (_lightshipTonnesPin is { } lightshipTonnes) { pair = pair.WithFirst(lightshipTonnes); }
-        if (_maxDisplacementTonnesPin is { } maxDisplacementTonnes) { pair = pair.WithSecond(maxDisplacementTonnes); }
-
-        return pair;
+        return Any.Pair(_lightshipTonnesRecipe, _maxDisplacementTonnesRecipe).Having.Item1LessThanItem2().Generate();
     }
 
-    /// <summary>Draws <c>lightshipVcgMetres</c> and <c>maxVcgMetres</c> together, <c>lightshipVcgMetres</c> always below <c>maxVcgMetres</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<double> LightshipVcgMetresAndMaxVcgMetres() {
-        AnyOrderedPair<double> pair = Any.OrderedPair(_lightshipVcgMetresRecipe, _maxVcgMetresRecipe, strict: true);
+    /// <summary>Draws <c>lightshipVcgMetres</c> and <c>maxVcgMetres</c>, <c>lightshipVcgMetres</c> always before <c>maxVcgMetres</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (double LightshipVcgMetres, double MaxVcgMetres) LightshipVcgMetresAndMaxVcgMetres() {
+        if (_lightshipVcgMetresPin is { } lightshipVcgMetres) { return (lightshipVcgMetres, _maxVcgMetresPin ?? _maxVcgMetresRecipe.GreaterThan(lightshipVcgMetres).Generate()); }
+        if (_maxVcgMetresPin is { } maxVcgMetres) { return (_lightshipVcgMetresRecipe.LessThan(maxVcgMetres).Generate(), maxVcgMetres); }
 
-        if (_lightshipVcgMetresPin is { } lightshipVcgMetres) { pair = pair.WithFirst(lightshipVcgMetres); }
-        if (_maxVcgMetresPin is { } maxVcgMetres) { pair = pair.WithSecond(maxVcgMetres); }
-
-        return pair;
+        return Any.Pair(_lightshipVcgMetresRecipe, _maxVcgMetresRecipe).Having.Item1LessThanItem2().Generate();
     }
 
     /// <summary>Pins <c>name</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -323,7 +313,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
         AnyVesselProfile copy = new AnyVesselProfile(this);
 
         copy._lightshipTonnesPin                      = value;
-        copy._lightshipTonnesAndMaxDisplacementTonnes = copy.LightshipTonnesAndMaxDisplacementTonnes();
 
         return copy;
     }
@@ -337,7 +326,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
 
         copy._lightshipTonnesRecipe                   = configure(_lightshipTonnesRecipe);
         copy._lightshipTonnesPin                      = null;
-        copy._lightshipTonnesAndMaxDisplacementTonnes = copy.LightshipTonnesAndMaxDisplacementTonnes();
 
         return copy;
     }
@@ -347,7 +335,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
         AnyVesselProfile copy = new AnyVesselProfile(this);
 
         copy._lightshipVcgMetresPin                = value;
-        copy._lightshipVcgMetresAndMaxVcgMetres    = copy.LightshipVcgMetresAndMaxVcgMetres();
 
         return copy;
     }
@@ -360,7 +347,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
 
         copy._lightshipVcgMetresRecipe             = configure(_lightshipVcgMetresRecipe);
         copy._lightshipVcgMetresPin                = null;
-        copy._lightshipVcgMetresAndMaxVcgMetres    = copy.LightshipVcgMetresAndMaxVcgMetres();
 
         return copy;
     }
@@ -370,7 +356,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
         AnyVesselProfile copy = new AnyVesselProfile(this);
 
         copy._maxDisplacementTonnesPin                = value;
-        copy._lightshipTonnesAndMaxDisplacementTonnes = copy.LightshipTonnesAndMaxDisplacementTonnes();
 
         return copy;
     }
@@ -384,7 +369,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
 
         copy._maxDisplacementTonnesRecipe             = configure(_maxDisplacementTonnesRecipe);
         copy._maxDisplacementTonnesPin                = null;
-        copy._lightshipTonnesAndMaxDisplacementTonnes = copy.LightshipTonnesAndMaxDisplacementTonnes();
 
         return copy;
     }
@@ -394,7 +378,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
         AnyVesselProfile copy = new AnyVesselProfile(this);
 
         copy._maxVcgMetresPin                      = value;
-        copy._lightshipVcgMetresAndMaxVcgMetres    = copy.LightshipVcgMetresAndMaxVcgMetres();
 
         return copy;
     }
@@ -407,7 +390,6 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
 
         copy._maxVcgMetresRecipe                   = configure(_maxVcgMetresRecipe);
         copy._maxVcgMetresPin                      = null;
-        copy._lightshipVcgMetresAndMaxVcgMetres    = copy.LightshipVcgMetresAndMaxVcgMetres();
 
         return copy;
     }
@@ -436,8 +418,8 @@ public sealed partial class AnyVesselProfile : IAny<VesselProfile> {
 
     /// <summary>Produces one arbitrary <see cref="VesselProfile" />.</summary>
     public VesselProfile Generate() {
-        (decimal lightshipTonnes, decimal maxDisplacementTonnes) = _lightshipTonnesAndMaxDisplacementTonnes.Generate();
-        (double lightshipVcgMetres, double maxVcgMetres)         = _lightshipVcgMetresAndMaxVcgMetres.Generate();
+        (decimal lightshipTonnes, decimal maxDisplacementTonnes) = LightshipTonnesAndMaxDisplacementTonnes();
+        (double lightshipVcgMetres, double maxVcgMetres)         = LightshipVcgMetresAndMaxVcgMetres();
 
         return new VesselProfile(_name.Generate(),
                                  _bayCount.Generate(),

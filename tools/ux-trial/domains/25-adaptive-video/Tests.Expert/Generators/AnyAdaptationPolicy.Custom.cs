@@ -12,8 +12,7 @@ public sealed partial class AnyAdaptationPolicy {
     internal AnyAdaptationPolicy WithComfortBufferSecondsAtMost(double capacitySeconds) {
         AnyAdaptationPolicy copy = new AnyAdaptationPolicy(this);
 
-        copy._comfortBufferSecondsRecipe                = _comfortBufferSecondsRecipe.LessThanOrEqualTo(capacitySeconds);
-        copy._panicBufferSecondsAndComfortBufferSeconds = copy.PanicBufferSecondsAndComfortBufferSeconds();
+        copy._comfortBufferSecondsRecipe = _comfortBufferSecondsRecipe.LessThanOrEqualTo(capacitySeconds);
 
         return copy;
     }

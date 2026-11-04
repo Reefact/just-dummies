@@ -592,7 +592,11 @@ internal static class Guards {
         foreach (IParameterSymbol parameter in rejected) { reading.MarkUnread(parameter.Name, at); }
 
         // Recorded like the rule of a plain if-throw, so a pair drawing both can be named in the note (#459).
-        if (rejected.Length == 2) { reading.RuleBetween(rejected[0].Name, rejected[1].Name, at); }
+        if (rejected.Length == 2
+         && throwing is IfStatementSyntax { Condition: var decided }
+         && ALeafTestsBoth(decided, model, method, [rejected[0]], [rejected[1]])) {
+            reading.RuleBetween(rejected[0].Name, rejected[1].Name, at);
+        }
 
         MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), throwing, model, method, reading);
     }
@@ -1387,15 +1391,10 @@ internal static class Guards {
 
         if (fromFirst.Count == 0 || fromSecond.Count == 0) { return false; }
 
-        foreach (IfStatementSyntax check in body.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
-                                                .OfType<IfStatementSyntax>()
-                                                .Where(Throws)) {
-            IParameterSymbol[] tested = Mentioned(check.Condition, model, callee);
-
-            if (tested.Any(fromFirst.Contains) && tested.Any(fromSecond.Contains)) { return true; }
-        }
-
-        return false;
+        return body.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                   .OfType<IfStatementSyntax>()
+                   .Where(Throws)
+                   .Any(check => ALeafTestsBoth(check.Condition, model, callee, fromFirst, fromSecond));
     }
 
     /// <summary>The parameters of <paramref name="callee" /> that <paramref name="invocation" /> hands <paramref name="outer" /> to, bare.</summary>
@@ -2020,7 +2019,7 @@ internal static class Guards {
         // A condition mentioning NO parameter is different and stays silent — one testing the clock, say, is
         // about none of them, so there is nobody to send looking. The loop below says both at once.
         if (mentioned.Length != 1) {
-            TieOrMark(branch.Condition, model, mentioned, reading, writes, unskipped);
+            TieOrMark(branch.Condition, model, method, mentioned, reading, writes, unskipped);
 
             return;
         }
@@ -2153,6 +2152,7 @@ internal static class Guards {
     /// </remarks>
     private static void TieOrMark(ExpressionSyntax condition,
                                   SemanticModel model,
+                                  IMethodSymbol method,
                                   IParameterSymbol[] mentioned,
                                   GuardReading reading,
                                   ParameterWrites writes,
@@ -2176,7 +2176,40 @@ internal static class Guards {
 
         // Kept so that, once the scaffolder knows which orders it draws as pairs, a rule between the same two can say
         // where it belongs — the pair's method, the one place both are drawn together (#459).
-        if (mentioned.Length == 2) { reading.RuleBetween(mentioned[0].Name, mentioned[1].Name, at); }
+        if (mentioned.Length == 2 && ALeafTestsBoth(condition, model, method, [mentioned[0]], [mentioned[1]])) {
+            reading.RuleBetween(mentioned[0].Name, mentioned[1].Name, at);
+        }
+    }
+
+    /// <summary>
+    ///     Whether one test of <paramref name="condition" /> — a part neither <c>||</c>, <c>&amp;&amp;</c>, <c>!</c>
+    ///     nor parentheses — names a parameter of <paramref name="first" /> and one of <paramref name="second" />
+    ///     together: <c>end - start &gt; 31</c> does, <c>start &lt; 0 || end &gt; 31</c> does not.
+    /// </summary>
+    /// <remarks>
+    ///     What a note may call a rule between two parameters (#459). Two tests each on one side are bounds, each
+    ///     honoured in that side's own recipe, and sending the developer to the pair's method for them would be
+    ///     wrong; a test that computes from both is the relation no single recipe can hold.
+    /// </remarks>
+    private static bool ALeafTestsBoth(ExpressionSyntax condition,
+                                       SemanticModel model,
+                                       IMethodSymbol method,
+                                       IReadOnlyCollection<IParameterSymbol> first,
+                                       IReadOnlyCollection<IParameterSymbol> second) {
+        return LogicalLeaves(condition).Select(leaf => Mentioned(leaf, model, method))
+                                       .Any(tested => tested.Any(parameter => first.Contains(parameter, SymbolEqualityComparer.Default))
+                                                   && tested.Any(parameter => second.Contains(parameter, SymbolEqualityComparer.Default)));
+    }
+
+    /// <summary>The tests <paramref name="expression" /> combines through <c>||</c>, <c>&amp;&amp;</c>, <c>!</c> and parentheses.</summary>
+    private static IEnumerable<ExpressionSyntax> LogicalLeaves(ExpressionSyntax expression) {
+        return expression switch {
+            ParenthesizedExpressionSyntax parenthesized                                => LogicalLeaves(parenthesized.Expression),
+            PrefixUnaryExpressionSyntax negation when negation.IsKind(SyntaxKind.LogicalNotExpression) => LogicalLeaves(negation.Operand),
+            BinaryExpressionSyntax logical when logical.IsKind(SyntaxKind.LogicalOrExpression) || logical.IsKind(SyntaxKind.LogicalAndExpression)
+                => LogicalLeaves(logical.Left).Concat(LogicalLeaves(logical.Right)),
+            _ => [expression]
+        };
     }
 
     /// <summary><c>a to b</c>, or <c>a, b and c</c>.</summary>

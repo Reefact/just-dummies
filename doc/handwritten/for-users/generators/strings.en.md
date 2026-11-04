@@ -315,6 +315,25 @@ Widening this set would mean taking a regex-automaton dependency; the decision t
 parser and refuse loudly instead is
 [ADR-0008](../../for-maintainers/adr/0008-generate-strings-from-a-home-grown-regular-subset.md).
 
+### Characters beyond the Basic Multilingual Plane
+
+A pattern is read in UTF-16 code units, exactly as the .NET engine reads it, and a character beyond
+the Basic Multilingual Plane — `𠀀`, an emoji — is two of them, a surrogate pair. The generator
+draws what the engine accepts, so three readings follow that are rarely the one meant:
+
+* a quantifier after such a character repeats its low surrogate only: `"\U00020000{3}"` yields the
+  units `D840 DC00 DC00 DC00`, a malformed string the engine nonetheless matches;
+* a class holding one draws either surrogate on its own;
+* a range between two of them is refused as out of order, its endpoints printed as `\uXXXX`.
+
+Write the character as a group, so that a quantifier repeats the whole pair, and a choice among
+several as an alternation:
+
+```csharp
+string anyIdeographs = Any.StringMatching("(\U00020000){3}").Generate();
+string anyIdeograph  = Any.StringMatching("(\U00020000|\U00020001)").Generate();
+```
+
 ### What you can still constrain
 
 An `AnyPattern` carries the type-agnostic trio — `OneOf`, `Except` and `DifferentFrom` — offered

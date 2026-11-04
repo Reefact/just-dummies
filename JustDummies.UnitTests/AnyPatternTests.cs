@@ -667,6 +667,25 @@ public sealed class AnyPatternTests {
         Check.ThatCode(() => Any.StringMatching((Regex)null!)).Throws<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "An astral class range is refused naming its surrogates as \\u escapes, and saying why it reads reversed (issue #431).")]
+    public void AnAstralClassRangeNamesItsSurrogatesAsEscapes() {
+        // The pattern is read in UTF-16 code units, as the real engine reads it: [\U00020000-\U00020010] is the high
+        // surrogate D840, then the reversed range DC00-D840, then DC10. Printed raw, those lone surrogates reach a UTF-8
+        // console as two U+FFFD.
+        Check.ThatCode(() => Any.StringMatching("[\U00020000-\U00020010]"))
+             .Throws<ArgumentException>()
+             .WhichMember(caught => caught.Message).Contains(@"'\uDC00-\uD840'", "UTF-16 code units");
+    }
+
+    [Fact(DisplayName = "An astral character written as a group is repeated whole: the way out the strings page gives (issue #431).")]
+    public void AnAstralCharacterWrittenAsAGroupIsRepeatedWhole() {
+        AnyPattern generator = Any.WithSeed(431).StringMatching("(\U00020000){3}");
+
+        for (int draw = 0; draw < 20; draw++) {
+            Check.That(generator.Generate()).IsEqualTo("\U00020000\U00020000\U00020000");
+        }
+    }
+
     [Fact(DisplayName = "Patterns the real engine rejects are rejected here too, never silently re-interpreted.")]
     public void RealEngineRejectionsAreMirrored() {
         // Each of these is refused by System.Text.RegularExpressions; accepting them would make the generator

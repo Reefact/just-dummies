@@ -594,7 +594,7 @@ internal static class Guards {
         // Recorded like the rule of a plain if-throw, so a pair drawing both can be named in the note (#459).
         if (rejected.Length == 2
          && throwing is IfStatementSyntax { Condition: var decided }
-         && ALeafTestsBoth(decided, model, method, [rejected[0]], [rejected[1]])) {
+         && ARejectionTestsBoth(decided, model, method, [rejected[0]], [rejected[1]])) {
             reading.RuleBetween(rejected[0].Name, rejected[1].Name, at);
         }
 
@@ -1394,7 +1394,7 @@ internal static class Guards {
         return body.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
                    .OfType<IfStatementSyntax>()
                    .Where(Throws)
-                   .Any(check => ALeafTestsBoth(check.Condition, model, callee, fromFirst, fromSecond));
+                   .Any(check => ARejectionTestsBoth(check.Condition, model, callee, fromFirst, fromSecond));
     }
 
     /// <summary>The parameters of <paramref name="callee" /> that <paramref name="invocation" /> hands <paramref name="outer" /> to, bare.</summary>
@@ -2176,39 +2176,46 @@ internal static class Guards {
 
         // Kept so that, once the scaffolder knows which orders it draws as pairs, a rule between the same two can say
         // where it belongs — the pair's method, the one place both are drawn together (#459).
-        if (mentioned.Length == 2 && ALeafTestsBoth(condition, model, method, [mentioned[0]], [mentioned[1]])) {
+        if (mentioned.Length == 2 && ARejectionTestsBoth(condition, model, method, [mentioned[0]], [mentioned[1]])) {
             reading.RuleBetween(mentioned[0].Name, mentioned[1].Name, at);
         }
     }
 
     /// <summary>
-    ///     Whether one test of <paramref name="condition" /> — a part neither <c>||</c>, <c>&amp;&amp;</c>, <c>!</c>
-    ///     nor parentheses — names a parameter of <paramref name="first" /> and one of <paramref name="second" />
-    ///     together: <c>end - start &gt; 31</c> does, <c>start &lt; 0 || end &gt; 31</c> does not.
+    ///     Whether a rejection <paramref name="condition" /> decides on its own — one of its disjuncts, once <c>!</c>
+    ///     is pushed through — names a parameter of <paramref name="first" /> and one of <paramref name="second" />
+    ///     together: <c>end - start &gt; 31</c> and <c>start &lt; 0 &amp;&amp; end &gt; 31</c> do,
+    ///     <c>start &lt; 0 || end &gt; 31</c> does not.
     /// </summary>
     /// <remarks>
-    ///     What a note may call a rule between two parameters (#459). Two tests each on one side are bounds, each
-    ///     honoured in that side's own recipe, and sending the developer to the pair's method for them would be
-    ///     wrong; a test that computes from both is the relation no single recipe can hold.
+    ///     What a note may call a rule between two parameters (#459). A throw on <c>a || b</c> is two rejections,
+    ///     each a bound its own side's recipe honours, and sending the developer to the pair's method for them would
+    ///     be wrong. A throw on <c>a &amp;&amp; b</c> rejects only where both hold, so narrowing either side alone
+    ///     excludes values the constructor accepts (ADR-0128): it is the relation no single recipe can hold, and
+    ///     keeping the pair out of it would be wrong the other way.
     /// </remarks>
-    private static bool ALeafTestsBoth(ExpressionSyntax condition,
-                                       SemanticModel model,
-                                       IMethodSymbol method,
-                                       IReadOnlyCollection<IParameterSymbol> first,
-                                       IReadOnlyCollection<IParameterSymbol> second) {
-        return LogicalLeaves(condition).Select(leaf => Mentioned(leaf, model, method))
-                                       .Any(tested => tested.Any(parameter => first.Contains(parameter, SymbolEqualityComparer.Default))
-                                                   && tested.Any(parameter => second.Contains(parameter, SymbolEqualityComparer.Default)));
+    private static bool ARejectionTestsBoth(ExpressionSyntax condition,
+                                            SemanticModel model,
+                                            IMethodSymbol method,
+                                            IReadOnlyCollection<IParameterSymbol> first,
+                                            IReadOnlyCollection<IParameterSymbol> second) {
+        return IndependentRejections(condition, negated: false)
+              .Select(rejection => Mentioned(rejection, model, method))
+              .Any(tested => tested.Any(parameter => first.Contains(parameter, SymbolEqualityComparer.Default))
+                          && tested.Any(parameter => second.Contains(parameter, SymbolEqualityComparer.Default)));
     }
 
-    /// <summary>The tests <paramref name="expression" /> combines through <c>||</c>, <c>&amp;&amp;</c>, <c>!</c> and parentheses.</summary>
-    private static IEnumerable<ExpressionSyntax> LogicalLeaves(ExpressionSyntax expression) {
-        return expression switch {
-            ParenthesizedExpressionSyntax parenthesized                                => LogicalLeaves(parenthesized.Expression),
-            PrefixUnaryExpressionSyntax negation when negation.IsKind(SyntaxKind.LogicalNotExpression) => LogicalLeaves(negation.Operand),
-            BinaryExpressionSyntax logical when logical.IsKind(SyntaxKind.LogicalOrExpression) || logical.IsKind(SyntaxKind.LogicalAndExpression)
-                => LogicalLeaves(logical.Left).Concat(LogicalLeaves(logical.Right)),
-            _ => [expression]
+    /// <summary>
+    ///     The rejections a throwing <paramref name="condition" /> decides independently of one another: its
+    ///     disjuncts, read through parentheses, a <c>!</c> turning a conjunction into a disjunction and back.
+    /// </summary>
+    private static IEnumerable<ExpressionSyntax> IndependentRejections(ExpressionSyntax condition, bool negated) {
+        return condition switch {
+            ParenthesizedExpressionSyntax parenthesized                                                   => IndependentRejections(parenthesized.Expression, negated),
+            PrefixUnaryExpressionSyntax negation when negation.IsKind(SyntaxKind.LogicalNotExpression) => IndependentRejections(negation.Operand, !negated),
+            BinaryExpressionSyntax disjunction when disjunction.IsKind(negated ? SyntaxKind.LogicalAndExpression : SyntaxKind.LogicalOrExpression)
+                => IndependentRejections(disjunction.Left, negated).Concat(IndependentRejections(disjunction.Right, negated)),
+            _ => [condition]
         };
     }
 

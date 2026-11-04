@@ -162,6 +162,12 @@ public sealed class OrderedPairTests {
                     if (start < 0 || end > 31) { Console.WriteLine(); throw new ArgumentException(nameof(start)); }
                 }
                 """)]
+    [InlineData("""
+                public Subject(int start, int end) {
+                    if (start >= end) { throw new ArgumentException(nameof(end)); }
+                    if (!(start >= 0 && end <= 31)) { throw new ArgumentException(nameof(start)); }
+                }
+                """)]
     public void SeparateTestsOnEachSideAreNotARuleBetweenThem(string members) {
         ScaffoldOutcome outcome = Scaffolded($$"""
                                                using System;
@@ -179,6 +185,39 @@ public sealed class OrderedPairTests {
         Check.That(outcome.Plan.Parameters.Select(parameter => parameter.RequiresVerification)).ContainsExactly(true, true);
         Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note ?? string.Empty))
              .ContainsOnlyElementsThatMatch(note => !note.Contains("StartAndEnd()"));
+    }
+
+    // A throw on a conjunction rejects only where both hold: narrowing either side alone excludes values the
+    // constructor accepts (ADR-0128), so it is a rule between the two, and the pair's method is where it belongs.
+    [Theory(DisplayName = "A conjunction across both sides of a pair is a rule between them, however it is spelled.")]
+    [InlineData("if (start < 0 && end > 31) { throw new ArgumentException(nameof(start)); }")]
+    [InlineData("if (!(start >= 0 || end <= 31)) { throw new ArgumentException(nameof(start)); }")]
+    [InlineData("if (start < 0 && end > 31) { Console.WriteLine(); throw new ArgumentException(nameof(start)); }")]
+    [InlineData("Validate(start, end);")]
+    public void AConjunctionAcrossBothSidesIsARuleBetweenThem(string guard) {
+        const string pointed = "ties start to end; StartAndEnd() draws their order, not this guard: write it there";
+
+        ScaffoldOutcome outcome = Scaffolded($$"""
+                                               using System;
+
+                                               namespace Shop.Domain;
+
+                                               public sealed class Subject {
+
+                                                   public Subject(int start, int end) {
+                                                       if (start >= end) { throw new ArgumentException(nameof(end)); }
+                                                       {{guard}}
+                                                   }
+
+                                                   private static void Validate(int start, int end) {
+                                                       if (start < 0 && end > 31) { throw new ArgumentException(nameof(start)); }
+                                                   }
+
+                                               }
+                                               """);
+
+        Check.That(outcome.Plan!.Pairings).HasSize(1);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note)).ContainsExactly(pointed, pointed);
     }
 
     // The rule travels with the order through the hand-off, swapped where the hand-off swaps the values, and is named

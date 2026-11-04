@@ -8,7 +8,11 @@ namespace JustDummies.Analyzers.UnitTests;
 
 public class Jd036UndeclaredNumericRangeTests {
 
-    private const string Message = "This floating-point dummy declares no range: one draw in ten spans the whole type";
+    // The message names the type the rule fired on: the library keeps decimal apart from the binary floating-point
+    // builders on every page, and "floating-point dummy" on an Any.Decimal() chain stopped readers (issue #438).
+    private static string MessageFor(string type) {
+        return $"This {type} dummy declares no range: one draw in ten spans the whole type";
+    }
 
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string body) {
         string source = $$"""
@@ -25,32 +29,33 @@ public class Jd036UndeclaredNumericRangeTests {
     }
 
     [Theory]
-    [InlineData("_ = Any.Double().Generate();")]
-    [InlineData("_ = Any.Single().Generate();")]
-    [InlineData("_ = Any.Decimal().Generate();")]
-    public async Task Reports_an_unconstrained_floating_point_chain(string body) {
+    [InlineData("_ = Any.Double().Generate();", "double")]
+    [InlineData("_ = Any.Single().Generate();", "float")]
+    [InlineData("_ = Any.Decimal().Generate();", "decimal")]
+    public async Task Reports_an_unconstrained_floating_point_chain(string body, string type) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync($"        {body}");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD036");
         Check.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Info);
-        Check.That(diagnostics[0].GetMessage()).IsEqualTo(Message);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo(MessageFor(type));
     }
 
     [Theory]
-    [InlineData("_ = Any.Double().Positive().Generate();")]
-    [InlineData("_ = Any.Double().Negative().Generate();")]
-    [InlineData("_ = Any.Double().GreaterThan(0).Generate();")]
-    [InlineData("_ = Any.Single().LessThanOrEqualTo(100f).Generate();")]
-    [InlineData("_ = Any.Decimal().GreaterThanOrEqualTo(0m).WithScale(2).Generate();")]
-    [InlineData("_ = Any.Double().NonZero().Except(1d).Generate();")]
-    public async Task Reports_a_chain_that_leaves_one_side_open(string body) {
+    [InlineData("_ = Any.Double().Positive().Generate();", "double")]
+    [InlineData("_ = Any.Double().Negative().Generate();", "double")]
+    [InlineData("_ = Any.Double().GreaterThan(0).Generate();", "double")]
+    [InlineData("_ = Any.Single().LessThanOrEqualTo(100f).Generate();", "float")]
+    [InlineData("_ = Any.Decimal().GreaterThanOrEqualTo(0m).WithScale(2).Generate();", "decimal")]
+    [InlineData("_ = Any.Decimal().Negative().Generate();", "decimal")]
+    [InlineData("_ = Any.Double().NonZero().Except(1d).Generate();", "double")]
+    public async Task Reports_a_chain_that_leaves_one_side_open(string body, string type) {
         // A one-sided bound is a permission, not a range: the window keeps nine draws in ten ordinary and the tenth
         // spans the open side to the type's edge, which is exactly what the rule names.
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync($"        {body}");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).IsEqualTo(Message);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo(MessageFor(type));
     }
 
     [Theory]

@@ -32,8 +32,17 @@ namespace JustDummies.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class UndeclaredNumericRangeAnalyzer : DiagnosticAnalyzer {
 
-    /// <summary>The factories whose open draws toss the edge coin.</summary>
-    private static readonly ImmutableHashSet<string> FloatingPointFactories = ImmutableHashSet.Create("Double", "Single", "Decimal");
+    /// <summary>
+    ///     The factories whose open draws toss the edge coin, each with the C# keyword the message names it by: the
+    ///     library keeps <c>decimal</c> apart from the binary floating-point builders, so the message says which type
+    ///     it fired on rather than calling all three floating point (issue #438).
+    /// </summary>
+    private static readonly ImmutableDictionary<string, string> FloatingPointFactories =
+        ImmutableDictionary.CreateRange(new[] {
+            new KeyValuePair<string, string>("Double", "double"),
+            new KeyValuePair<string, string>("Single", "float"),
+            new KeyValuePair<string, string>("Decimal", "decimal")
+        });
 
     /// <summary>The constraints that settle the draw on their own: a value set, and the pin on zero.</summary>
     private static readonly ImmutableHashSet<string> SettlingConstraints = ImmutableHashSet.Create("OneOf", "Zero");
@@ -70,11 +79,11 @@ public sealed class UndeclaredNumericRangeAnalyzer : DiagnosticAnalyzer {
         // Analyse each chain once, from its outermost call — the only point where every constraint is in hand.
         if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
-        if (factory is null || !FloatingPointFactories.Contains(factory.TargetMethod.Name)) { return; }
+        if (factory is null || !FloatingPointFactories.TryGetValue(factory.TargetMethod.Name, out string? type)) { return; }
         if (DeclaresARange(constraints)) { return; }
 
         // On the factory call itself: that is where the missing range would be written.
-        context.ReportDiagnostic(Diagnostic.Create(Descriptors.UndeclaredNumericRange, factory.Syntax.GetLocation()));
+        context.ReportDiagnostic(Diagnostic.Create(Descriptors.UndeclaredNumericRange, factory.Syntax.GetLocation(), type));
     }
 
     /// <summary>Whether the chain closes both sides of its draw, or settles it by a value set or a pin.</summary>

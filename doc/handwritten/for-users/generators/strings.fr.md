@@ -324,6 +324,25 @@ reste court, et seule une imbrication de plusieurs niveaux peut atteindre le pla
 de garder un analyseur maison et de refuser bruyamment est
 [ADR-0008](../../for-maintainers/adr/0008-generate-strings-from-a-home-grown-regular-subset.fr.md).
 
+### Caractères au-delà du plan multilingue de base
+
+Un motif est lu en unités de code UTF-16, exactement comme le moteur .NET le lit, et un caractère
+au-delà du plan multilingue de base — `𠀀`, un emoji — en occupe deux, une paire de substituts. Le
+générateur tire ce que le moteur accepte, d'où trois lectures qui sont rarement celle voulue :
+
+* un quantificateur placé après un tel caractère ne répète que son substitut bas : `"\U00020000{3}"`
+  produit les unités `D840 DC00 DC00 DC00`, une chaîne malformée que le moteur reconnaît pourtant ;
+* une classe qui en contient un tire l'un ou l'autre substitut seul ;
+* une plage entre deux d'entre eux est refusée comme inversée, ses bornes affichées en `\uXXXX`.
+
+Écrivez le caractère comme un groupe, pour qu'un quantificateur répète la paire entière, et un choix
+entre plusieurs comme une alternative :
+
+```csharp
+string anyIdeographs = Any.StringMatching("(\U00020000){3}").Generate();
+string anyIdeograph  = Any.StringMatching("(\U00020000|\U00020001)").Generate();
+```
+
 ### Ce que l'on peut encore contraindre
 
 Un `AnyPattern` porte le trio agnostique du type — `OneOf`, `Except` et `DifferentFrom` — offert

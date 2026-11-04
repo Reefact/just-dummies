@@ -387,6 +387,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **An astral class range in `Any.StringMatching` is refused legibly.** `[\U00020000-\U00020010]` is
+  read, as the .NET engine reads it, in UTF-16 code units, which makes it a reversed range between two
+  surrogates; the refusal printed them raw, and a UTF-8 console showed two U+FFFD. It now prints each as
+  `\uXXXX` and says that an astral character is two code units, so it can never be a range endpoint. The
+  strings page says how a pattern reads such a character, and to write it as a group, `(\U00020000){3}`
+  (issue #431).
 - **JD014 reports a `null` element in a `OneOf` value set.** `Any.OneOf<byte?>(null, (byte)6, (byte)17)`
   and `Any.OneOf("a", null)` compiled clean and threw at declaration every time: nullable analysis, to
   which the rule left a `null`, cannot see one once the element type is itself nullable. The rule now

@@ -573,7 +573,7 @@ internal sealed class RegexParser {
         if (!AtEnd && Peek() == '-' && PeekAt(1) != ']' && PeekAt(1) != '\0') {
             _index++; // consume '-'
             char high = ReadClassChar();
-            if (high < low) { throw Malformed($"character class range '{low}-{high}' is out of order"); }
+            if (high < low) { throw Malformed(OutOfOrderRange(low, high)); }
             // Iterate an int, not a char: a class range may legitimately end at U+FFFF (reachable via a
             // literal or the \uFFFF escape), and incrementing a 16-bit char past it wraps to 0x0000 and never ends.
             for (int code = low; code <= high; code++) { set.Add((char)code); }
@@ -638,6 +638,25 @@ internal sealed class RegexParser {
         if (!_foldsAsciiI && (character is 'I' or 'i')) { return new[] { character }; }
 
         return RegexAlphabet.WithBothCases(character);
+    }
+
+    /// <summary>
+    ///     Why a class range is out of order. An endpoint that is a surrogate or a control character is printed as its
+    ///     <c>\uXXXX</c> escape: a lone surrogate reaches a UTF-8 console as U+FFFD, and a control character as nothing
+    ///     legible. A surrogate endpoint is half of an astral character, which the message says (issue #431).
+    /// </summary>
+    private static string OutOfOrderRange(char low, char high) {
+        string reason = $"character class range '{Printable(low)}-{Printable(high)}' is out of order";
+
+        return char.IsSurrogate(low) || char.IsSurrogate(high)
+                   ? reason + "; a pattern is read in UTF-16 code units, as the .NET engine reads it, and an astral character is two of them, so it can never be a range endpoint"
+                   : reason;
+    }
+
+    private static string Printable(char character) {
+        return char.IsSurrogate(character) || char.IsControl(character)
+                   ? "\\u" + ((int)character).ToString("X4", CultureInfo.InvariantCulture)
+                   : character.ToString();
     }
 
     [SuppressMessage(SonarRule.S3928.Category, SonarRule.S3928.Id, Justification = SuppressionJustification.S3928.PatternIsTheCallersArgument)]

@@ -19,6 +19,8 @@ internal sealed class GuardReading {
 
     private readonly List<(OrderedPairing Pairing, UnreadGuard At)> ties = [];
 
+    private readonly List<(string First, string Second, UnreadGuard At)> rulesBetweenTwo = [];
+
     private readonly Dictionary<string, decimal> ceilingsBeyondTheCap = new(StringComparer.Ordinal);
 
     private readonly Dictionary<string, decimal> floorsBeyondTheCap = new(StringComparer.Ordinal);
@@ -165,6 +167,43 @@ internal sealed class GuardReading {
 
         MarkUnread(pairing.First, at);
         MarkUnread(pairing.Second, at);
+    }
+
+    /// <summary>A rule between exactly <paramref name="first" /> and <paramref name="second" /> that stays unread.</summary>
+    internal void RuleBetween(string first, string second, UnreadGuard at) {
+        rulesBetweenTwo.Add((first, second, at));
+    }
+
+    /// <summary>
+    ///     Says, on every unread rule between the two parameters of an order drawn as a pair, where it belongs: the
+    ///     pair's method, <paramref name="method" />'s answer, draws their order and is the one place both are drawn
+    ///     together, so a rule the engine cannot read is written there, not in either recipe (#459).
+    /// </summary>
+    /// <remarks>
+    ///     Called once the scaffolder has kept the ties it can draw: an order it unties is marked like any other rule,
+    ///     and a rule beside it has no pair to point to.
+    /// </remarks>
+    internal void PointToThePairs(Func<OrderedPairing, string> method) {
+        foreach ((OrderedPairing pairing, UnreadGuard _) in ties) {
+            foreach ((string first, string second, UnreadGuard at) in rulesBetweenTwo) {
+                if (!pairing.Ties(first) || !pairing.Ties(second)) { continue; }
+
+                UnreadGuard pointed = at.WithNote(at.Note + "; " + method(pairing) + "() draws their order, not this guard: write it there");
+
+                Replace(first, at, pointed);
+                Replace(second, at, pointed);
+            }
+        }
+    }
+
+    private void Replace(string parameter, UnreadGuard at, UnreadGuard pointed) {
+        if (places.TryGetValue(parameter, out Dictionary<(string? File, int Line), UnreadGuard>? seen)
+         && seen.TryGetValue((at.File, at.Line), out UnreadGuard? place)
+         && ReferenceEquals(place, at)) {
+            seen[(at.File, at.Line)] = pointed;
+        }
+
+        if (unread.TryGetValue(parameter, out UnreadGuard? earliest) && ReferenceEquals(earliest, at)) { unread[parameter] = pointed; }
     }
 
     /// <summary>Whether an order read between two parameters involves <paramref name="parameter" />.</summary>

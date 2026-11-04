@@ -136,6 +136,7 @@ public static class Scaffolder {
         GuardReading guards        = Guards.Read(chosen, compilation, names);
 
         KeepTheTiesItCanDraw(chosen, target, TypeNaming.GeneratorNameFor(target, options.Naming), guards, generators, library);
+        guards.PointToThePairs(PairNames.Method);
 
         string targetName = names.Of(target);
 

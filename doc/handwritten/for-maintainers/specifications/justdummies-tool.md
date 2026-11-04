@@ -1563,7 +1563,10 @@ and its place reads `first unread guard at`, and the report carries `further` �
 second trial measured was a developer who fixed the named guard, deleted the sentinel, and shipped a
 generator that still threw on the one never named. A guard that ties several parameters is called
 out as such, `ties volatileRunOffDays to coreMaturityMonths`, since narrowing one of them alone has
-not resolved it. **A regex guard quotes its pattern and names the retype** (#374): where the guard
+not resolved it; where the two are the parameters of an order drawn as a pair, the note says where the
+rule belongs — `ties end to start; StartAndEnd() draws their order, not this guard: write it there` —
+since the pair's method is the one place both are drawn together, and the recipes the sentinels sit in
+are each one side of it (#459). **A regex guard quotes its pattern and names the retype** (#374): where the guard
 calls `Regex.IsMatch(p, "…")`, the `IsMatch` of a `[GeneratedRegex]` method, or that of a `Regex`
 field built from a constant, the line quotes the pattern — the one thing the developer copies into
 `Any.StringMatching` if it lies in the library's regular subset — and says that the call returns an

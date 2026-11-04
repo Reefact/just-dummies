@@ -1653,7 +1653,10 @@ unread guard at`, et le rapport porte `further` — parce que le piège mesuré 
 développeur qui corrigeait la garde nommée, supprimait la sentinelle, et livrait un generator qui
 levait encore sur celle jamais nommée. Une garde qui lie plusieurs paramètres est signalée comme
 telle, `ties volatileRunOffDays to coreMaturityMonths`, puisque resserrer l'un d'eux seul ne la
-résout pas. **Une garde regex cite son motif et nomme le retypage** (#374) : quand la garde appelle
+résout pas ; quand les deux sont les paramètres d'un ordre tiré en paire, la note dit où la règle a sa
+place — `ties end to start; StartAndEnd() draws their order, not this guard: write it there` —
+puisque la méthode de la paire est le seul endroit où les deux sont tirés ensemble, et que les recettes
+où se trouvent les sentinelles n'en sont chacune qu'un côté (#459). **Une garde regex cite son motif et nomme le retypage** (#374) : quand la garde appelle
 `Regex.IsMatch(p, "…")`, le `IsMatch` d'une méthode `[GeneratedRegex]`, ou celui d'un champ `Regex`
 construit sur une constante, la ligne cite le motif — la seule chose que le développeur copie dans
 `Any.StringMatching` s'il tient dans le sous-ensemble régulier de la bibliothèque — et dit que l'appel

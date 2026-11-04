@@ -2093,9 +2093,14 @@ internal static class Guards {
         // Called out as a rule between parameters (#373): a developer who narrows one of them alone has not
         // resolved it, and the trial measured exactly that — (204 days, 3 months) still throwing after both
         // named guards were fixed.
-        string? ties = mentioned.Length < 2 ? null : "ties " + Listed(mentioned);
+        string?     ties = mentioned.Length < 2 ? null : "ties " + Listed(mentioned);
+        UnreadGuard at   = UnreadGuard.At(condition, ties);
 
-        foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name, UnreadGuard.At(condition, ties)); }
+        foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name, at); }
+
+        // Kept so that, once the scaffolder knows which orders it draws as pairs, a rule between the same two can say
+        // where it belongs — the pair's method, the one place both are drawn together (#459).
+        if (mentioned.Length == 2) { reading.RuleBetween(mentioned[0].Name, mentioned[1].Name, at); }
     }
 
     /// <summary><c>a to b</c>, or <c>a, b and c</c>.</summary>

@@ -1351,10 +1351,65 @@ internal static class Guards {
 
             foreach (IParameterSymbol parameter in handed) { reading.MarkUnread(parameter.Name, at); }
 
-            // A throwing helper handed exactly two parameters is a rule between them, still marked, never read, and
-            // still one a pair drawing both can be named for (#459).
-            if (handed.Length == 2) { reading.RuleBetween(handed[0].Name, handed[1].Name, at); }
+            // Handed two parameters is not yet a rule between them: only a throw in the helper deciding on both is,
+            // and only then can a pair drawing both be named for it (#459). Both stay marked either way.
+            if (handed.Length == 2 && HelperThrowsOnBoth(invocation, callee, model, method, handed[0], handed[1])) {
+                reading.RuleBetween(handed[0].Name, handed[1].Name, at);
+            }
         }
+    }
+
+    /// <summary>
+    ///     Whether the same-type <paramref name="callee" /> throws on a condition testing both the parameter handed
+    ///     <paramref name="first" /> and the one handed <paramref name="second" />, each handed bare.
+    /// </summary>
+    /// <remarks>
+    ///     Asked only to word a note, never to read the guard: a helper whose throws test one side alone —
+    ///     <c>ValidateStart(start, end)</c> throwing on <c>start &lt; 0</c> — is a guard a recipe can honour on its own,
+    ///     and saying it ties the two would send the developer to the wrong place. A helper the engine cannot see the
+    ///     body of, in this tree, is answered no.
+    /// </remarks>
+    private static bool HelperThrowsOnBoth(InvocationExpressionSyntax invocation,
+                                           IMethodSymbol callee,
+                                           SemanticModel model,
+                                           IMethodSymbol method,
+                                           IParameterSymbol first,
+                                           IParameterSymbol second) {
+        MethodDeclarationSyntax? declaration = callee.DeclaringSyntaxReferences
+                                                     .Select(reference => reference.GetSyntax())
+                                                     .OfType<MethodDeclarationSyntax>()
+                                                     .FirstOrDefault();
+
+        if (declaration?.Body is not { } body || body.SyntaxTree != model.SyntaxTree) { return false; }
+
+        HashSet<IParameterSymbol> fromFirst  = HandedBare(invocation, callee, model, method, first);
+        HashSet<IParameterSymbol> fromSecond = HandedBare(invocation, callee, model, method, second);
+
+        if (fromFirst.Count == 0 || fromSecond.Count == 0) { return false; }
+
+        foreach (IfStatementSyntax check in body.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                                                .OfType<IfStatementSyntax>()
+                                                .Where(Throws)) {
+            IParameterSymbol[] tested = Mentioned(check.Condition, model, callee);
+
+            if (tested.Any(fromFirst.Contains) && tested.Any(fromSecond.Contains)) { return true; }
+        }
+
+        return false;
+    }
+
+    /// <summary>The parameters of <paramref name="callee" /> that <paramref name="invocation" /> hands <paramref name="outer" /> to, bare.</summary>
+    private static HashSet<IParameterSymbol> HandedBare(InvocationExpressionSyntax invocation, IMethodSymbol callee, SemanticModel model, IMethodSymbol method, IParameterSymbol outer) {
+        HashSet<IParameterSymbol>           inners    = new(SymbolEqualityComparer.Default);
+        SeparatedSyntaxList<ArgumentSyntax> arguments = invocation.ArgumentList.Arguments;
+
+        for (int index = 0; index < arguments.Count; index++) {
+            if (!SymbolEqualityComparer.Default.Equals(HandedFrom(arguments[index], model, method), outer)) { continue; }
+
+            if (HandedTo(arguments[index], index, callee) is { } inner) { inners.Add(inner); }
+        }
+
+        return inners;
     }
 
     /// <summary>

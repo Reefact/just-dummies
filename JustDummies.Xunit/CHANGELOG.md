@@ -17,6 +17,12 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
   warning as the only hint. The pages now name the floor and what a lower one does, and a test holds
   every stated version to the one `Directory.Packages.props` pins, so the number cannot drift when
   the floor moves.
+- **The package README and the documentation say how to run the tests on the .NET 10 SDK.**
+  `xunit.v3` 4.x runs only on Microsoft.Testing.Platform, so a project raising `xunit.v3` to meet the
+  floor found `dotnet test` stopped by an error, or by `MSB1001` for `--project`, with only a
+  maintainer record explaining why. The adapter page and the README now give the `global.json`
+  opt-in, the two alternatives (`dotnet run --project`, `-p:IsTestingPlatformApplication=false`)
+  and a link to the SDK's own page.
 
 ### Fixed
 

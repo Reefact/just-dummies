@@ -19,6 +19,30 @@ d'extensibilité au-dessus de celui que `xunit.v3.core` épingle, le signale (`N
 de test plante au lieu d'exécuter le moindre test. L'avertissement est le seul indice : si vous le
 voyez, montez `xunit.v3` au même niveau.
 
+### Exécuter les tests
+
+Le même plancher décide de la façon dont `dotnet test` s'exécute. `xunit.v3` 4.x ne tourne que sur
+Microsoft.Testing.Platform v2, et sur le SDK .NET 10 `dotnet test` ne l'atteint plus par la cible VSTest :
+il s'arrête sur une erreur qui nomme l'opt-in. Un projet en `xunit.v3` 3.x, où un simple `dotnet test`
+fonctionnait, rencontre cette erreur dès qu'il monte `xunit.v3` pour adopter l'adaptateur — et
+`dotnet test --project …` échoue plus tôt encore, avec `MSB1001: Unknown switch`, parce que ce
+commutateur appartient à la nouvelle expérience. Activez-la depuis le `global.json` placé à côté de votre
+solution :
+
+```json
+{
+  "test": {
+    "runner": "Microsoft.Testing.Platform"
+  }
+}
+```
+
+Si vous préférez ne pas toucher à `global.json`, deux voies restent ouvertes : exécuter le projet de test
+lui-même, qui est un exécutable sous Microsoft.Testing.Platform (`dotnet run --project Tests`), ou le
+maintenir sur la cible VSTest avec `-p:IsTestingPlatformApplication=false`. La page du SDK lui-même,
+[Tester avec `dotnet test`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test),
+décrit les deux modes et les commutateurs que chacun accepte.
+
 ## Toute la surface
 
 `ReproducibleAttribute`, dans l'espace de noms `JustDummies.Xunit`, avec une propriété `Seed` assignable. C'est tout — l'adaptateur est

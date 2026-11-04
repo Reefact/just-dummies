@@ -18,11 +18,13 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
   every stated version to the one `Directory.Packages.props` pins, so the number cannot drift when
   the floor moves.
 - **The package README and the documentation say how to run the tests on the .NET 10 SDK.**
-  `xunit.v3` 4.x runs only on Microsoft.Testing.Platform, so a project raising `xunit.v3` to meet the
-  floor found `dotnet test` stopped by an error, or by `MSB1001` for `--project`, with only a
-  maintainer record explaining why. The adapter page and the README now give the `global.json`
-  opt-in, the two alternatives (`dotnet run --project`, `-p:IsTestingPlatformApplication=false`)
-  and a link to the SDK's own page.
+  From 4.0.0 on, `xunit.v3` turns its Microsoft.Testing.Platform v2 integration on by default, and on
+  the .NET 10 SDK that integration stops a `dotnet test` running in its default VSTest mode, so a
+  project raising `xunit.v3` to meet the floor found `dotnet test` stopped by an error, or by
+  `MSB1001` for `--project`, with only a maintainer record explaining why. The adapter page and the
+  README now give the `global.json` opt-in, the two alternatives — `dotnet run --project`, or
+  `-p:IsTestingPlatformApplication=false` with the `xunit.runner.visualstudio` and
+  `Microsoft.NET.Test.Sdk` references VSTest needs — and links to xUnit's and the SDK's own pages.
 
 ### Fixed
 

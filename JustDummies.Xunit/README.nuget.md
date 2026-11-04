@@ -74,14 +74,18 @@ the outer ones pinned nothing the test drew.
   adapter can use — this package holds no privileged access to `JustDummies`.
 - xUnit v3 only, `xunit.v3` 4.0.2 or later. An older `xunit.v3` restores with
   warning `NU1608` and the test process then crashes: raise `xunit.v3` to match.
-- `xunit.v3` 4.x runs only on Microsoft.Testing.Platform, so on the .NET 10 SDK
-  `dotnet test` needs the opt-in `{"test":{"runner":"Microsoft.Testing.Platform"}}`
-  in `global.json`. Without it, `dotnet test` stops on an error naming the opt-in.
-  Two alternatives: `dotnet run --project <tests>`, or
-  `-p:IsTestingPlatformApplication=false` to stay on VSTest. See
-  [Testing with `dotnet test`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test).
   On xUnit v2, NUnit, MSTest or anything else, use `Any.Reproducibly(...)`: it is
   unaffected by this package and works everywhere.
+- From 4.0.0 on, `xunit.v3` turns its Microsoft.Testing.Platform v2 integration
+  on by default, and on the .NET 10 SDK it stops a `dotnet test` running in its
+  default VSTest mode. Opt in with `{"test":{"runner":"Microsoft.Testing.Platform"}}`
+  in `global.json`, or run the project with `dotnet run --project <tests>`. To stay
+  on VSTest instead, pass `-p:IsTestingPlatformApplication=false` and keep the
+  `xunit.runner.visualstudio` and `Microsoft.NET.Test.Sdk` package references
+  VSTest mode requires. See xUnit's
+  [Microsoft Testing Platform](https://xunit.net/docs/getting-started/v3/microsoft-testing-platform)
+  page and the SDK's
+  [Testing with `dotnet test`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test).
 
 ## Links
 

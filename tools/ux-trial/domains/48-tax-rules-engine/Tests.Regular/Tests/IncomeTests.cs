@@ -54,7 +54,7 @@ public sealed class EmploymentIncomeTests {
     [Fact]
     public void A_deduction_above_the_gross_is_refused() {
         // Arrange
-        (decimal anySmaller, decimal anyLarger) = Any.OrderedPair(Dummies.IncomeAmount(), Dummies.IncomeAmount(), strict: true).Generate();
+        (decimal anySmaller, decimal anyLarger) = Any.Pair(Dummies.IncomeAmount(), Dummies.IncomeAmount()).Having.Item1LessThanItem2().Generate();
 
         // Act
         Exception? thrown = Record.Exception(() => new EmploymentIncome(Dummies.Source().Generate(), new Money(anySmaller), new Money(anyLarger)));

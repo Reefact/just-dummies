@@ -16,7 +16,6 @@ namespace ColdChain.Tests.Expert.Generators;
 /// </summary>
 public sealed partial class AnyTemperatureRange : IAny<TemperatureRange> {
 
-    private AnyOrderedPair<decimal> _minCelsiusAndMaxCelsius;
 
     private AnyDecimal _minCelsiusRecipe;
     private AnyDecimal _maxCelsiusRecipe;
@@ -42,26 +41,22 @@ public sealed partial class AnyTemperatureRange : IAny<TemperatureRange> {
                                 AnyDecimal maxCelsius) {
         _minCelsiusRecipe        = minCelsius;
         _maxCelsiusRecipe        = maxCelsius;
-        _minCelsiusAndMaxCelsius = MinCelsiusAndMaxCelsius();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyTemperatureRange(AnyTemperatureRange from) {
-        _minCelsiusAndMaxCelsius = from._minCelsiusAndMaxCelsius;
         _minCelsiusRecipe        = from._minCelsiusRecipe;
         _minCelsiusPin           = from._minCelsiusPin;
         _maxCelsiusRecipe        = from._maxCelsiusRecipe;
         _maxCelsiusPin           = from._maxCelsiusPin;
     }
 
-    /// <summary>Draws <c>minCelsius</c> and <c>maxCelsius</c> together, <c>minCelsius</c> always before <c>maxCelsius</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<decimal> MinCelsiusAndMaxCelsius() {
-        AnyOrderedPair<decimal> pair = Any.OrderedPair(_minCelsiusRecipe, _maxCelsiusRecipe, strict: true);
+    /// <summary>Draws <c>minCelsius</c> and <c>maxCelsius</c>, <c>minCelsius</c> always before <c>maxCelsius</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (decimal MinCelsius, decimal MaxCelsius) MinCelsiusAndMaxCelsius() {
+        if (_minCelsiusPin is { } minCelsius) { return (minCelsius, _maxCelsiusPin ?? _maxCelsiusRecipe.GreaterThan(minCelsius).Generate()); }
+        if (_maxCelsiusPin is { } maxCelsius) { return (_minCelsiusRecipe.LessThan(maxCelsius).Generate(), maxCelsius); }
 
-        if (_minCelsiusPin is { } minCelsius) { pair = pair.WithFirst(minCelsius); }
-        if (_maxCelsiusPin is { } maxCelsius) { pair = pair.WithSecond(maxCelsius); }
-
-        return pair;
+        return Any.Pair(_minCelsiusRecipe, _maxCelsiusRecipe).Having.Item1LessThanItem2().Generate();
     }
 
     /// <summary>Pins <c>minCelsius</c> to a fixed value, which bounds <c>maxCelsius</c>; its recipe is kept for a later refinement.</summary>
@@ -69,7 +64,6 @@ public sealed partial class AnyTemperatureRange : IAny<TemperatureRange> {
         AnyTemperatureRange copy = new AnyTemperatureRange(this);
 
         copy._minCelsiusPin           = value;
-        copy._minCelsiusAndMaxCelsius = copy.MinCelsiusAndMaxCelsius();
 
         return copy;
     }
@@ -83,7 +77,6 @@ public sealed partial class AnyTemperatureRange : IAny<TemperatureRange> {
 
         copy._minCelsiusRecipe        = configure(_minCelsiusRecipe);
         copy._minCelsiusPin           = null;
-        copy._minCelsiusAndMaxCelsius = copy.MinCelsiusAndMaxCelsius();
 
         return copy;
     }
@@ -93,7 +86,6 @@ public sealed partial class AnyTemperatureRange : IAny<TemperatureRange> {
         AnyTemperatureRange copy = new AnyTemperatureRange(this);
 
         copy._maxCelsiusPin           = value;
-        copy._minCelsiusAndMaxCelsius = copy.MinCelsiusAndMaxCelsius();
 
         return copy;
     }
@@ -107,14 +99,13 @@ public sealed partial class AnyTemperatureRange : IAny<TemperatureRange> {
 
         copy._maxCelsiusRecipe        = configure(_maxCelsiusRecipe);
         copy._maxCelsiusPin           = null;
-        copy._minCelsiusAndMaxCelsius = copy.MinCelsiusAndMaxCelsius();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="TemperatureRange" />.</summary>
     public TemperatureRange Generate() {
-        (decimal minCelsius, decimal maxCelsius) = _minCelsiusAndMaxCelsius.Generate();
+        (decimal minCelsius, decimal maxCelsius) = MinCelsiusAndMaxCelsius();
 
         return new TemperatureRange(minCelsius,
                                     maxCelsius);

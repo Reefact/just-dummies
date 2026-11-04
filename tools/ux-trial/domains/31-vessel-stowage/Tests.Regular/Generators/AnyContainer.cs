@@ -128,14 +128,12 @@ public sealed partial class AnyContainer : IAny<Container> {
     }
 
     /// <summary>Draws <c>tareTonnes</c> and <c>grossMassTonnes</c> together, <c>tareTonnes</c> never after <c>grossMassTonnes</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<decimal> TareTonnesAndGrossMassTonnes(ContainerSize size) {
+    private (decimal, decimal) TareTonnesAndGrossMassTonnes(ContainerSize size) {
         (decimal minTare, decimal maxTare) = size == ContainerSize.TwentyFoot ? (1.8m, 3.2m) : (3.4m, 4.9m);
 
-        AnyOrderedPair<decimal> pair = Any.OrderedPair(_tareTonnesRecipe.Between(minTare, maxTare),
-                                                       _grossMassTonnesRecipe.Between(minTare, Container.MaxGrossMass(size)));
-
-        if (_tareTonnesPin is { } tareTonnes) { pair = pair.WithFirst(tareTonnes); }
-        if (_grossMassTonnesPin is { } grossMassTonnes) { pair = pair.WithSecond(grossMassTonnes); }
+        (decimal, decimal) pair = _tareTonnesPin is { } tareTonnes ? (tareTonnes, _grossMassTonnesPin ?? _grossMassTonnesRecipe.Between(minTare, Container.MaxGrossMass(size)).GreaterThanOrEqualTo(tareTonnes).Generate())
+                                  : _grossMassTonnesPin is { } grossMassTonnes ? (_tareTonnesRecipe.Between(minTare, maxTare).LessThanOrEqualTo(grossMassTonnes).Generate(), grossMassTonnes)
+                                  : Any.Pair(_tareTonnesRecipe.Between(minTare, maxTare), _grossMassTonnesRecipe.Between(minTare, Container.MaxGrossMass(size))).Having.Item1LessThanOrEqualToItem2().Generate();
 
         return pair;
     }
@@ -321,7 +319,7 @@ public sealed partial class AnyContainer : IAny<Container> {
         // The masses, the two ports and the reefer flag are tied to other parameters (size, each other, hazard):
         // they are drawn here, after the parameter they depend on.
         ContainerSize size = _size.Generate();
-        (decimal tareTonnes, decimal grossMassTonnes) = TareTonnesAndGrossMassTonnes(size).Generate();
+        (decimal tareTonnes, decimal grossMassTonnes) = TareTonnesAndGrossMassTonnes(size);
 
         PortCode portOfLoading   = _portOfLoading.Generate();
         PortCode portOfDischarge = ReferenceEquals(_portOfDischarge, _portOfDischargeRecipe)

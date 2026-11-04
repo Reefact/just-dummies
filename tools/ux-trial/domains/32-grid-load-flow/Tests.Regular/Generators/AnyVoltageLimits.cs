@@ -16,7 +16,6 @@ namespace GridLoadFlow.Tests.Regular;
 /// </summary>
 public sealed partial class AnyVoltageLimits : IAny<VoltageLimits> {
 
-    private AnyOrderedPair<double> _minimumPuAndMaximumPu;
 
     private AnyDouble _minimumPuRecipe;
     private AnyDouble _maximumPuRecipe;
@@ -42,26 +41,22 @@ public sealed partial class AnyVoltageLimits : IAny<VoltageLimits> {
                              AnyDouble maximumPu) {
         _minimumPuRecipe       = minimumPu;
         _maximumPuRecipe       = maximumPu;
-        _minimumPuAndMaximumPu = MinimumPuAndMaximumPu();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyVoltageLimits(AnyVoltageLimits from) {
-        _minimumPuAndMaximumPu = from._minimumPuAndMaximumPu;
         _minimumPuRecipe       = from._minimumPuRecipe;
         _minimumPuPin          = from._minimumPuPin;
         _maximumPuRecipe       = from._maximumPuRecipe;
         _maximumPuPin          = from._maximumPuPin;
     }
 
-    /// <summary>Draws <c>minimumPu</c> and <c>maximumPu</c> together, <c>minimumPu</c> always before <c>maximumPu</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<double> MinimumPuAndMaximumPu() {
-        AnyOrderedPair<double> pair = Any.OrderedPair(_minimumPuRecipe, _maximumPuRecipe, strict: true);
+    /// <summary>Draws <c>minimumPu</c> and <c>maximumPu</c>, <c>minimumPu</c> always before <c>maximumPu</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (double MinimumPu, double MaximumPu) MinimumPuAndMaximumPu() {
+        if (_minimumPuPin is { } minimumPu) { return (minimumPu, _maximumPuPin ?? _maximumPuRecipe.GreaterThan(minimumPu).Generate()); }
+        if (_maximumPuPin is { } maximumPu) { return (_minimumPuRecipe.LessThan(maximumPu).Generate(), maximumPu); }
 
-        if (_minimumPuPin is { } minimumPu) { pair = pair.WithFirst(minimumPu); }
-        if (_maximumPuPin is { } maximumPu) { pair = pair.WithSecond(maximumPu); }
-
-        return pair;
+        return Any.Pair(_minimumPuRecipe, _maximumPuRecipe).Having.Item1LessThanItem2().Generate();
     }
 
     /// <summary>Pins <c>minimumPu</c> to a fixed value, which bounds <c>maximumPu</c>; its recipe is kept for a later refinement.</summary>
@@ -69,7 +64,6 @@ public sealed partial class AnyVoltageLimits : IAny<VoltageLimits> {
         AnyVoltageLimits copy = new AnyVoltageLimits(this);
 
         copy._minimumPuPin          = value;
-        copy._minimumPuAndMaximumPu = copy.MinimumPuAndMaximumPu();
 
         return copy;
     }
@@ -83,7 +77,6 @@ public sealed partial class AnyVoltageLimits : IAny<VoltageLimits> {
 
         copy._minimumPuRecipe       = configure(_minimumPuRecipe);
         copy._minimumPuPin          = null;
-        copy._minimumPuAndMaximumPu = copy.MinimumPuAndMaximumPu();
 
         return copy;
     }
@@ -93,7 +86,6 @@ public sealed partial class AnyVoltageLimits : IAny<VoltageLimits> {
         AnyVoltageLimits copy = new AnyVoltageLimits(this);
 
         copy._maximumPuPin          = value;
-        copy._minimumPuAndMaximumPu = copy.MinimumPuAndMaximumPu();
 
         return copy;
     }
@@ -107,14 +99,13 @@ public sealed partial class AnyVoltageLimits : IAny<VoltageLimits> {
 
         copy._maximumPuRecipe       = configure(_maximumPuRecipe);
         copy._maximumPuPin          = null;
-        copy._minimumPuAndMaximumPu = copy.MinimumPuAndMaximumPu();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="VoltageLimits" />.</summary>
     public VoltageLimits Generate() {
-        (double minimumPu, double maximumPu) = _minimumPuAndMaximumPu.Generate();
+        (double minimumPu, double maximumPu) = MinimumPuAndMaximumPu();
 
         return new VoltageLimits(minimumPu,
                                  maximumPu);

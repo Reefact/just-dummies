@@ -21,7 +21,6 @@ public sealed partial class AnyRentalListing : IAny<RentalListing> {
 
     private IAny<Property>           _property;
     private IAny<decimal>            _monthlyRent;
-    private AnyOrderedPair<DateOnly> _availableFromAndAvailableUntil;
 
     private AnyProperty _propertyRecipe;
     private AnyDecimal  _monthlyRentRecipe;
@@ -66,7 +65,6 @@ public sealed partial class AnyRentalListing : IAny<RentalListing> {
         _monthlyRentRecipe              = monthlyRent;
         _availableFromRecipe            = availableFrom;
         _availableUntilRecipe           = availableUntil;
-        _availableFromAndAvailableUntil = AvailableFromAndAvailableUntil();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -75,21 +73,18 @@ public sealed partial class AnyRentalListing : IAny<RentalListing> {
         _propertyRecipe                 = from._propertyRecipe;
         _monthlyRent                    = from._monthlyRent;
         _monthlyRentRecipe              = from._monthlyRentRecipe;
-        _availableFromAndAvailableUntil = from._availableFromAndAvailableUntil;
         _availableFromRecipe            = from._availableFromRecipe;
         _availableFromPin               = from._availableFromPin;
         _availableUntilRecipe           = from._availableUntilRecipe;
         _availableUntilPin              = from._availableUntilPin;
     }
 
-    /// <summary>Draws <c>availableFrom</c> and <c>availableUntil</c> together, <c>availableFrom</c> always before <c>availableUntil</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateOnly> AvailableFromAndAvailableUntil() {
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(_availableFromRecipe, _availableUntilRecipe, strict: true);
+    /// <summary>Draws <c>availableFrom</c> and <c>availableUntil</c>, <c>availableFrom</c> always before <c>availableUntil</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateOnly AvailableFrom, DateOnly AvailableUntil) AvailableFromAndAvailableUntil() {
+        if (_availableFromPin is { } availableFrom) { return (availableFrom, _availableUntilPin ?? _availableUntilRecipe.After(availableFrom).Generate()); }
+        if (_availableUntilPin is { } availableUntil) { return (_availableFromRecipe.Before(availableUntil).Generate(), availableUntil); }
 
-        if (_availableFromPin is { } availableFrom) { pair = pair.WithFirst(availableFrom); }
-        if (_availableUntilPin is { } availableUntil) { pair = pair.WithSecond(availableUntil); }
-
-        return pair;
+        return Any.Pair(_availableFromRecipe, _availableUntilRecipe).Having.Item1BeforeItem2().Generate();
     }
 
     /// <summary>Pins <c>property</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -141,7 +136,6 @@ public sealed partial class AnyRentalListing : IAny<RentalListing> {
         AnyRentalListing copy = new AnyRentalListing(this);
 
         copy._availableFromPin               = value;
-        copy._availableFromAndAvailableUntil = copy.AvailableFromAndAvailableUntil();
 
         return copy;
     }
@@ -155,7 +149,6 @@ public sealed partial class AnyRentalListing : IAny<RentalListing> {
 
         copy._availableFromRecipe            = configure(_availableFromRecipe);
         copy._availableFromPin               = null;
-        copy._availableFromAndAvailableUntil = copy.AvailableFromAndAvailableUntil();
 
         return copy;
     }
@@ -165,7 +158,6 @@ public sealed partial class AnyRentalListing : IAny<RentalListing> {
         AnyRentalListing copy = new AnyRentalListing(this);
 
         copy._availableUntilPin              = value;
-        copy._availableFromAndAvailableUntil = copy.AvailableFromAndAvailableUntil();
 
         return copy;
     }
@@ -179,14 +171,13 @@ public sealed partial class AnyRentalListing : IAny<RentalListing> {
 
         copy._availableUntilRecipe           = configure(_availableUntilRecipe);
         copy._availableUntilPin              = null;
-        copy._availableFromAndAvailableUntil = copy.AvailableFromAndAvailableUntil();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="RentalListing" />.</summary>
     public RentalListing Generate() {
-        (DateOnly availableFrom, DateOnly availableUntil) = _availableFromAndAvailableUntil.Generate();
+        (DateOnly availableFrom, DateOnly availableUntil) = AvailableFromAndAvailableUntil();
 
         return new RentalListing(_property.Generate(),
                                  _monthlyRent.Generate(),

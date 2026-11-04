@@ -101,7 +101,7 @@ public sealed partial class AnyLabResult : IAny<LabResult> {
             0 => Any.Fixed(((decimal?)null, (decimal?)null)),
             1 => aLimit.As(lower => ((decimal?)lower, (decimal?)null)),
             2 => aLimit.As(upper => ((decimal?)null, (decimal?)upper)),
-            _ => Any.OrderedPair(Any.Decimal().GreaterThanOrEqualTo(0m), Any.Decimal().GreaterThanOrEqualTo(0m), strict: true)
+            _ => Any.Pair(Any.Decimal().GreaterThanOrEqualTo(0m), Any.Decimal().GreaterThanOrEqualTo(0m)).Having.Item1LessThanItem2()
                     .As(pair => ((decimal?)pair.Item1, (decimal?)pair.Item2))
         });
     }

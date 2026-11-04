@@ -98,7 +98,7 @@ public sealed class TransferTests {
         // Arrange
         CadastralReference anyParcel = Any.CadastralReference().Generate();
         decimal            anyPrice  = Any.Decimal().Positive().LessThanOrEqualTo(1_000_000_000m).Generate();
-        (DateOnly anyEarlier, DateOnly anyLater) = Any.OrderedPair(Any.DateOnly(), Any.DateOnly(), strict: true).Generate();
+        (DateOnly anyEarlier, DateOnly anyLater) = Any.Pair(Any.DateOnly(), Any.DateOnly()).Having.Item1BeforeItem2().Generate();
 
         // Act
         ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => new Transfer(anyParcel, anyPrice, anyLater, anyEarlier));

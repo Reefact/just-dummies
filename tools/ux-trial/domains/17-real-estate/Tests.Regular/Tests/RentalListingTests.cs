@@ -97,7 +97,7 @@ public sealed class RentalListingTests {
     public void A_listing_that_ends_before_it_starts_is_refused() {
         // Arrange
         Property property = Any.Property().Lettable().Generate();
-        (DateOnly anyEarlier, DateOnly anyLater) = Any.OrderedPair(Any.DateOnly(), Any.DateOnly(), strict: true).Generate();
+        (DateOnly anyEarlier, DateOnly anyLater) = Any.Pair(Any.DateOnly(), Any.DateOnly()).Having.Item1BeforeItem2().Generate();
 
         // Act
         ArgumentException exception = Assert.Throws<ArgumentException>(() => new RentalListing(property, 1_000m, anyLater, anyEarlier));

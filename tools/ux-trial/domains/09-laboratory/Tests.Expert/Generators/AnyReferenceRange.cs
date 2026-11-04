@@ -15,7 +15,6 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
 
     private const double Ceiling = 1_000d;
 
-    private AnyOrderedPair<double> _lowerAndUpper;
     private IAny<MeasurementUnit>  _unit;
     private bool?                  _criticalLimits;
 
@@ -30,11 +29,9 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
     private AnyReferenceRange(AnyMeasurementUnit unit) {
         _unit           = unit;
         _unitRecipe     = unit;
-        _lowerAndUpper  = LowerAndUpper();
     }
 
     private AnyReferenceRange(AnyReferenceRange from) {
-        _lowerAndUpper  = from._lowerAndUpper;
         _unit           = from._unit;
         _unitRecipe     = from._unitRecipe;
         _criticalLimits = from._criticalLimits;
@@ -42,12 +39,11 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
         _upperPin       = from._upperPin;
     }
 
-    private AnyOrderedPair<double> LowerAndUpper() {
+    private (double, double) LowerAndUpper() {
         AnyDouble              bound = Any.Double().Between(0d, Ceiling);
-        AnyOrderedPair<double> pair  = Any.OrderedPair(bound, bound, strict: true);
-
-        if (_lowerPin is { } lower) { pair = pair.WithFirst(lower); }
-        if (_upperPin is { } upper) { pair = pair.WithSecond(upper); }
+        (double, double) pair = _lowerPin is { } lower ? (lower, _upperPin ?? bound.GreaterThan(lower).Generate())
+                                : _upperPin is { } upper ? (bound.LessThan(upper).Generate(), upper)
+                                : Any.Pair(bound, bound).Having.Item1LessThanItem2().Generate();
 
         return pair;
     }
@@ -56,7 +52,6 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
         AnyReferenceRange copy = new AnyReferenceRange(this);
 
         copy._lowerPin      = value;
-        copy._lowerAndUpper = copy.LowerAndUpper();
 
         return copy;
     }
@@ -65,7 +60,6 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
         AnyReferenceRange copy = new AnyReferenceRange(this);
 
         copy._upperPin      = value;
-        copy._lowerAndUpper = copy.LowerAndUpper();
 
         return copy;
     }
@@ -108,7 +102,7 @@ public sealed partial class AnyReferenceRange : IAny<ReferenceRange> {
     }
 
     public ReferenceRange Generate() {
-        (double lower, double upper) = _lowerAndUpper.Generate();
+        (double lower, double upper) = LowerAndUpper();
 
         AnyDouble criticalLow  = Any.Double().Between(0d, lower);
         AnyDouble criticalHigh = Any.Double().Between(upper, 2 * Ceiling);

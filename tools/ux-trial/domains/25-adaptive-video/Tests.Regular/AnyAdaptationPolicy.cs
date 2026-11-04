@@ -16,7 +16,6 @@ namespace AdaptiveVideo.Domain;
 public sealed partial class AnyAdaptationPolicy : IAny<AdaptationPolicy> {
 
     private IAny<double>           _safetyFactor;
-    private AnyOrderedPair<double> _panicBufferSecondsAndComfortBufferSeconds;
 
     private AnyDouble _safetyFactorRecipe;
     private AnyDouble _panicBufferSecondsRecipe;
@@ -51,28 +50,24 @@ public sealed partial class AnyAdaptationPolicy : IAny<AdaptationPolicy> {
         _safetyFactorRecipe                        = safetyFactor;
         _panicBufferSecondsRecipe                  = panicBufferSeconds;
         _comfortBufferSecondsRecipe                = comfortBufferSeconds;
-        _panicBufferSecondsAndComfortBufferSeconds = PanicBufferSecondsAndComfortBufferSeconds();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyAdaptationPolicy(AnyAdaptationPolicy from) {
         _safetyFactor                              = from._safetyFactor;
         _safetyFactorRecipe                        = from._safetyFactorRecipe;
-        _panicBufferSecondsAndComfortBufferSeconds = from._panicBufferSecondsAndComfortBufferSeconds;
         _panicBufferSecondsRecipe                  = from._panicBufferSecondsRecipe;
         _panicBufferSecondsPin                     = from._panicBufferSecondsPin;
         _comfortBufferSecondsRecipe                = from._comfortBufferSecondsRecipe;
         _comfortBufferSecondsPin                   = from._comfortBufferSecondsPin;
     }
 
-    /// <summary>Draws <c>panicBufferSeconds</c> and <c>comfortBufferSeconds</c> together, <c>panicBufferSeconds</c> always before <c>comfortBufferSeconds</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<double> PanicBufferSecondsAndComfortBufferSeconds() {
-        AnyOrderedPair<double> pair = Any.OrderedPair(_panicBufferSecondsRecipe, _comfortBufferSecondsRecipe, strict: true);
+    /// <summary>Draws <c>panicBufferSeconds</c> and <c>comfortBufferSeconds</c>, <c>panicBufferSeconds</c> always before <c>comfortBufferSeconds</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (double PanicBufferSeconds, double ComfortBufferSeconds) PanicBufferSecondsAndComfortBufferSeconds() {
+        if (_panicBufferSecondsPin is { } panicBufferSeconds) { return (panicBufferSeconds, _comfortBufferSecondsPin ?? _comfortBufferSecondsRecipe.GreaterThan(panicBufferSeconds).Generate()); }
+        if (_comfortBufferSecondsPin is { } comfortBufferSeconds) { return (_panicBufferSecondsRecipe.LessThan(comfortBufferSeconds).Generate(), comfortBufferSeconds); }
 
-        if (_panicBufferSecondsPin is { } panicBufferSeconds) { pair = pair.WithFirst(panicBufferSeconds); }
-        if (_comfortBufferSecondsPin is { } comfortBufferSeconds) { pair = pair.WithSecond(comfortBufferSeconds); }
-
-        return pair;
+        return Any.Pair(_panicBufferSecondsRecipe, _comfortBufferSecondsRecipe).Having.Item1LessThanItem2().Generate();
     }
 
     /// <summary>Pins <c>safetyFactor</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -102,7 +97,6 @@ public sealed partial class AnyAdaptationPolicy : IAny<AdaptationPolicy> {
         AnyAdaptationPolicy copy = new AnyAdaptationPolicy(this);
 
         copy._panicBufferSecondsPin                     = value;
-        copy._panicBufferSecondsAndComfortBufferSeconds = copy.PanicBufferSecondsAndComfortBufferSeconds();
 
         return copy;
     }
@@ -116,7 +110,6 @@ public sealed partial class AnyAdaptationPolicy : IAny<AdaptationPolicy> {
 
         copy._panicBufferSecondsRecipe                  = configure(_panicBufferSecondsRecipe);
         copy._panicBufferSecondsPin                     = null;
-        copy._panicBufferSecondsAndComfortBufferSeconds = copy.PanicBufferSecondsAndComfortBufferSeconds();
 
         return copy;
     }
@@ -126,7 +119,6 @@ public sealed partial class AnyAdaptationPolicy : IAny<AdaptationPolicy> {
         AnyAdaptationPolicy copy = new AnyAdaptationPolicy(this);
 
         copy._comfortBufferSecondsPin                   = value;
-        copy._panicBufferSecondsAndComfortBufferSeconds = copy.PanicBufferSecondsAndComfortBufferSeconds();
 
         return copy;
     }
@@ -140,14 +132,13 @@ public sealed partial class AnyAdaptationPolicy : IAny<AdaptationPolicy> {
 
         copy._comfortBufferSecondsRecipe                = configure(_comfortBufferSecondsRecipe);
         copy._comfortBufferSecondsPin                   = null;
-        copy._panicBufferSecondsAndComfortBufferSeconds = copy.PanicBufferSecondsAndComfortBufferSeconds();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="AdaptationPolicy" />.</summary>
     public AdaptationPolicy Generate() {
-        (double panicBufferSeconds, double comfortBufferSeconds) = _panicBufferSecondsAndComfortBufferSeconds.Generate();
+        (double panicBufferSeconds, double comfortBufferSeconds) = PanicBufferSecondsAndComfortBufferSeconds();
 
         return new AdaptationPolicy(_safetyFactor.Generate(),
                                     panicBufferSeconds,

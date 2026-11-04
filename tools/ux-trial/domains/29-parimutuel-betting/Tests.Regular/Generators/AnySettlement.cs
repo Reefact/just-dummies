@@ -20,7 +20,6 @@ namespace ParimutuelBetting.Domain;
 /// </summary>
 public sealed partial class AnySettlement : IAny<Settlement> {
 
-    private AnyOrderedPair<decimal>       _refundedAndGrossPool;
     private IAny<decimal>                 _deductions;
     private IAny<IReadOnlyList<Dividend>> _dividends;
     private IAny<decimal>                 _carryover;
@@ -76,12 +75,10 @@ public sealed partial class AnySettlement : IAny<Settlement> {
         _dividendsRecipe      = dividends;
         _carryover            = carryover;
         _carryoverRecipe      = carryover;
-        _refundedAndGrossPool = RefundedAndGrossPool();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnySettlement(AnySettlement from) {
-        _refundedAndGrossPool = from._refundedAndGrossPool;
         _grossPoolRecipe      = from._grossPoolRecipe;
         _grossPoolPin         = from._grossPoolPin;
         _refundedRecipe       = from._refundedRecipe;
@@ -94,14 +91,12 @@ public sealed partial class AnySettlement : IAny<Settlement> {
         _carryoverRecipe      = from._carryoverRecipe;
     }
 
-    /// <summary>Draws <c>refunded</c> and <c>grossPool</c> together, <c>refunded</c> never after <c>grossPool</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<decimal> RefundedAndGrossPool() {
-        AnyOrderedPair<decimal> pair = Any.OrderedPair(_refundedRecipe, _grossPoolRecipe);
+    /// <summary>Draws <c>refunded</c> and <c>grossPool</c>, <c>refunded</c> never after <c>grossPool</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (decimal Refunded, decimal GrossPool) RefundedAndGrossPool() {
+        if (_refundedPin is { } refunded) { return (refunded, _grossPoolPin ?? _grossPoolRecipe.GreaterThanOrEqualTo(refunded).Generate()); }
+        if (_grossPoolPin is { } grossPool) { return (_refundedRecipe.LessThanOrEqualTo(grossPool).Generate(), grossPool); }
 
-        if (_refundedPin is { } refunded) { pair = pair.WithFirst(refunded); }
-        if (_grossPoolPin is { } grossPool) { pair = pair.WithSecond(grossPool); }
-
-        return pair;
+        return Any.Pair(_refundedRecipe, _grossPoolRecipe).Having.Item1LessThanOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>grossPool</c> to a fixed value, which bounds <c>refunded</c>; its recipe is kept for a later refinement.</summary>
@@ -109,7 +104,6 @@ public sealed partial class AnySettlement : IAny<Settlement> {
         AnySettlement copy = new AnySettlement(this);
 
         copy._grossPoolPin         = value;
-        copy._refundedAndGrossPool = copy.RefundedAndGrossPool();
 
         return copy;
     }
@@ -123,7 +117,6 @@ public sealed partial class AnySettlement : IAny<Settlement> {
 
         copy._grossPoolRecipe      = configure(_grossPoolRecipe);
         copy._grossPoolPin         = null;
-        copy._refundedAndGrossPool = copy.RefundedAndGrossPool();
 
         return copy;
     }
@@ -133,7 +126,6 @@ public sealed partial class AnySettlement : IAny<Settlement> {
         AnySettlement copy = new AnySettlement(this);
 
         copy._refundedPin          = value;
-        copy._refundedAndGrossPool = copy.RefundedAndGrossPool();
 
         return copy;
     }
@@ -147,7 +139,6 @@ public sealed partial class AnySettlement : IAny<Settlement> {
 
         copy._refundedRecipe       = configure(_refundedRecipe);
         copy._refundedPin          = null;
-        copy._refundedAndGrossPool = copy.RefundedAndGrossPool();
 
         return copy;
     }
@@ -220,7 +211,7 @@ public sealed partial class AnySettlement : IAny<Settlement> {
 
     /// <summary>Produces one arbitrary <see cref="Settlement" />.</summary>
     public Settlement Generate() {
-        (decimal refunded, decimal grossPool) = _refundedAndGrossPool.Generate();
+        (decimal refunded, decimal grossPool) = RefundedAndGrossPool();
 
         // Deductions fit in what refunds leave; carryover fits in the net pool and only exists without dividends.
         decimal deductions = Within(_deductions, _deductionsRecipe, grossPool - refunded).Generate();

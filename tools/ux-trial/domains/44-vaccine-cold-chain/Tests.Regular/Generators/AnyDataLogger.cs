@@ -22,7 +22,6 @@ public sealed partial class AnyDataLogger : IAny<DataLogger> {
 
     private IAny<SensorId>           _id;
     private IAny<int>                _recordingIntervalMinutes;
-    private AnyOrderedPair<DateOnly> _calibratedOnAndCalibrationDueOn;
 
     private AnySensorId _idRecipe;
     private AnyInt32    _recordingIntervalMinutesRecipe;
@@ -66,7 +65,6 @@ public sealed partial class AnyDataLogger : IAny<DataLogger> {
         _recordingIntervalMinutesRecipe  = recordingIntervalMinutes;
         _calibratedOnRecipe              = calibratedOn;
         _calibrationDueOnRecipe          = calibrationDueOn;
-        _calibratedOnAndCalibrationDueOn = CalibratedOnAndCalibrationDueOn();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -75,21 +73,18 @@ public sealed partial class AnyDataLogger : IAny<DataLogger> {
         _idRecipe                        = from._idRecipe;
         _recordingIntervalMinutes        = from._recordingIntervalMinutes;
         _recordingIntervalMinutesRecipe  = from._recordingIntervalMinutesRecipe;
-        _calibratedOnAndCalibrationDueOn = from._calibratedOnAndCalibrationDueOn;
         _calibratedOnRecipe              = from._calibratedOnRecipe;
         _calibratedOnPin                 = from._calibratedOnPin;
         _calibrationDueOnRecipe          = from._calibrationDueOnRecipe;
         _calibrationDueOnPin             = from._calibrationDueOnPin;
     }
 
-    /// <summary>Draws <c>calibratedOn</c> and <c>calibrationDueOn</c> together, <c>calibratedOn</c> always before <c>calibrationDueOn</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateOnly> CalibratedOnAndCalibrationDueOn() {
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(_calibratedOnRecipe, _calibrationDueOnRecipe, strict: true);
+    /// <summary>Draws <c>calibratedOn</c> and <c>calibrationDueOn</c>, <c>calibratedOn</c> always before <c>calibrationDueOn</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateOnly CalibratedOn, DateOnly CalibrationDueOn) CalibratedOnAndCalibrationDueOn() {
+        if (_calibratedOnPin is { } calibratedOn) { return (calibratedOn, _calibrationDueOnPin ?? _calibrationDueOnRecipe.After(calibratedOn).Generate()); }
+        if (_calibrationDueOnPin is { } calibrationDueOn) { return (_calibratedOnRecipe.Before(calibrationDueOn).Generate(), calibrationDueOn); }
 
-        if (_calibratedOnPin is { } calibratedOn) { pair = pair.WithFirst(calibratedOn); }
-        if (_calibrationDueOnPin is { } calibrationDueOn) { pair = pair.WithSecond(calibrationDueOn); }
-
-        return pair;
+        return Any.Pair(_calibratedOnRecipe, _calibrationDueOnRecipe).Having.Item1BeforeItem2().Generate();
     }
 
     /// <summary>Pins <c>id</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -141,7 +136,6 @@ public sealed partial class AnyDataLogger : IAny<DataLogger> {
         AnyDataLogger copy = new AnyDataLogger(this);
 
         copy._calibratedOnPin                 = value;
-        copy._calibratedOnAndCalibrationDueOn = copy.CalibratedOnAndCalibrationDueOn();
 
         return copy;
     }
@@ -155,7 +149,6 @@ public sealed partial class AnyDataLogger : IAny<DataLogger> {
 
         copy._calibratedOnRecipe              = configure(_calibratedOnRecipe);
         copy._calibratedOnPin                 = null;
-        copy._calibratedOnAndCalibrationDueOn = copy.CalibratedOnAndCalibrationDueOn();
 
         return copy;
     }
@@ -165,7 +158,6 @@ public sealed partial class AnyDataLogger : IAny<DataLogger> {
         AnyDataLogger copy = new AnyDataLogger(this);
 
         copy._calibrationDueOnPin             = value;
-        copy._calibratedOnAndCalibrationDueOn = copy.CalibratedOnAndCalibrationDueOn();
 
         return copy;
     }
@@ -179,14 +171,13 @@ public sealed partial class AnyDataLogger : IAny<DataLogger> {
 
         copy._calibrationDueOnRecipe          = configure(_calibrationDueOnRecipe);
         copy._calibrationDueOnPin             = null;
-        copy._calibratedOnAndCalibrationDueOn = copy.CalibratedOnAndCalibrationDueOn();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="DataLogger" />.</summary>
     public DataLogger Generate() {
-        (DateOnly calibratedOn, DateOnly calibrationDueOn) = _calibratedOnAndCalibrationDueOn.Generate();
+        (DateOnly calibratedOn, DateOnly calibrationDueOn) = CalibratedOnAndCalibrationDueOn();
 
         // A certificate is valid for at most a year after the calibration: the pair is ordered, this keeps it close.
         if (calibrationDueOn.DayNumber - calibratedOn.DayNumber > 365) {

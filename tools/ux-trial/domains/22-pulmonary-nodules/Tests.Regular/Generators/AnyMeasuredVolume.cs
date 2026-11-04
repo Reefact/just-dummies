@@ -15,7 +15,6 @@ namespace PulmonaryNodules.Domain;
 /// </summary>
 public sealed partial class AnyMeasuredVolume : IAny<MeasuredVolume> {
 
-    private AnyOrderedPair<double> _uncertaintyMm3AndVolumeMm3;
 
     private AnyDouble _volumeMm3Recipe;
     private AnyDouble _uncertaintyMm3Recipe;
@@ -41,26 +40,22 @@ public sealed partial class AnyMeasuredVolume : IAny<MeasuredVolume> {
                               AnyDouble uncertaintyMm3) {
         _volumeMm3Recipe            = volumeMm3;
         _uncertaintyMm3Recipe       = uncertaintyMm3;
-        _uncertaintyMm3AndVolumeMm3 = UncertaintyMm3AndVolumeMm3();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyMeasuredVolume(AnyMeasuredVolume from) {
-        _uncertaintyMm3AndVolumeMm3 = from._uncertaintyMm3AndVolumeMm3;
         _volumeMm3Recipe            = from._volumeMm3Recipe;
         _volumeMm3Pin               = from._volumeMm3Pin;
         _uncertaintyMm3Recipe       = from._uncertaintyMm3Recipe;
         _uncertaintyMm3Pin          = from._uncertaintyMm3Pin;
     }
 
-    /// <summary>Draws <c>uncertaintyMm3</c> and <c>volumeMm3</c> together, <c>uncertaintyMm3</c> always before <c>volumeMm3</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<double> UncertaintyMm3AndVolumeMm3() {
-        AnyOrderedPair<double> pair = Any.OrderedPair(_uncertaintyMm3Recipe, _volumeMm3Recipe, strict: true);
+    /// <summary>Draws <c>uncertaintyMm3</c> and <c>volumeMm3</c>, <c>uncertaintyMm3</c> always before <c>volumeMm3</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (double UncertaintyMm3, double VolumeMm3) UncertaintyMm3AndVolumeMm3() {
+        if (_uncertaintyMm3Pin is { } uncertaintyMm3) { return (uncertaintyMm3, _volumeMm3Pin ?? _volumeMm3Recipe.GreaterThan(uncertaintyMm3).Generate()); }
+        if (_volumeMm3Pin is { } volumeMm3) { return (_uncertaintyMm3Recipe.LessThan(volumeMm3).Generate(), volumeMm3); }
 
-        if (_uncertaintyMm3Pin is { } uncertaintyMm3) { pair = pair.WithFirst(uncertaintyMm3); }
-        if (_volumeMm3Pin is { } volumeMm3) { pair = pair.WithSecond(volumeMm3); }
-
-        return pair;
+        return Any.Pair(_uncertaintyMm3Recipe, _volumeMm3Recipe).Having.Item1LessThanItem2().Generate();
     }
 
     /// <summary>Pins <c>volumeMm3</c> to a fixed value, which bounds <c>uncertaintyMm3</c>; its recipe is kept for a later refinement.</summary>
@@ -68,7 +63,6 @@ public sealed partial class AnyMeasuredVolume : IAny<MeasuredVolume> {
         AnyMeasuredVolume copy = new AnyMeasuredVolume(this);
 
         copy._volumeMm3Pin               = value;
-        copy._uncertaintyMm3AndVolumeMm3 = copy.UncertaintyMm3AndVolumeMm3();
 
         return copy;
     }
@@ -82,7 +76,6 @@ public sealed partial class AnyMeasuredVolume : IAny<MeasuredVolume> {
 
         copy._volumeMm3Recipe            = configure(_volumeMm3Recipe);
         copy._volumeMm3Pin               = null;
-        copy._uncertaintyMm3AndVolumeMm3 = copy.UncertaintyMm3AndVolumeMm3();
 
         return copy;
     }
@@ -92,7 +85,6 @@ public sealed partial class AnyMeasuredVolume : IAny<MeasuredVolume> {
         AnyMeasuredVolume copy = new AnyMeasuredVolume(this);
 
         copy._uncertaintyMm3Pin          = value;
-        copy._uncertaintyMm3AndVolumeMm3 = copy.UncertaintyMm3AndVolumeMm3();
 
         return copy;
     }
@@ -106,14 +98,13 @@ public sealed partial class AnyMeasuredVolume : IAny<MeasuredVolume> {
 
         copy._uncertaintyMm3Recipe       = configure(_uncertaintyMm3Recipe);
         copy._uncertaintyMm3Pin          = null;
-        copy._uncertaintyMm3AndVolumeMm3 = copy.UncertaintyMm3AndVolumeMm3();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="MeasuredVolume" />.</summary>
     public MeasuredVolume Generate() {
-        (double uncertaintyMm3, double volumeMm3) = _uncertaintyMm3AndVolumeMm3.Generate();
+        (double uncertaintyMm3, double volumeMm3) = UncertaintyMm3AndVolumeMm3();
 
         return new MeasuredVolume(volumeMm3,
                                   uncertaintyMm3);

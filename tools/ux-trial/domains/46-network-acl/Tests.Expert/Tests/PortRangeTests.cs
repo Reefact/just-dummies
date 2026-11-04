@@ -15,7 +15,7 @@ public sealed class PortRangeTests {
     public void A_range_whose_low_port_exceeds_its_high_port_is_refused() {
         // Arrange
         // Which ports they are does not matter, only that they are reversed.
-        (ushort anyLowerPort, ushort anyHigherPort) = Any.OrderedPair(Any.UInt16(), Any.UInt16(), strict: true).Generate();
+        (ushort anyLowerPort, ushort anyHigherPort) = Any.Pair(Any.UInt16(), Any.UInt16()).Having.Item1LessThanItem2().Generate();
 
         // Act
         ArgumentException refusal = Assert.Throws<ArgumentException>(() => new PortRange(anyHigherPort, anyLowerPort));
@@ -134,7 +134,7 @@ public sealed class PortRangeTests {
     [Fact]
     public void Ranges_with_the_same_bounds_are_equal_and_hash_alike() {
         // Arrange
-        (ushort anyLow, ushort anyHigh) = Any.OrderedPair(Any.UInt16(), Any.UInt16()).Generate();
+        (ushort anyLow, ushort anyHigh) = Any.Pair(Any.UInt16(), Any.UInt16()).Having.Item1LessThanOrEqualToItem2().Generate();
         PortRange first  = new PortRange(anyLow, anyHigh);
         PortRange second = new PortRange(anyLow, anyHigh);
 

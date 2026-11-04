@@ -21,7 +21,6 @@ public sealed partial class AnyTransfer : IAny<Transfer> {
 
     private IAny<CadastralReference> _parcel;
     private IAny<decimal>            _price;
-    private AnyOrderedPair<DateOnly> _signedOnAndRegisteredOn;
 
     private AnyCadastralReference _parcelRecipe;
     private AnyDecimal            _priceRecipe;
@@ -65,7 +64,6 @@ public sealed partial class AnyTransfer : IAny<Transfer> {
         _priceRecipe        = price;
         _signedOnRecipe     = signedOn;
         _registeredOnRecipe = registeredOn;
-        _signedOnAndRegisteredOn = SignedOnAndRegisteredOn();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -74,7 +72,6 @@ public sealed partial class AnyTransfer : IAny<Transfer> {
         _parcelRecipe       = from._parcelRecipe;
         _price              = from._price;
         _priceRecipe        = from._priceRecipe;
-        _signedOnAndRegisteredOn = from._signedOnAndRegisteredOn;
         _signedOnRecipe     = from._signedOnRecipe;
         _signedOnPin        = from._signedOnPin;
         _registeredOnRecipe = from._registeredOnRecipe;
@@ -125,14 +122,12 @@ public sealed partial class AnyTransfer : IAny<Transfer> {
         return copy;
     }
 
-    /// <summary>Draws <c>signedOn</c> and <c>registeredOn</c> together, <c>registeredOn</c> never before <c>signedOn</c> as the constructor requires.</summary>
-    private AnyOrderedPair<DateOnly> SignedOnAndRegisteredOn() {
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(_signedOnRecipe, _registeredOnRecipe);
+    /// <summary>Draws <c>signedOn</c> and <c>registeredOn</c>, <c>signedOn</c> never after <c>registeredOn</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateOnly SignedOn, DateOnly RegisteredOn) SignedOnAndRegisteredOn() {
+        if (_signedOnPin is { } signedOn) { return (signedOn, _registeredOnPin ?? _registeredOnRecipe.AfterOrEqualTo(signedOn).Generate()); }
+        if (_registeredOnPin is { } registeredOn) { return (_signedOnRecipe.BeforeOrEqualTo(registeredOn).Generate(), registeredOn); }
 
-        if (_signedOnPin is { } signedOn) { pair = pair.WithFirst(signedOn); }
-        if (_registeredOnPin is { } registeredOn) { pair = pair.WithSecond(registeredOn); }
-
-        return pair;
+        return Any.Pair(_signedOnRecipe, _registeredOnRecipe).Having.Item1BeforeOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>signedOn</c> to a fixed value, which bounds <c>registeredOn</c>; its recipe is kept for a later refinement.</summary>
@@ -140,7 +135,6 @@ public sealed partial class AnyTransfer : IAny<Transfer> {
         AnyTransfer copy = new AnyTransfer(this);
 
         copy._signedOnPin              = value;
-        copy._signedOnAndRegisteredOn = copy.SignedOnAndRegisteredOn();
 
         return copy;
     }
@@ -153,7 +147,6 @@ public sealed partial class AnyTransfer : IAny<Transfer> {
 
         copy._signedOnRecipe          = configure(_signedOnRecipe);
         copy._signedOnPin             = null;
-        copy._signedOnAndRegisteredOn = copy.SignedOnAndRegisteredOn();
 
         return copy;
     }
@@ -163,7 +156,6 @@ public sealed partial class AnyTransfer : IAny<Transfer> {
         AnyTransfer copy = new AnyTransfer(this);
 
         copy._registeredOnPin         = value;
-        copy._signedOnAndRegisteredOn = copy.SignedOnAndRegisteredOn();
 
         return copy;
     }
@@ -176,14 +168,13 @@ public sealed partial class AnyTransfer : IAny<Transfer> {
 
         copy._registeredOnRecipe      = configure(_registeredOnRecipe);
         copy._registeredOnPin         = null;
-        copy._signedOnAndRegisteredOn = copy.SignedOnAndRegisteredOn();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Transfer" />.</summary>
     public Transfer Generate() {
-        (DateOnly signedOn, DateOnly registeredOn) = _signedOnAndRegisteredOn.Generate();
+        (DateOnly signedOn, DateOnly registeredOn) = SignedOnAndRegisteredOn();
 
         return new Transfer(_parcel.Generate(), _price.Generate(), signedOn, registeredOn);
     }

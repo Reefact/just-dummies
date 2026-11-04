@@ -21,7 +21,6 @@ public sealed partial class AnyKinshipPolicy : IAny<KinshipPolicy> {
 
     private IAny<KinshipCoefficient> _maximumPairKinship;
     private IAny<int>                _maximumPairingsPerIndividual;
-    private AnyOrderedPair<int>      _minimumBreedingAgeYearsAndMaximumBreedingAgeYears;
 
     private AnyKinshipCoefficient _maximumPairKinshipRecipe;
     private AnyInt32              _maximumPairingsPerIndividualRecipe;
@@ -65,7 +64,6 @@ public sealed partial class AnyKinshipPolicy : IAny<KinshipPolicy> {
         _maximumPairingsPerIndividualRecipe                = maximumPairingsPerIndividual;
         _minimumBreedingAgeYearsRecipe                     = minimumBreedingAgeYears;
         _maximumBreedingAgeYearsRecipe                     = maximumBreedingAgeYears;
-        _minimumBreedingAgeYearsAndMaximumBreedingAgeYears = MinimumBreedingAgeYearsAndMaximumBreedingAgeYears();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -74,21 +72,18 @@ public sealed partial class AnyKinshipPolicy : IAny<KinshipPolicy> {
         _maximumPairKinshipRecipe                          = from._maximumPairKinshipRecipe;
         _maximumPairingsPerIndividual                      = from._maximumPairingsPerIndividual;
         _maximumPairingsPerIndividualRecipe                = from._maximumPairingsPerIndividualRecipe;
-        _minimumBreedingAgeYearsAndMaximumBreedingAgeYears = from._minimumBreedingAgeYearsAndMaximumBreedingAgeYears;
         _minimumBreedingAgeYearsRecipe                     = from._minimumBreedingAgeYearsRecipe;
         _minimumBreedingAgeYearsPin                        = from._minimumBreedingAgeYearsPin;
         _maximumBreedingAgeYearsRecipe                     = from._maximumBreedingAgeYearsRecipe;
         _maximumBreedingAgeYearsPin                        = from._maximumBreedingAgeYearsPin;
     }
 
-    /// <summary>Draws <c>minimumBreedingAgeYears</c> and <c>maximumBreedingAgeYears</c> together, <c>minimumBreedingAgeYears</c> always before <c>maximumBreedingAgeYears</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<int> MinimumBreedingAgeYearsAndMaximumBreedingAgeYears() {
-        AnyOrderedPair<int> pair = Any.OrderedPair(_minimumBreedingAgeYearsRecipe, _maximumBreedingAgeYearsRecipe, strict: true);
+    /// <summary>Draws <c>minimumBreedingAgeYears</c> and <c>maximumBreedingAgeYears</c>, <c>minimumBreedingAgeYears</c> always before <c>maximumBreedingAgeYears</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (int MinimumBreedingAgeYears, int MaximumBreedingAgeYears) MinimumBreedingAgeYearsAndMaximumBreedingAgeYears() {
+        if (_minimumBreedingAgeYearsPin is { } minimumBreedingAgeYears) { return (minimumBreedingAgeYears, _maximumBreedingAgeYearsPin ?? _maximumBreedingAgeYearsRecipe.GreaterThan(minimumBreedingAgeYears).Generate()); }
+        if (_maximumBreedingAgeYearsPin is { } maximumBreedingAgeYears) { return (_minimumBreedingAgeYearsRecipe.LessThan(maximumBreedingAgeYears).Generate(), maximumBreedingAgeYears); }
 
-        if (_minimumBreedingAgeYearsPin is { } minimumBreedingAgeYears) { pair = pair.WithFirst(minimumBreedingAgeYears); }
-        if (_maximumBreedingAgeYearsPin is { } maximumBreedingAgeYears) { pair = pair.WithSecond(maximumBreedingAgeYears); }
-
-        return pair;
+        return Any.Pair(_minimumBreedingAgeYearsRecipe, _maximumBreedingAgeYearsRecipe).Having.Item1LessThanItem2().Generate();
     }
 
     /// <summary>Pins <c>maximumPairKinship</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -140,7 +135,6 @@ public sealed partial class AnyKinshipPolicy : IAny<KinshipPolicy> {
         AnyKinshipPolicy copy = new AnyKinshipPolicy(this);
 
         copy._minimumBreedingAgeYearsPin                        = value;
-        copy._minimumBreedingAgeYearsAndMaximumBreedingAgeYears = copy.MinimumBreedingAgeYearsAndMaximumBreedingAgeYears();
 
         return copy;
     }
@@ -154,7 +148,6 @@ public sealed partial class AnyKinshipPolicy : IAny<KinshipPolicy> {
 
         copy._minimumBreedingAgeYearsRecipe                     = configure(_minimumBreedingAgeYearsRecipe);
         copy._minimumBreedingAgeYearsPin                        = null;
-        copy._minimumBreedingAgeYearsAndMaximumBreedingAgeYears = copy.MinimumBreedingAgeYearsAndMaximumBreedingAgeYears();
 
         return copy;
     }
@@ -164,7 +157,6 @@ public sealed partial class AnyKinshipPolicy : IAny<KinshipPolicy> {
         AnyKinshipPolicy copy = new AnyKinshipPolicy(this);
 
         copy._maximumBreedingAgeYearsPin                        = value;
-        copy._minimumBreedingAgeYearsAndMaximumBreedingAgeYears = copy.MinimumBreedingAgeYearsAndMaximumBreedingAgeYears();
 
         return copy;
     }
@@ -178,14 +170,13 @@ public sealed partial class AnyKinshipPolicy : IAny<KinshipPolicy> {
 
         copy._maximumBreedingAgeYearsRecipe                     = configure(_maximumBreedingAgeYearsRecipe);
         copy._maximumBreedingAgeYearsPin                        = null;
-        copy._minimumBreedingAgeYearsAndMaximumBreedingAgeYears = copy.MinimumBreedingAgeYearsAndMaximumBreedingAgeYears();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="KinshipPolicy" />.</summary>
     public KinshipPolicy Generate() {
-        (int minimumBreedingAgeYears, int maximumBreedingAgeYears) = _minimumBreedingAgeYearsAndMaximumBreedingAgeYears.Generate();
+        (int minimumBreedingAgeYears, int maximumBreedingAgeYears) = MinimumBreedingAgeYearsAndMaximumBreedingAgeYears();
 
         return new KinshipPolicy(_maximumPairKinship.Generate(),
                                  _maximumPairingsPerIndividual.Generate(),

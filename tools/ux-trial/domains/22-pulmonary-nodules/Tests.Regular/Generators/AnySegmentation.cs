@@ -19,7 +19,6 @@ namespace PulmonaryNodules.Domain;
 /// </summary>
 public sealed partial class AnySegmentation : IAny<Segmentation> {
 
-    private AnyOrderedPair<int> _boundaryVoxelCountAndVoxelCount;
     private IAny<VoxelSpacing>  _spacing;
     private IAny<SpatialPoint>  _centroid;
 
@@ -65,12 +64,10 @@ public sealed partial class AnySegmentation : IAny<Segmentation> {
         _spacingRecipe                   = spacing;
         _centroid                        = centroid;
         _centroidRecipe                  = centroid;
-        _boundaryVoxelCountAndVoxelCount = BoundaryVoxelCountAndVoxelCount();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnySegmentation(AnySegmentation from) {
-        _boundaryVoxelCountAndVoxelCount = from._boundaryVoxelCountAndVoxelCount;
         _voxelCountRecipe                = from._voxelCountRecipe;
         _voxelCountPin                   = from._voxelCountPin;
         _boundaryVoxelCountRecipe        = from._boundaryVoxelCountRecipe;
@@ -82,11 +79,10 @@ public sealed partial class AnySegmentation : IAny<Segmentation> {
     }
 
     /// <summary>Draws <c>boundaryVoxelCount</c> and <c>voxelCount</c> together, <c>boundaryVoxelCount</c> never after <c>voxelCount</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<int> BoundaryVoxelCountAndVoxelCount(int maxVoxelCount = Segmentation.MaxVoxelCount) {
-        AnyOrderedPair<int> pair = Any.OrderedPair(_boundaryVoxelCountRecipe, _voxelCountRecipe.LessThanOrEqualTo(maxVoxelCount));
-
-        if (_boundaryVoxelCountPin is { } boundaryVoxelCount) { pair = pair.WithFirst(boundaryVoxelCount); }
-        if (_voxelCountPin is { } voxelCount) { pair = pair.WithSecond(voxelCount); }
+    private (int, int) BoundaryVoxelCountAndVoxelCount(int maxVoxelCount = Segmentation.MaxVoxelCount) {
+        (int, int) pair = _boundaryVoxelCountPin is { } boundaryVoxelCount ? (boundaryVoxelCount, _voxelCountPin ?? _voxelCountRecipe.LessThanOrEqualTo(maxVoxelCount).GreaterThanOrEqualTo(boundaryVoxelCount).Generate())
+                          : _voxelCountPin is { } voxelCount ? (_boundaryVoxelCountRecipe.LessThanOrEqualTo(voxelCount).Generate(), voxelCount)
+                          : Any.Pair(_boundaryVoxelCountRecipe, _voxelCountRecipe.LessThanOrEqualTo(maxVoxelCount)).Having.Item1LessThanOrEqualToItem2().Generate();
 
         return pair;
     }
@@ -96,7 +92,6 @@ public sealed partial class AnySegmentation : IAny<Segmentation> {
         AnySegmentation copy = new AnySegmentation(this);
 
         copy._voxelCountPin                   = value;
-        copy._boundaryVoxelCountAndVoxelCount = copy.BoundaryVoxelCountAndVoxelCount();
 
         return copy;
     }
@@ -110,7 +105,6 @@ public sealed partial class AnySegmentation : IAny<Segmentation> {
 
         copy._voxelCountRecipe                = configure(_voxelCountRecipe);
         copy._voxelCountPin                   = null;
-        copy._boundaryVoxelCountAndVoxelCount = copy.BoundaryVoxelCountAndVoxelCount();
 
         return copy;
     }
@@ -120,7 +114,6 @@ public sealed partial class AnySegmentation : IAny<Segmentation> {
         AnySegmentation copy = new AnySegmentation(this);
 
         copy._boundaryVoxelCountPin           = value;
-        copy._boundaryVoxelCountAndVoxelCount = copy.BoundaryVoxelCountAndVoxelCount();
 
         return copy;
     }
@@ -134,7 +127,6 @@ public sealed partial class AnySegmentation : IAny<Segmentation> {
 
         copy._boundaryVoxelCountRecipe        = configure(_boundaryVoxelCountRecipe);
         copy._boundaryVoxelCountPin           = null;
-        copy._boundaryVoxelCountAndVoxelCount = copy.BoundaryVoxelCountAndVoxelCount();
 
         return copy;
     }
@@ -190,7 +182,7 @@ public sealed partial class AnySegmentation : IAny<Segmentation> {
         int maxVoxelCount = (int)Math.Min(Segmentation.MaxVoxelCount, Math.Floor(MeasuredVolume.MaxVolumeMm3 / spacing.VoxelVolumeMm3));
         while (maxVoxelCount * spacing.VoxelVolumeMm3 > MeasuredVolume.MaxVolumeMm3) { maxVoxelCount--; }
 
-        (int boundaryVoxelCount, int voxelCount) = BoundaryVoxelCountAndVoxelCount(maxVoxelCount).Generate();
+        (int boundaryVoxelCount, int voxelCount) = BoundaryVoxelCountAndVoxelCount(maxVoxelCount);
 
         return new Segmentation(voxelCount,
                                 boundaryVoxelCount,

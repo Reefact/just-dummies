@@ -17,7 +17,6 @@ public sealed partial class AnyWitness : IAny<Witness> {
 
     private IAny<WitnessSiglum> _siglum;
     private IAny<string>        _repository;
-    private AnyOrderedPair<int> _datedFromAndDatedTo;
     private IAny<int>           _folioCount;
 
     private AnyWitnessSiglum _siglumRecipe;
@@ -71,7 +70,6 @@ public sealed partial class AnyWitness : IAny<Witness> {
         _datedToRecipe       = datedTo;
         _folioCount          = folioCount;
         _folioCountRecipe    = folioCount;
-        _datedFromAndDatedTo = DatedFromAndDatedTo();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -80,7 +78,6 @@ public sealed partial class AnyWitness : IAny<Witness> {
         _siglumRecipe        = from._siglumRecipe;
         _repository          = from._repository;
         _repositoryRecipe    = from._repositoryRecipe;
-        _datedFromAndDatedTo = from._datedFromAndDatedTo;
         _datedFromRecipe     = from._datedFromRecipe;
         _datedFromPin        = from._datedFromPin;
         _datedToRecipe       = from._datedToRecipe;
@@ -89,14 +86,12 @@ public sealed partial class AnyWitness : IAny<Witness> {
         _folioCountRecipe    = from._folioCountRecipe;
     }
 
-    /// <summary>Draws <c>datedFrom</c> and <c>datedTo</c> together, <c>datedFrom</c> never after <c>datedTo</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<int> DatedFromAndDatedTo() {
-        AnyOrderedPair<int> pair = Any.OrderedPair(_datedFromRecipe, _datedToRecipe);
+    /// <summary>Draws <c>datedFrom</c> and <c>datedTo</c>, <c>datedFrom</c> never after <c>datedTo</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (int DatedFrom, int DatedTo) DatedFromAndDatedTo() {
+        if (_datedFromPin is { } datedFrom) { return (datedFrom, _datedToPin ?? _datedToRecipe.GreaterThanOrEqualTo(datedFrom).Generate()); }
+        if (_datedToPin is { } datedTo) { return (_datedFromRecipe.LessThanOrEqualTo(datedTo).Generate(), datedTo); }
 
-        if (_datedFromPin is { } datedFrom) { pair = pair.WithFirst(datedFrom); }
-        if (_datedToPin is { } datedTo) { pair = pair.WithSecond(datedTo); }
-
-        return pair;
+        return Any.Pair(_datedFromRecipe, _datedToRecipe).Having.Item1LessThanOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>siglum</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -148,7 +143,6 @@ public sealed partial class AnyWitness : IAny<Witness> {
         AnyWitness copy = new AnyWitness(this);
 
         copy._datedFromPin        = value;
-        copy._datedFromAndDatedTo = copy.DatedFromAndDatedTo();
 
         return copy;
     }
@@ -162,7 +156,6 @@ public sealed partial class AnyWitness : IAny<Witness> {
 
         copy._datedFromRecipe     = configure(_datedFromRecipe);
         copy._datedFromPin        = null;
-        copy._datedFromAndDatedTo = copy.DatedFromAndDatedTo();
 
         return copy;
     }
@@ -172,7 +165,6 @@ public sealed partial class AnyWitness : IAny<Witness> {
         AnyWitness copy = new AnyWitness(this);
 
         copy._datedToPin          = value;
-        copy._datedFromAndDatedTo = copy.DatedFromAndDatedTo();
 
         return copy;
     }
@@ -186,7 +178,6 @@ public sealed partial class AnyWitness : IAny<Witness> {
 
         copy._datedToRecipe       = configure(_datedToRecipe);
         copy._datedToPin          = null;
-        copy._datedFromAndDatedTo = copy.DatedFromAndDatedTo();
 
         return copy;
     }
@@ -215,7 +206,7 @@ public sealed partial class AnyWitness : IAny<Witness> {
 
     /// <summary>Produces one arbitrary <see cref="Witness" />.</summary>
     public Witness Generate() {
-        (int datedFrom, int datedTo) = _datedFromAndDatedTo.Generate();
+        (int datedFrom, int datedTo) = DatedFromAndDatedTo();
 
         return new Witness(_siglum.Generate(),
                            _repository.Generate(),

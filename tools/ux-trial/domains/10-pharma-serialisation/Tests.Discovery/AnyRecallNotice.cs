@@ -205,7 +205,7 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
     public RecallNotice Generate() {
         // effectiveFrom may equal issuedOn but never precede it; the pair is drawn together.
         // Because of that, WithIssuedOn/WithEffectiveFrom pins and refinements are not read here.
-        (DateOnly issuedOn, DateOnly effectiveFrom) = Any.OrderedPair(_issuedOnRecipe, _effectiveFromRecipe, strict: false).Generate();
+        (DateOnly issuedOn, DateOnly effectiveFrom) = Any.Pair(_issuedOnRecipe, _effectiveFromRecipe).Having.Item1BeforeOrEqualToItem2().Generate();
 
         return new RecallNotice(_batch.Generate(),
                                 issuedOn,

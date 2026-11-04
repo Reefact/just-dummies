@@ -21,7 +21,6 @@ public sealed partial class AnyLeg : IAny<Leg> {
 
     private IAny<UnLocode>                 _origin;
     private IAny<UnLocode>                 _destination;
-    private AnyOrderedPair<DateTimeOffset> _departureAndArrival;
 
     private AnyUnLocode       _originRecipe;
     private AnyUnLocode       _destinationRecipe;
@@ -66,7 +65,6 @@ public sealed partial class AnyLeg : IAny<Leg> {
         _destinationRecipe   = destination;
         _departureRecipe     = departure;
         _arrivalRecipe       = arrival;
-        _departureAndArrival = DepartureAndArrival();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -75,21 +73,18 @@ public sealed partial class AnyLeg : IAny<Leg> {
         _originRecipe        = from._originRecipe;
         _destination         = from._destination;
         _destinationRecipe   = from._destinationRecipe;
-        _departureAndArrival = from._departureAndArrival;
         _departureRecipe     = from._departureRecipe;
         _departurePin        = from._departurePin;
         _arrivalRecipe       = from._arrivalRecipe;
         _arrivalPin          = from._arrivalPin;
     }
 
-    /// <summary>Draws <c>departure</c> and <c>arrival</c> together, <c>departure</c> always before <c>arrival</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateTimeOffset> DepartureAndArrival() {
-        AnyOrderedPair<DateTimeOffset> pair = Any.OrderedPair(_departureRecipe, _arrivalRecipe, strict: true);
+    /// <summary>Draws <c>departure</c> and <c>arrival</c>, <c>departure</c> always before <c>arrival</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateTimeOffset Departure, DateTimeOffset Arrival) DepartureAndArrival() {
+        if (_departurePin is { } departure) { return (departure, _arrivalPin ?? _arrivalRecipe.After(departure).Generate()); }
+        if (_arrivalPin is { } arrival) { return (_departureRecipe.Before(arrival).Generate(), arrival); }
 
-        if (_departurePin is { } departure) { pair = pair.WithFirst(departure); }
-        if (_arrivalPin is { } arrival) { pair = pair.WithSecond(arrival); }
-
-        return pair;
+        return Any.Pair(_departureRecipe, _arrivalRecipe).Having.Item1BeforeItem2().Generate();
     }
 
     /// <summary>Pins <c>origin</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -141,7 +136,6 @@ public sealed partial class AnyLeg : IAny<Leg> {
         AnyLeg copy = new AnyLeg(this);
 
         copy._departurePin        = value;
-        copy._departureAndArrival = copy.DepartureAndArrival();
 
         return copy;
     }
@@ -155,7 +149,6 @@ public sealed partial class AnyLeg : IAny<Leg> {
 
         copy._departureRecipe     = configure(_departureRecipe);
         copy._departurePin        = null;
-        copy._departureAndArrival = copy.DepartureAndArrival();
 
         return copy;
     }
@@ -165,7 +158,6 @@ public sealed partial class AnyLeg : IAny<Leg> {
         AnyLeg copy = new AnyLeg(this);
 
         copy._arrivalPin          = value;
-        copy._departureAndArrival = copy.DepartureAndArrival();
 
         return copy;
     }
@@ -179,14 +171,13 @@ public sealed partial class AnyLeg : IAny<Leg> {
 
         copy._arrivalRecipe       = configure(_arrivalRecipe);
         copy._arrivalPin          = null;
-        copy._departureAndArrival = copy.DepartureAndArrival();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Leg" />.</summary>
     public Leg Generate() {
-        (DateTimeOffset departure, DateTimeOffset arrival) = _departureAndArrival.Generate();
+        (DateTimeOffset departure, DateTimeOffset arrival) = DepartureAndArrival();
 
         // A leg lasts at most Leg.MaxTransit: the ordered pair is brought back within it.
         if (arrival - departure > Leg.MaxTransit) {

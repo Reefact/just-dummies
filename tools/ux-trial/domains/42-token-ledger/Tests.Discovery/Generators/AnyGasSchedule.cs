@@ -18,7 +18,6 @@ namespace TokenLedger.Domain;
 /// </summary>
 public sealed partial class AnyGasSchedule : IAny<GasSchedule> {
 
-    private AnyOrderedPair<ulong> _transferAndTransferFrom;
     private IAny<ulong>           _approve;
     private IAny<ulong>           _mint;
     private IAny<ulong>           _burn;
@@ -90,12 +89,10 @@ public sealed partial class AnyGasSchedule : IAny<GasSchedule> {
         _burnRecipe               = burn;
         _newHolderSurcharge       = newHolderSurcharge;
         _newHolderSurchargeRecipe = newHolderSurcharge;
-        _transferAndTransferFrom  = TransferAndTransferFrom();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyGasSchedule(AnyGasSchedule from) {
-        _transferAndTransferFrom  = from._transferAndTransferFrom;
         _transferRecipe           = from._transferRecipe;
         _transferPin              = from._transferPin;
         _approve                  = from._approve;
@@ -110,14 +107,12 @@ public sealed partial class AnyGasSchedule : IAny<GasSchedule> {
         _newHolderSurchargeRecipe = from._newHolderSurchargeRecipe;
     }
 
-    /// <summary>Draws <c>transfer</c> and <c>transferFrom</c> together, <c>transfer</c> never after <c>transferFrom</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<ulong> TransferAndTransferFrom() {
-        AnyOrderedPair<ulong> pair = Any.OrderedPair(_transferRecipe, _transferFromRecipe);
+    /// <summary>Draws <c>transfer</c> and <c>transferFrom</c>, <c>transfer</c> never after <c>transferFrom</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (ulong Transfer, ulong TransferFrom) TransferAndTransferFrom() {
+        if (_transferPin is { } transfer) { return (transfer, _transferFromPin ?? _transferFromRecipe.GreaterThanOrEqualTo(transfer).Generate()); }
+        if (_transferFromPin is { } transferFrom) { return (_transferRecipe.LessThanOrEqualTo(transferFrom).Generate(), transferFrom); }
 
-        if (_transferPin is { } transfer) { pair = pair.WithFirst(transfer); }
-        if (_transferFromPin is { } transferFrom) { pair = pair.WithSecond(transferFrom); }
-
-        return pair;
+        return Any.Pair(_transferRecipe, _transferFromRecipe).Having.Item1LessThanOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>transfer</c> to a fixed value, which bounds <c>transferFrom</c>; its recipe is kept for a later refinement.</summary>
@@ -125,7 +120,6 @@ public sealed partial class AnyGasSchedule : IAny<GasSchedule> {
         AnyGasSchedule copy = new AnyGasSchedule(this);
 
         copy._transferPin             = value;
-        copy._transferAndTransferFrom = copy.TransferAndTransferFrom();
 
         return copy;
     }
@@ -139,7 +133,6 @@ public sealed partial class AnyGasSchedule : IAny<GasSchedule> {
 
         copy._transferRecipe          = configure(_transferRecipe);
         copy._transferPin             = null;
-        copy._transferAndTransferFrom = copy.TransferAndTransferFrom();
 
         return copy;
     }
@@ -171,7 +164,6 @@ public sealed partial class AnyGasSchedule : IAny<GasSchedule> {
         AnyGasSchedule copy = new AnyGasSchedule(this);
 
         copy._transferFromPin         = value;
-        copy._transferAndTransferFrom = copy.TransferAndTransferFrom();
 
         return copy;
     }
@@ -185,7 +177,6 @@ public sealed partial class AnyGasSchedule : IAny<GasSchedule> {
 
         copy._transferFromRecipe      = configure(_transferFromRecipe);
         copy._transferFromPin         = null;
-        copy._transferAndTransferFrom = copy.TransferAndTransferFrom();
 
         return copy;
     }
@@ -258,7 +249,7 @@ public sealed partial class AnyGasSchedule : IAny<GasSchedule> {
 
     /// <summary>Produces one arbitrary <see cref="GasSchedule" />.</summary>
     public GasSchedule Generate() {
-        (ulong transfer, ulong transferFrom) = _transferAndTransferFrom.Generate();
+        (ulong transfer, ulong transferFrom) = TransferAndTransferFrom();
 
         return new GasSchedule(transfer,
                                _approve.Generate(),

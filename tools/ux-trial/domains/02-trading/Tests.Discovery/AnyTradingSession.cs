@@ -1,5 +1,5 @@
 // Scaffolded by `any`, then rewritten by hand: the scaffold could not tie opensAt to closesAt
-// (TimeOnly has no OrderedPair) nor keep the date off the weekend.
+// (TimeOnly has no Any.Pair) nor keep the date off the weekend.
 
 using System;
 

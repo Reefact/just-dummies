@@ -24,12 +24,11 @@ public sealed partial class AnyLabResult : IAny<LabResult> {
         _analyteCode = TrialFields.AnalyteCode();
         _result      = TrialFields.Entered(Any.Decimal().Between(0m, 1_000m).WithScale(2));
         _unit        = Any.StringMatching("[a-zA-Z0-9/%]{1,12}");
-        _range       = Any.OrderedPair(Any.Decimal().Between(0m, 500m).WithScale(2),
-                                       Any.Decimal().Between(0m, 500m).WithScale(2),
-                                       strict: true)
-                          .Then(pair => Any.Int32().Between(0, 9).As(k => k < 5 ? (Lower: (decimal?)pair.First, Upper: (decimal?)pair.Second)
-                                                                          : k < 7 ? (Lower: (decimal?)pair.First, Upper: (decimal?)null)
-                                                                          : k < 9 ? (Lower: (decimal?)null, Upper: (decimal?)pair.Second)
+        _range       = Any.Pair(Any.Decimal().Between(0m, 500m).WithScale(2),
+                                       Any.Decimal().Between(0m, 500m).WithScale(2)).Having.Item1LessThanItem2()
+                          .Then(pair => Any.Int32().Between(0, 9).As(k => k < 5 ? (Lower: (decimal?)pair.Item1, Upper: (decimal?)pair.Item2)
+                                                                          : k < 7 ? (Lower: (decimal?)pair.Item1, Upper: (decimal?)null)
+                                                                          : k < 9 ? (Lower: (decimal?)null, Upper: (decimal?)pair.Item2)
                                                                                   : (Lower: (decimal?)null, Upper: (decimal?)null)));
     }
 

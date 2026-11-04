@@ -20,7 +20,6 @@ namespace Serialisation.Domain;
 public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
 
     private IAny<BatchNumber> _batch;
-    private AnyOrderedPair<DateOnly> _issuedOnAndEffectiveFrom;
     private IAny<RecallClass> _recallClass;
     private IAny<string>      _reason;
 
@@ -75,14 +74,12 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
         _recallClassRecipe   = recallClass;
         _reason              = reason;
         _reasonRecipe        = reason;
-        _issuedOnAndEffectiveFrom = IssuedOnAndEffectiveFrom();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyRecallNotice(AnyRecallNotice from) {
         _batch               = from._batch;
         _batchRecipe         = from._batchRecipe;
-        _issuedOnAndEffectiveFrom = from._issuedOnAndEffectiveFrom;
         _issuedOnRecipe      = from._issuedOnRecipe;
         _issuedOnPin         = from._issuedOnPin;
         _effectiveFromRecipe = from._effectiveFromRecipe;
@@ -93,14 +90,12 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
         _reasonRecipe        = from._reasonRecipe;
     }
 
-    /// <summary>Draws <c>issuedOn</c> and <c>effectiveFrom</c> together, <c>effectiveFrom</c> never before <c>issuedOn</c> (the same day is accepted), each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateOnly> IssuedOnAndEffectiveFrom() {
-        AnyOrderedPair<DateOnly> pair = Any.OrderedPair(_issuedOnRecipe, _effectiveFromRecipe);
+    /// <summary>Draws <c>issuedOn</c> and <c>effectiveFrom</c>, <c>issuedOn</c> never after <c>effectiveFrom</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateOnly IssuedOn, DateOnly EffectiveFrom) IssuedOnAndEffectiveFrom() {
+        if (_issuedOnPin is { } issuedOn) { return (issuedOn, _effectiveFromPin ?? _effectiveFromRecipe.AfterOrEqualTo(issuedOn).Generate()); }
+        if (_effectiveFromPin is { } effectiveFrom) { return (_issuedOnRecipe.BeforeOrEqualTo(effectiveFrom).Generate(), effectiveFrom); }
 
-        if (_issuedOnPin is { } issuedOn) { pair = pair.WithFirst(issuedOn); }
-        if (_effectiveFromPin is { } effectiveFrom) { pair = pair.WithSecond(effectiveFrom); }
-
-        return pair;
+        return Any.Pair(_issuedOnRecipe, _effectiveFromRecipe).Having.Item1BeforeOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>batch</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -130,7 +125,6 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
         AnyRecallNotice copy = new AnyRecallNotice(this);
 
         copy._issuedOnPin                = value;
-        copy._issuedOnAndEffectiveFrom = copy.IssuedOnAndEffectiveFrom();
 
         return copy;
     }
@@ -144,7 +138,6 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
 
         copy._issuedOnRecipe = configure(_issuedOnRecipe);
         copy._issuedOnPin    = null;
-        copy._issuedOnAndEffectiveFrom = copy.IssuedOnAndEffectiveFrom();
 
         return copy;
     }
@@ -154,7 +147,6 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
         AnyRecallNotice copy = new AnyRecallNotice(this);
 
         copy._effectiveFromPin         = value;
-        copy._issuedOnAndEffectiveFrom = copy.IssuedOnAndEffectiveFrom();
 
         return copy;
     }
@@ -168,7 +160,6 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
 
         copy._effectiveFromRecipe = configure(_effectiveFromRecipe);
         copy._effectiveFromPin    = null;
-        copy._issuedOnAndEffectiveFrom = copy.IssuedOnAndEffectiveFrom();
 
         return copy;
     }
@@ -219,7 +210,7 @@ public sealed partial class AnyRecallNotice : IAny<RecallNotice> {
 
     /// <summary>Produces one arbitrary <see cref="RecallNotice" />.</summary>
     public RecallNotice Generate() {
-        (DateOnly issuedOn, DateOnly effectiveFrom) = _issuedOnAndEffectiveFrom.Generate();
+        (DateOnly issuedOn, DateOnly effectiveFrom) = IssuedOnAndEffectiveFrom();
 
         return new RecallNotice(_batch.Generate(),
                                 issuedOn,

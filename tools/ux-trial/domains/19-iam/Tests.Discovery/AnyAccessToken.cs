@@ -24,7 +24,6 @@ public sealed partial class AnyAccessToken : IAny<AccessToken> {
     private IAny<ClientId>                   _clientId;
     private IAny<Guid>                       _subjectId;
     private IAny<IReadOnlyCollection<Scope>> _scopes;
-    private AnyOrderedPair<DateTimeOffset>   _issuedAtAndExpiresAt;
 
     private AnyGuid           _tokenIdRecipe;
     private AnyClientId       _clientIdRecipe;
@@ -86,7 +85,6 @@ public sealed partial class AnyAccessToken : IAny<AccessToken> {
         _scopesRecipe         = scopes;
         _issuedAtRecipe       = issuedAt;
         _expiresAtRecipe      = expiresAt;
-        _issuedAtAndExpiresAt = IssuedAtAndExpiresAt();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
@@ -99,21 +97,18 @@ public sealed partial class AnyAccessToken : IAny<AccessToken> {
         _subjectIdRecipe      = from._subjectIdRecipe;
         _scopes               = from._scopes;
         _scopesRecipe         = from._scopesRecipe;
-        _issuedAtAndExpiresAt = from._issuedAtAndExpiresAt;
         _issuedAtRecipe       = from._issuedAtRecipe;
         _issuedAtPin          = from._issuedAtPin;
         _expiresAtRecipe      = from._expiresAtRecipe;
         _expiresAtPin         = from._expiresAtPin;
     }
 
-    /// <summary>Draws <c>issuedAt</c> and <c>expiresAt</c> together, <c>issuedAt</c> always before <c>expiresAt</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateTimeOffset> IssuedAtAndExpiresAt() {
-        AnyOrderedPair<DateTimeOffset> pair = Any.OrderedPair(_issuedAtRecipe, _expiresAtRecipe, strict: true);
+    /// <summary>Draws <c>issuedAt</c> and <c>expiresAt</c>, <c>issuedAt</c> always before <c>expiresAt</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateTimeOffset IssuedAt, DateTimeOffset ExpiresAt) IssuedAtAndExpiresAt() {
+        if (_issuedAtPin is { } issuedAt) { return (issuedAt, _expiresAtPin ?? _expiresAtRecipe.After(issuedAt).Generate()); }
+        if (_expiresAtPin is { } expiresAt) { return (_issuedAtRecipe.Before(expiresAt).Generate(), expiresAt); }
 
-        if (_issuedAtPin is { } issuedAt) { pair = pair.WithFirst(issuedAt); }
-        if (_expiresAtPin is { } expiresAt) { pair = pair.WithSecond(expiresAt); }
-
-        return pair;
+        return Any.Pair(_issuedAtRecipe, _expiresAtRecipe).Having.Item1BeforeItem2().Generate();
     }
 
     /// <summary>Pins <c>tokenId</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
@@ -209,7 +204,6 @@ public sealed partial class AnyAccessToken : IAny<AccessToken> {
         AnyAccessToken copy = new AnyAccessToken(this);
 
         copy._issuedAtPin          = value;
-        copy._issuedAtAndExpiresAt = copy.IssuedAtAndExpiresAt();
 
         return copy;
     }
@@ -223,7 +217,6 @@ public sealed partial class AnyAccessToken : IAny<AccessToken> {
 
         copy._issuedAtRecipe       = configure(_issuedAtRecipe);
         copy._issuedAtPin          = null;
-        copy._issuedAtAndExpiresAt = copy.IssuedAtAndExpiresAt();
 
         return copy;
     }
@@ -233,7 +226,6 @@ public sealed partial class AnyAccessToken : IAny<AccessToken> {
         AnyAccessToken copy = new AnyAccessToken(this);
 
         copy._expiresAtPin         = value;
-        copy._issuedAtAndExpiresAt = copy.IssuedAtAndExpiresAt();
 
         return copy;
     }
@@ -247,14 +239,13 @@ public sealed partial class AnyAccessToken : IAny<AccessToken> {
 
         copy._expiresAtRecipe      = configure(_expiresAtRecipe);
         copy._expiresAtPin         = null;
-        copy._issuedAtAndExpiresAt = copy.IssuedAtAndExpiresAt();
 
         return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="AccessToken" />.</summary>
     public AccessToken Generate() {
-        (DateTimeOffset issuedAt, DateTimeOffset expiresAt) = _issuedAtAndExpiresAt.Generate();
+        (DateTimeOffset issuedAt, DateTimeOffset expiresAt) = IssuedAtAndExpiresAt();
 
         // The constructor also caps the lifetime at 24 hours, which the pair cannot express: cap it here.
         if (expiresAt - issuedAt > TokenPolicy.HardMaximumLifetime) { expiresAt = issuedAt + TokenPolicy.HardMaximumLifetime; }

@@ -20,8 +20,8 @@ public sealed partial class AnyGeofence : IAny<Geofence> {
 
     /// <summary>Produces one arbitrary <see cref="Geofence" />.</summary>
     public Geofence Generate() {
-        (double southLatitude, double northLatitude) = Any.OrderedPair(AnyValidLatitude(), AnyValidLatitude()).Generate();
-        (double westLongitude, double eastLongitude) = Any.OrderedPair(AnyValidLongitude(), AnyValidLongitude()).Generate();
+        (double southLatitude, double northLatitude) = Any.Pair(AnyValidLatitude(), AnyValidLatitude()).Having.Item1LessThanOrEqualToItem2().Generate();
+        (double westLongitude, double eastLongitude) = Any.Pair(AnyValidLongitude(), AnyValidLongitude()).Having.Item1LessThanOrEqualToItem2().Generate();
 
         return new Geofence(new GeoCoordinate(southLatitude, westLongitude),
                             new GeoCoordinate(northLatitude, eastLongitude));

@@ -50,6 +50,44 @@ public sealed class DocumentationSampleCompilationTests {
              .That(failures).IsEmpty();
     }
 
+    // The harness once injected `using JustDummies;` and `using Xunit;` into every declarations sample, and declared it
+    // under the JustDummies namespace: a sample missing its import compiled on the page and failed in the reader's
+    // file (UX trial 3, DOCS-11). This pins that a declarations sample now binds the library and xUnit only through
+    // imports of its own, so neither the injection nor the namespace can come back unnoticed.
+    [Theory(DisplayName = "A declarations sample binds the library and xUnit only through its own using directives.")]
+    [InlineData("public static class Sample { public static int Draw() => Any.Int32().Generate(); }", "using JustDummies;")]
+    [InlineData("public sealed class SampleTests { [Fact] public void Runs() { } }", "using Xunit;")]
+    public void ADeclarationsSampleBindsOnlyThroughItsOwnImports(string declaration, string import) {
+        string directory = Path.Combine(Path.GetTempPath(), "jd-doc-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+
+        try {
+            string path = Path.Combine(directory, "sample.en.md");
+            File.WriteAllText(path, $"""
+                                     <!-- jd:declarations -->
+                                     ```csharp
+                                     {declaration}
+                                     ```
+
+                                     <!-- jd:declarations -->
+                                     ```csharp
+                                     {import}
+
+                                     {declaration}
+                                     ```
+                                     """);
+
+            DocumentationPage page = DocumentationPage.Read(path, directory);
+
+            Check.That(page.Fences).HasSize(2);
+            Check.WithCustomMessage("A declarations sample without its import compiled: the harness is supplying it again.")
+                 .That(DocumentationSampleCompiler.GetErrors(page, page.Fences[0])).Not.IsEmpty();
+            Check.That(DocumentationSampleCompiler.GetErrors(page, page.Fences[1])).IsEmpty();
+        } finally {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact(DisplayName = "A sample opts out of compilation only through a marker that says so.")]
     public void OptingOutIsExplicit() {
         List<string> skipped = [];

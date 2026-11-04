@@ -247,7 +247,7 @@ public static class Scaffolder {
     ///     other rule between parameters is marked (§5.3, #405).
     /// </summary>
     /// <remarks>
-    ///     A pair is drawn when the library carries <c>Any.OrderedPair</c> over the generator both parameters
+    ///     A pair is drawn when the library carries <c>Any.Pair</c> over the generator both parameters
     ///     draw from, when neither parameter is held by another order — a chain <c>a ≤ b ≤ c</c> is a relation
     ///     among three, which the engine does not try to solve (ADR-0046) — and when the identifiers it adds to the
     ///     file are free (<see cref="PairNames" />).
@@ -270,7 +270,7 @@ public static class Scaffolder {
             IParameterSymbol first = chosen.Parameters.First(parameter => parameter.Name == pairing.First);
             DrawnGenerator   drawn = generators.Draw(first.Type, target);
 
-            if (!alone || !nameable || !drawn.Resolved || !library.CarriesOrderedPair(drawn.Builder)) { guards.Untie(pairing, at); }
+            if (!alone || !nameable || !drawn.Resolved || !library.CarriesPair(drawn.Builder)) { guards.Untie(pairing, at); }
         }
     }
 

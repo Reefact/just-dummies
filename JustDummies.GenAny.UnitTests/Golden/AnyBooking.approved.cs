@@ -15,8 +15,7 @@ namespace Shop.Domain;
 /// </summary>
 public sealed partial class AnyBooking : IAny<Booking> {
 
-    private AnyOrderedPair<DateTime> _startAndEnd;
-    private IAny<string>             _note;
+    private IAny<string> _note;
 
     private AnyDateTime _startRecipe;
     private AnyDateTime _endRecipe;
@@ -51,12 +50,10 @@ public sealed partial class AnyBooking : IAny<Booking> {
         _endRecipe   = end;
         _note        = note;
         _noteRecipe  = note;
-        _startAndEnd = StartAndEnd();
     }
 
     /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
     private AnyBooking(AnyBooking from) {
-        _startAndEnd = from._startAndEnd;
         _startRecipe = from._startRecipe;
         _startPin    = from._startPin;
         _endRecipe   = from._endRecipe;
@@ -65,14 +62,12 @@ public sealed partial class AnyBooking : IAny<Booking> {
         _noteRecipe  = from._noteRecipe;
     }
 
-    /// <summary>Draws <c>start</c> and <c>end</c> together, <c>start</c> never after <c>end</c> as the constructor requires, each from its current recipe and pin.</summary>
-    private AnyOrderedPair<DateTime> StartAndEnd() {
-        AnyOrderedPair<DateTime> pair = Any.OrderedPair(_startRecipe, _endRecipe);
+    /// <summary>Draws <c>start</c> and <c>end</c>, <c>start</c> never after <c>end</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>
+    private (DateTime Start, DateTime End) StartAndEnd() {
+        if (_startPin is { } start) { return (start, _endPin ?? _endRecipe.AfterOrEqualTo(start).Generate()); }
+        if (_endPin is { } end) { return (_startRecipe.BeforeOrEqualTo(end).Generate(), end); }
 
-        if (_startPin is { } start) { pair = pair.WithFirst(start); }
-        if (_endPin is { } end) { pair = pair.WithSecond(end); }
-
-        return pair;
+        return Any.Pair(_startRecipe, _endRecipe).Having.Item1BeforeOrEqualToItem2().Generate();
     }
 
     /// <summary>Pins <c>start</c> to a fixed value, which bounds <c>end</c>; its recipe is kept for a later refinement.</summary>
@@ -80,7 +75,6 @@ public sealed partial class AnyBooking : IAny<Booking> {
         AnyBooking copy = new AnyBooking(this);
 
         copy._startPin    = value;
-        copy._startAndEnd = copy.StartAndEnd();
 
         return copy;
     }
@@ -94,7 +88,6 @@ public sealed partial class AnyBooking : IAny<Booking> {
 
         copy._startRecipe = configure(_startRecipe);
         copy._startPin    = null;
-        copy._startAndEnd = copy.StartAndEnd();
 
         return copy;
     }
@@ -103,8 +96,7 @@ public sealed partial class AnyBooking : IAny<Booking> {
     public AnyBooking WithEnd(DateTime value) {
         AnyBooking copy = new AnyBooking(this);
 
-        copy._endPin      = value;
-        copy._startAndEnd = copy.StartAndEnd();
+        copy._endPin    = value;
 
         return copy;
     }
@@ -116,9 +108,8 @@ public sealed partial class AnyBooking : IAny<Booking> {
 
         AnyBooking copy = new AnyBooking(this);
 
-        copy._endRecipe   = configure(_endRecipe);
-        copy._endPin      = null;
-        copy._startAndEnd = copy.StartAndEnd();
+        copy._endRecipe = configure(_endRecipe);
+        copy._endPin    = null;
 
         return copy;
     }
@@ -147,7 +138,7 @@ public sealed partial class AnyBooking : IAny<Booking> {
 
     /// <summary>Produces one arbitrary <see cref="Booking" />.</summary>
     public Booking Generate() {
-        (DateTime start, DateTime end) = _startAndEnd.Generate();
+        (DateTime start, DateTime end) = StartAndEnd();
 
         return new Booking(start,
                            end,

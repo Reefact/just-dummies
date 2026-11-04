@@ -13,8 +13,9 @@ namespace JustDummies.GenAny.UnitTests;
 
 /// <summary>
 ///     The one rule between two parameters the engine draws rather than marks: a direct comparison of two parameters
-///     of one ordered type, drawn through <c>Any.OrderedPair</c> (§5.3, #405). Every other rule between parameters
-///     stays <c>to verify</c>.
+///     of one ordered type, decided at the draw — through <c>Any.Pair(…).Having.&lt;relation&gt;()</c> when neither
+///     is pinned, a bound on the other side when one is (§5.3, #405, #428). Every other rule between parameters stays
+///     <c>to verify</c>.
 /// </summary>
 public sealed class OrderedPairTests {
 
@@ -92,7 +93,7 @@ public sealed class OrderedPairTests {
         Check.That(pairing.Second).IsEqualTo(second);
     }
 
-    [Fact(DisplayName = "The pair is drawn in order, pins keep their meaning, and two pins out of order are refused at the second.")]
+    [Fact(DisplayName = "The pair is drawn in order, pins keep their meaning whatever order they are written in, and the draw decides.")]
     public void ThePairIsDrawnInOrderAndPinsKeepTheirMeaning() {
         const string domain = """
                               using System;
@@ -147,13 +148,33 @@ public sealed class OrderedPairTests {
                                      return true;
                                  }
 
-                                 public static string? PinsOutOfOrder() {
+                                 public static string PinsOutsideTheRecipesInEitherOrder() {
+                                     AnyWindow bounded    = new AnyWindow().WithStart(s => s.Between(0, 100)).WithEnd(e => e.Between(0, 100));
+                                     Window    startFirst = bounded.WithStart(500).WithEnd(600).Generate();
+                                     Window    endFirst   = bounded.WithEnd(600).WithStart(500).Generate();
+
+                                     return $"{startFirst.Start}-{startFirst.End} {endFirst.Start}-{endFirst.End}";
+                                 }
+
+                                 public static string? LonePinNoRecipeCanFollow() {
                                      try {
-                                         new AnyWindow().WithStart(10).WithEnd(10);
+                                         new AnyWindow().WithEnd(e => e.Between(0, 100)).WithStart(500).Generate();
 
                                          return null;
                                      } catch (JustDummies.ConflictingAnyConstraintException conflict) {
                                          return conflict.Message;
+                                     }
+                                 }
+
+                                 public static string? PinsOutOfOrder() {
+                                     AnyWindow pinned = new AnyWindow().WithStart(10).WithEnd(10);
+
+                                     try {
+                                         pinned.Generate();
+
+                                         return null;
+                                     } catch (ArgumentException refusal) {
+                                         return refusal.Message;
                                      }
                                  }
 
@@ -171,14 +192,15 @@ public sealed class OrderedPairTests {
 
         Check.That((bool)probes.GetMethod("AlwaysInOrder")!.Invoke(null, [2000])!).IsTrue();
         Check.That((bool)probes.GetMethod("EndPinnedBoundsStart")!.Invoke(null, [])!).IsTrue();
-        Check.That((string?)probes.GetMethod("PinsOutOfOrder")!.Invoke(null, [])).IsNotNull();
+        Check.That((string)probes.GetMethod("PinsOutsideTheRecipesInEitherOrder")!.Invoke(null, [])!).IsEqualTo("500-600 500-600");
+        Check.That((string?)probes.GetMethod("LonePinNoRecipeCanFollow")!.Invoke(null, [])).Contains("GreaterThan(500)", "Between(0, 100)");
+        Check.That((string?)probes.GetMethod("PinsOutOfOrder")!.Invoke(null, [])).StartsWith("A window ends after it starts.");
     }
 
-    // A pair adds four identifiers to the file, derived from the two parameter names, and a parameter can already
-    // declare one of them — or two pairs can synthesise one. Such a scaffold declared a field twice (CS0102), so the
+    // A pair adds three identifiers to the file, derived from the two parameter names, and a parameter can already
+    // declare one of them — or two pairs can synthesise one. Such a scaffold declared a member twice (CS0102), so the
     // order is left to verify instead, as any order the engine does not draw.
     [Theory(DisplayName = "An order whose pair would redeclare an identifier the file has is marked, and the file compiles.")]
-    [InlineData("int start, int end, int startAndEnd", "if (start > end) { throw new ArgumentException(nameof(start)); }", 2)]
     [InlineData("int start, int end, int startPin", "if (start > end) { throw new ArgumentException(nameof(start)); }", 2)]
     [InlineData("int a, int bAndC, int aAndB, int c", "if (a > bAndC) { throw new ArgumentException(nameof(a)); } if (aAndB > c) { throw new ArgumentException(nameof(c)); }", 4)]
     public void AnOrderWhosePairWouldRedeclareAnIdentifierIsMarked(string parameters, string body, int marked) {

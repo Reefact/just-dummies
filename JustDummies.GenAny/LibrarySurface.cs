@@ -226,18 +226,44 @@ internal sealed class LibrarySurface {
     }
 
     /// <summary>
-    ///     Whether <c>Any.OrderedPair(first, second, strict)</c> resolves over two <paramref name="builder" />s — the
-    ///     only way a two-parameter order is drawn rather than marked (§5.3, #405).
+    ///     Whether a pair over two <paramref name="builder" />s can be written in full — <c>Any.Pair(item1, item2)</c>,
+    ///     its two relations through <c>Having</c>, and the four bounds a pinned side puts on the other, each in the
+    ///     builder's own <see cref="PairVocabulary" />. It is the only way a two-parameter order is drawn rather than
+    ///     marked (§5.3, #405, ADR-0131).
     /// </summary>
-    internal bool CarriesOrderedPair(ITypeSymbol? builder) {
-        return builder is not null
-            && Any.GetMembers("OrderedPair")
-                  .OfType<IMethodSymbol>()
-                  .Any(candidate => candidate.IsStatic
-                                 && candidate.Parameters.Length == 3
-                                 && SymbolEqualityComparer.Default.Equals(candidate.Parameters[0].Type, builder)
-                                 && SymbolEqualityComparer.Default.Equals(candidate.Parameters[1].Type, builder)
-                                 && candidate.Parameters[2].Type.SpecialType == SpecialType.System_Boolean);
+    internal bool CarriesPair(ITypeSymbol? builder) {
+        if (builder is null) { return false; }
+
+        IMethodSymbol? pair = Any.GetMembers("Pair")
+                                 .OfType<IMethodSymbol>()
+                                 .FirstOrDefault(candidate => candidate.IsStatic
+                                                           && candidate.Parameters.Length == 2
+                                                           && SymbolEqualityComparer.Default.Equals(candidate.Parameters[0].Type, builder)
+                                                           && SymbolEqualityComparer.Default.Equals(candidate.Parameters[1].Type, builder));
+        ITypeSymbol? having = pair?.ReturnType.GetMembers("Having").OfType<IPropertySymbol>().FirstOrDefault()?.Type;
+        INamedTypeSymbol? relations = compilation.GetTypeByMetadataName("JustDummies.AnyPairRelations");
+
+        if (having is null || relations is null) { return false; }
+
+        PairVocabulary vocabulary = PairVocabulary.For(builder.Name);
+
+        return Relates(relations, vocabulary.Ordered, having)
+            && Relates(relations, vocabulary.StrictlyOrdered, having)
+            && new[] { vocabulary.AtLeast, vocabulary.Above, vocabulary.AtMost, vocabulary.Below }.All(bound => Bounds(builder, bound));
+    }
+
+    /// <summary>Whether <paramref name="relations" /> declares <c><paramref name="name" />(this <paramref name="having" />)</c>.</summary>
+    private static bool Relates(INamedTypeSymbol relations, string name, ITypeSymbol having) {
+        return relations.GetMembers(name)
+                        .OfType<IMethodSymbol>()
+                        .Any(candidate => candidate.IsStatic
+                                       && candidate.Parameters.Length == 1
+                                       && SymbolEqualityComparer.Default.Equals(candidate.Parameters[0].Type, having));
+    }
+
+    /// <summary>Whether <paramref name="builder" /> takes the one-value bound <paramref name="name" />.</summary>
+    private static bool Bounds(ITypeSymbol builder, string name) {
+        return builder.GetMembers(name).OfType<IMethodSymbol>().Any(candidate => !candidate.IsStatic && candidate.Parameters.Length == 1);
     }
 
     /// <summary>Whether the candidate is <c>Fixed&lt;T&gt;(T) -&gt; IAny&lt;T&gt;</c>.</summary>

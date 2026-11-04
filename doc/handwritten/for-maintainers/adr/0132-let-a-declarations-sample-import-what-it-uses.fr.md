@@ -23,14 +23,20 @@ Le troisième essai d'expérience développeur a rencontré la conséquence des 
 (DOCS-11) : un lecteur qui copiait un exemple de déclarations dans un fichier de test obtenait `CS0103` sur `Any`, ou
 un `[Fact]` introuvable, parce que la page compilait avec des imports que son fichier n'avait pas. Le harnais cachait
 le manque au build : sous un espace de noms intérieur à `JustDummies`, les types de la bibliothèque se résolvaient par
-l'espace de noms englobant, même sans import. La première recommandation du même essai, retirer l'injection, n'avait
-été appliquée qu'à la page de l'adaptateur xUnit.
+l'espace de noms englobant, même sans import. Un essai UX antérieur avait déjà recommandé de retirer l'injection
+([XU-D1](../../../../tools/ux-trial/REPORT.fr.md#xu-d1)) ; cette recommandation n'avait été appliquée qu'à la page de
+l'adaptateur xUnit.
+
+Un projet de test sur le SDK reçoit un ensemble d'imports implicites, dont `System`, sans en écrire une ligne : les
+modèles de projet du SDK les activent par défaut. Ils restent toutefois un réglage du projet, et un projet qui les
+désactive doit écrire ces imports dans chaque fichier.
 
 ## Decision
 
-Un exemple de déclarations énonce les imports qu'il utilise, et le harnais le compile avec seulement ce qu'un projet
-de test fournit sans qu'on l'écrive — les imports implicites du SDK et le domaine d'illustration partagé — dans un
-espace de noms hors de `JustDummies` ; un exemple d'instructions garde les imports partagés.
+Un exemple de déclarations énonce les imports qu'il utilise au-delà des imports implicites du SDK, et le harnais le
+compile avec seulement ce qu'un projet de test aux imports implicites activés fournit sans qu'on l'écrive — ces imports
+implicites et le domaine d'illustration partagé — dans un espace de noms hors de `JustDummies` ; un exemple
+d'instructions garde les imports partagés.
 
 ## Rationale
 
@@ -46,9 +52,13 @@ premier. Le renverser pour les exemples de déclarations fait montrer cette lign
 aucune place pour un import ; là, les imports partagés sont le seul moyen de compiler, et le lecteur copie un fragment
 dans une méthode qui a déjà les imports de son fichier.
 
-**Ce qu'un projet de test fournit sans qu'on l'écrive est la base honnête.** Les imports implicites du SDK sont dans
-le projet de chaque lecteur sans une ligne de sa part, et le domaine d'illustration est la seule chose qu'ADR-0055
-permet à une page de supposer. Tout le reste est une ligne que le lecteur doit écrire : l'exemple l'écrit donc aussi.
+**Le projet de test par défaut est la base honnête, et elle est nommée comme telle.** Les imports implicites du SDK
+sont dans le projet d'un lecteur sans une ligne de sa part tant que le projet garde le défaut des modèles, et le domaine
+d'illustration est la seule chose qu'ADR-0055 permet à une page de supposer. Tout le reste est une ligne que le lecteur
+doit écrire : l'exemple l'écrit donc aussi. Un projet qui désactive les imports implicites écrit déjà `System` et ses
+voisins dans chacun de ses fichiers ; les répéter dans chaque exemple montrerait à la plupart des lecteurs des lignes
+qu'ils n'écrivent jamais, si bien que la base reste le défaut et que la décision le dit au lieu de prétendre valoir pour
+tout projet.
 
 ## Alternatives Considered
 
@@ -66,7 +76,8 @@ de compiler, alors que le contrat de compilation d'ADR-0055 est l'objet même.
 
 ### Positive
 
-* Un exemple de déclarations se copie tel quel : la page montre les imports dont le fichier du lecteur a besoin.
+* Un exemple de déclarations se copie tel quel dans un projet de test qui garde les imports implicites du SDK : la
+  page montre les imports dont le fichier du lecteur a besoin au-delà de ceux-là.
 * Un exemple qui oublie un import fait échouer le build, et un test de contrat empêche le harnais de le fournir à
   nouveau.
 
@@ -74,6 +85,8 @@ de compiler, alors que le contrat de compilation d'ADR-0055 est l'objet même.
 
 * Un exemple de déclarations s'allonge de ses lignes d'import, et chaque nouvel exemple doit les énoncer.
 * Le contrat d'ADR-0055 diffère désormais selon le mode, ce qu'un rédacteur doit savoir.
+* Un lecteur dont le projet désactive les imports implicites ajoute encore `System` et ses voisins à un exemple copié,
+  comme il le fait pour chacun de ses fichiers.
 
 ### Risks
 

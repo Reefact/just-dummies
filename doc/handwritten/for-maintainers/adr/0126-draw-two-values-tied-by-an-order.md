@@ -2,7 +2,7 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0126-draw-two-values-tied-by-an-order.fr.md)
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0131](0131-draw-a-pair-from-two-bases-and-an-optional-order.md)
 **Proposed:** 2026-11-01
 **Accepted:** 2026-11-01
 **Decision Makers:** Reefact

@@ -87,6 +87,34 @@ public sealed class OrderedPairTests {
                               "ties end to start; StartAndEnd() draws their order, not this guard: write it there");
     }
 
+    // A same-type void helper is not folded, only marked at its call: still a rule between the two paired parameters.
+    [Fact(DisplayName = "A throwing helper handed both paired parameters points to the pair.")]
+    public void AThrowingHelperHandedBothPairedParametersPointsToThePair() {
+        ScaffoldOutcome outcome = Scaffolded("""
+                                             using System;
+
+                                             namespace Shop.Domain;
+
+                                             public sealed class Subject {
+
+                                                 public Subject(int start, int end) {
+                                                     if (start >= end) { throw new ArgumentException(nameof(end)); }
+                                                     ValidateGap(start, end);
+                                                 }
+
+                                                 private static void ValidateGap(int start, int end) {
+                                                     if (end - start > 31) { throw new ArgumentException(nameof(end)); }
+                                                 }
+
+                                             }
+                                             """);
+
+        Check.That(outcome.Plan!.Pairings).HasSize(1);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note))
+             .ContainsExactly("ties start to end; StartAndEnd() draws their order, not this guard: write it there",
+                              "ties start to end; StartAndEnd() draws their order, not this guard: write it there");
+    }
+
     // The rule travels with the order through the hand-off, swapped where the hand-off swaps the values, and is named
     // after the parameters this generator draws, never after the delegated constructor's own.
     [Theory(DisplayName = "A rule between two parameters a constructor hands on points to the pair drawn for them.")]

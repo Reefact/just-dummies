@@ -1346,9 +1346,14 @@ internal static class Guards {
                 continue;
             }
 
-            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
-                reading.MarkUnread(parameter.Name, UnreadGuard.At(invocation));
-            }
+            UnreadGuard        at     = UnreadGuard.At(invocation);
+            IParameterSymbol[] handed = [.. Mentioned(invocation, model, method).Distinct<IParameterSymbol>(SymbolEqualityComparer.Default)];
+
+            foreach (IParameterSymbol parameter in handed) { reading.MarkUnread(parameter.Name, at); }
+
+            // A throwing helper handed exactly two parameters is a rule between them, still marked, never read, and
+            // still one a pair drawing both can be named for (#459).
+            if (handed.Length == 2) { reading.RuleBetween(handed[0].Name, handed[1].Name, at); }
         }
     }
 

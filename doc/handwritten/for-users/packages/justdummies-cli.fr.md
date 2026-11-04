@@ -643,12 +643,14 @@ fixez-la.
 
 Le fichier généré vous appartient et la classe est `partial`. Ajoutez à côté un fichier contenant la
 surcharge dont vous avez besoin. Le fichier généré porte son propre `using JustDummies;` ; le vôtre n'en hérite
-pas, donc commencez-le par la même ligne, ou déclarez `<Using Include="JustDummies" />` une fois dans le projet
+pas, donc commencez-le par la même ligne, ou, en C# 10 ou plus, déclarez `<Using Include="JustDummies" />` une fois dans le projet
 de test :
 
 <!-- jd:skip -->
 ```csharp
 // AnyShipment.Custom.cs: written by you, never touched by `any generate --force`.
+using JustDummies;
+
 public sealed partial class AnyShipment {
 
     public AnyShipment WithDeclaredValue(IAny<decimal?> generator) {

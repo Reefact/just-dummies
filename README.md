@@ -62,7 +62,7 @@ dotnet add package JustDummies
 
 No runtime dependency, and the 38 analyzer rules come bundled inside — they start working on your next
 build. Everything lives in the `JustDummies` namespace: `using JustDummies;` in a test file, or
-`<Using Include="JustDummies" />` once in the test project.
+`<Using Include="JustDummies" />` once in a test project that compiles at C# 10 or later.
 
 ## 🔁 Reproducible by construction
 

@@ -55,6 +55,10 @@ public sealed class GeneratorWhereValueExpectedAnalyzer : DiagnosticAnalyzer {
         // the mixed comparison.
         if (IsOperandOfAGeneratorComparison(conversion, iAny)) { return; }
 
+        // A string `+` or `+=` reaches object.ToString through this same conversion, and JD005 already reports the
+        // generator rendered as text on that span: one mistake draws one diagnostic (ADR-0078, issue #437).
+        if (IsOperandOfAStringConcatenation(conversion)) { return; }
+
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.GeneratorWhereValueExpected, operand.Syntax.GetLocation(), operand.Type!.Name));
     }
 
@@ -98,6 +102,17 @@ public sealed class GeneratorWhereValueExpectedAnalyzer : DiagnosticAnalyzer {
         }
 
         return false;
+    }
+
+    // True when the conversion is an operand of a string `+`, or the value of a string `+=`: the text-rendering
+    // shapes JD005 owns.
+    private static bool IsOperandOfAStringConcatenation(IConversionOperation conversion) {
+        return conversion.Parent switch {
+            IBinaryOperation { OperatorKind: BinaryOperatorKind.Add } binary => binary.Type?.SpecialType == SpecialType.System_String,
+            ICompoundAssignmentOperation { OperatorKind: BinaryOperatorKind.Add } assignment => assignment.Type?.SpecialType == SpecialType.System_String
+                                                                                                && ReferenceEquals(assignment.Value, conversion),
+            _ => false
+        };
     }
 
     private static bool IsObjectLike(ITypeSymbol? type) {

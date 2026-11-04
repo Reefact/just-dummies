@@ -161,4 +161,50 @@ public class Jd011GeneratorWhereValueExpectedTests {
         Check.That(descriptor.DefaultSeverity).IsEqualTo(DiagnosticSeverity.Warning);
     }
 
+    // JD005 owns a generator rendered as text, and a string `+` or `+=` reaches object.ToString through an implicit
+    // conversion to object that this rule would otherwise report on the same span: one mistake draws one diagnostic
+    // (ADR-0078, issue #437).
+    [Theory]
+    [InlineData("string s = Any.String().Generate() + Any.Int32().Between(1, 5);")]
+    [InlineData("string s = Any.Int32().Between(1, 5) + \"suffix\";")]
+    [InlineData("string s = \"\"; s += Any.Int32().Between(1, 5);")]
+    [InlineData("string s = $\"{Any.Int32().Between(1, 5)}\";")]
+    [InlineData("System.FormattableString s = $\"{Any.Int32().Between(1, 5)}\";")]
+    public async Task Leaves_a_generator_rendered_as_text_to_JD005(string statement) {
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    {{statement}}
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> jd011 = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorWhereValueExpectedAnalyzer(), source, "JD011");
+        ImmutableArray<Diagnostic> jd005 = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorRenderedAsTextAnalyzer(), source);
+
+        Check.That(jd005.Length).IsEqualTo(1);
+        Check.That(jd011).IsEmpty();
+    }
+
+    [Fact]
+    public async Task Still_reports_a_generator_converted_to_object_outside_text() {
+        // Only the text-rendering shapes move to JD005: the same generator stored as object keeps its JD011.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    object o = Any.Int32().Between(1, 5);
+                    string s = "" + o;
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorWhereValueExpectedAnalyzer(), source, "JD011");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+    }
+
 }

@@ -50,6 +50,30 @@ public sealed class OrderedPairTests {
         Check.That(outcome.Plan.Parameters.Select(parameter => parameter.RequiresVerification)).ContainsExactly(true, true);
     }
 
+    // The order is drawn by the pair and the gap is not, so a developer sent to either recipe would narrow one side
+    // alone: the note names the pair's method, the one place both are drawn together (#459).
+    [Fact(DisplayName = "A rule the engine cannot read between two paired parameters points to the pair's method.")]
+    public void AnUnreadRuleBetweenPairedParametersPointsToThePair() {
+        ScaffoldOutcome outcome = Scaffolded("int start, int end", """
+                                                                   if (start >= end) { throw new ArgumentException(nameof(end)); }
+                                                                   if (end - start > 31) { throw new ArgumentException(nameof(end)); }
+                                                                   """);
+
+        Check.That(outcome.Plan!.Pairings).HasSize(1);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note))
+             .ContainsExactly("ties end to start; StartAndEnd() draws their order, not this guard: write it there",
+                              "ties end to start; StartAndEnd() draws their order, not this guard: write it there");
+        Check.That(outcome.File!.SourceText).Contains("— ties end to start; StartAndEnd() draws their order, not this guard: write it there — then delete these two lines.");
+    }
+
+    [Fact(DisplayName = "A rule between two parameters that are not paired keeps its plain note.")]
+    public void AnUnreadRuleBetweenUnpairedParametersKeepsItsNote() {
+        ScaffoldOutcome outcome = Scaffolded("int start, int end", "if (end - start > 31) { throw new ArgumentException(nameof(end)); }");
+
+        Check.That(outcome.Plan!.Pairings).IsEmpty();
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note)).ContainsExactly("ties end to start", "ties end to start");
+    }
+
     // Three parameters in a chain are a relation among three: pairing two of them would leave the third order to luck,
     // and solving it is what the engine does not try (ADR-0046).
     [Fact(DisplayName = "A chain of orders is marked, not paired.")]

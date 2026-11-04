@@ -92,6 +92,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **A rule the tool cannot read between two paired parameters says where it belongs.** An order plus a
+  maximum gap — `if (start >= end)` and `if (end.DayNumber - start.DayNumber > 31)` — drew the order
+  through `Any.Pair` and marked the gap `ties end to start` in both recipes, where narrowing either side
+  alone cannot hold it. The `TODO` and the recap now add `StartAndEnd() draws their order, not this guard:
+  write it there`, the one place both are drawn together; the CLI page's "When a guard ties two parameters"
+  shows the edit. Re-scaffolding with `--force` brings the new comment (issue #459).
 - **The generated `With…` methods say what is easy to get wrong.** A pin's documentation says every draw hands
   over the value it was given — one shared instance for a reference type — and a refining overload's says to reuse
   a refinement as a `Func<G, G>` that builds on what it receives, since `_ => prepared` compiles and replaces the

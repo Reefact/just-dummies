@@ -77,6 +77,11 @@ public sealed class UnreadGuard {
         return new UnreadGuard(File, Line, Excerpt, Note, FirstLine, further, Pattern);
     }
 
+    /// <summary>The same place, saying <paramref name="note" /> about why it marks the parameter.</summary>
+    internal UnreadGuard WithNote(string note) {
+        return new UnreadGuard(File, Line, Excerpt, note, FirstLine, Further, Pattern);
+    }
+
     /// <summary>The source file's name, without its folder, or null when the tree has none.</summary>
     public string? File { get; }
 

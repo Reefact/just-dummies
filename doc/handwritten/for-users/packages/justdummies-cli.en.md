@@ -101,7 +101,7 @@ accepts. The shapes it reads, and what each becomes:
 | `decimal.Round(p, 2) != p` | `.WithScale(2)` |
 | `p.AsSpan().IndexOfAnyExcept("ACGT") >= 0` | `.WithChars("ACGT")` |
 | `items.Any(x => x is null)`, `items.Contains(null)` on a non-nullable element type | nothing to add — the elements it draws are never `null` |
-| `a > b`, `a >= b` between two parameters of one type | both drawn as one `Any.OrderedPair(…)` ([below](#when-a-guard-ties-two-parameters)) |
+| `a > b`, `a >= b` between two parameters of one type | both drawn as one `Any.Pair(…)`, ordered through `Having` ([below](#when-a-guard-ties-two-parameters)) |
 | `ArgumentOutOfRangeException.ThrowIfNegative(p)` and its siblings, `ArgumentException.ThrowIfNullOrEmpty(p)`, `ThrowIfNullOrWhiteSpace(p)` — on `p` or on `p.Length` | the row of the same condition |
 | `Guard.Against.…` (Ardalis) and `Guard.Is…` (CommunityToolkit) | the row of the same condition, for the helpers the specification lists |
 | a guard in a helper of your type that returns the value unchanged, `X = Guard(x);` | whatever the helper's own guards say, read one level down |
@@ -698,11 +698,13 @@ test. The generated pin says so in its documentation.
 
 **A direct order is drawn for you.** When the constructor compares two of its parameters of one
 ordered type — `if (start > end) { throw … }`, or `>=`, or the mirrored `end < start` — the tool draws
-them together through `Any.OrderedPair`, so `start` is never after `end` (never equal either, for
-`>=`), and each keeps the guards it has on its own. `WithStart(…)` and `WithEnd(…)` keep their
-meaning: a pin on one side bounds the other, it survives a refinement of the other side, and two pins
-in the wrong order are refused at the second call, naming both. Nothing is left to verify, so a later
-`--force` loses nothing.
+them together through `Any.Pair` and the order its `Having` declares, so `start` is never after `end`
+(never equal either, for `>=`), and each keeps the guards it has on its own. `WithStart(…)` and
+`WithEnd(…)` keep their meaning, and the draw decides once both are known: a pin on one side bounds the
+other in the builder's own words — `AfterOrEqualTo(start)` — and survives a refinement of the other
+side, two pins are handed to the constructor, whose guard judges their order, and the order a test
+writes them in never changes the outcome. Nothing is left to verify, so a later `--force` loses
+nothing.
 
 Every other rule between parameters — `start < end` written as a sum, a claim inside a policy period,
 a chain of three, a check digit computed from the digits before it — is one no per-parameter recipe
@@ -746,8 +748,8 @@ public static class BookingGenerators {
 **Derive one draw from another inside `Generate()`.** The scaffolder wrote one draw per parameter;
 `Generate()` is ordinary code, so the dependent one can be computed from the first
 (`DateTime end = start + _duration.Generate();`) before the constructor is called. The library's own
-seams work there too: `Any.OrderedPair(_startRecipe, _endRecipe).Generate()` for an order the tool
-did not pair, `_start.Then(start => …)` for a draw that depends on another.
+seams work there too: `Any.Pair(_startRecipe, _endRecipe).Having.Item1BeforeItem2().Generate()` for
+an order the tool did not pair, `_start.Then(start => …)` for a draw that depends on another.
 
 Two consequences follow, and both are yours to weigh. A parameter you now derive no longer draws from
 its field, so its `With…` pin no longer reaches the draw: `WithEnd(…)` sets a field your `Generate()`

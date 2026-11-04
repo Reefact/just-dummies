@@ -100,7 +100,7 @@ exclurait des valeurs que votre constructeur accepte. Les formes lues, et ce que
 | `decimal.Round(p, 2) != p` | `.WithScale(2)` |
 | `p.AsSpan().IndexOfAnyExcept("ACGT") >= 0` | `.WithChars("ACGT")` |
 | `items.Any(x => x is null)`, `items.Contains(null)` sur un type d'élément non nullable | rien à ajouter — les éléments qu'il tire ne sont jamais `null` |
-| `a > b`, `a >= b` entre deux paramètres d'un même type | les deux tirés comme un seul `Any.OrderedPair(…)` ([plus bas](#quand-une-garde-relie-deux-paramètres)) |
+| `a > b`, `a >= b` entre deux paramètres d'un même type | les deux tirés comme un seul `Any.Pair(…)`, ordonnés par `Having` ([plus bas](#quand-une-garde-relie-deux-paramètres)) |
 | `ArgumentOutOfRangeException.ThrowIfNegative(p)` et ses frères, `ArgumentException.ThrowIfNullOrEmpty(p)`, `ThrowIfNullOrWhiteSpace(p)` — sur `p` ou sur `p.Length` | la ligne de la même condition |
 | `Guard.Against.…` (Ardalis) et `Guard.Is…` (CommunityToolkit) | la ligne de la même condition, pour les helpers que la spécification liste |
 | une garde dans un helper de votre type qui retourne la valeur inchangée, `X = Guard(x);` | ce que disent les propres gardes du helper, lues un niveau plus bas |
@@ -714,10 +714,12 @@ test. Le pin généré le dit dans sa documentation.
 
 **Un ordre direct est tiré pour vous.** Quand le constructeur compare deux de ses paramètres d'un même type
 ordonné — `if (start > end) { throw … }`, ou `>=`, ou la forme miroir `end < start` —, l'outil les tire ensemble
-par `Any.OrderedPair`, si bien que `start` n'est jamais après `end` (ni égal, pour `>=`), et chacun garde les
-gardes qu'il a pour lui seul. `WithStart(…)` et `WithEnd(…)` gardent leur sens : un pin d'un côté borne l'autre, il
-survit à un affinage de l'autre côté, et deux pins dans le mauvais ordre sont refusés au second appel, en nommant
-les deux. Il ne reste rien à vérifier, donc un `--force` ultérieur ne perd rien.
+par `Any.Pair` et l'ordre que déclare son `Having`, si bien que `start` n'est jamais après `end` (ni égal, pour
+`>=`), et chacun garde les gardes qu'il a pour lui seul. `WithStart(…)` et `WithEnd(…)` gardent leur sens, et le
+tirage décide une fois les deux connus : un pin d'un côté borne l'autre dans les mots propres au builder —
+`AfterOrEqualTo(start)` — et survit à un affinage de l'autre côté, deux pins sont passés au constructeur, dont la
+garde juge leur ordre, et l'ordre dans lequel un test les écrit ne change jamais le résultat. Il ne reste rien à
+vérifier, donc un `--force` ultérieur ne perd rien.
 
 Toute autre règle entre paramètres — `start < end` écrit comme une somme, une déclaration comprise dans une période
 de garantie, une chaîne de trois, un chiffre de contrôle calculé à partir des chiffres qui le précèdent — est une
@@ -761,8 +763,8 @@ public static class BookingGenerators {
 **Dérivez un tirage d'un autre dans `Generate()`.** Le scaffolder a écrit un tirage par paramètre ; `Generate()`
 est du code ordinaire, et le tirage dépendant peut donc être calculé à partir du premier
 (`DateTime end = start + _duration.Generate();`) avant l'appel du constructeur. Les points d'assemblage de la
-bibliothèque y fonctionnent aussi : `Any.OrderedPair(_startRecipe, _endRecipe).Generate()` pour un ordre que l'outil
-n'a pas apparié, `_start.Then(start => …)` pour un tirage qui dépend d'un autre.
+bibliothèque y fonctionnent aussi : `Any.Pair(_startRecipe, _endRecipe).Having.Item1BeforeItem2().Generate()` pour
+un ordre que l'outil n'a pas apparié, `_start.Then(start => …)` pour un tirage qui dépend d'un autre.
 
 Deux conséquences en découlent, et c'est à vous de les peser. Un paramètre que vous dérivez désormais ne tire plus
 depuis son champ, donc son pin `With…` n'atteint plus le tirage : `WithEnd(…)` règle un champ que votre `Generate()`

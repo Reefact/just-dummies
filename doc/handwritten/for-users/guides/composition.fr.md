@@ -112,39 +112,53 @@ IAny<(Guid, string, OrderStatus)> anyRow = Any.TripleOf(
     Any.Enum<OrderStatus>());
 ```
 
-## `Any.OrderedPair` : deux valeurs liées par un ordre
+## `Any.Pair` : deux valeurs liées par un ordre
 
 Le début et la fin d'une période, le minimum et le maximum d'une plage : deux valeurs qu'un constructeur
-refuse dans le mauvais ordre. Deux tirages indépendants brisent cet ordre une fois sur deux, et dériver
-la fin du début à la main ne s'inverse pas — épingler la fin doit contraindre le début.
-`Any.OrderedPair(first, second)` existe sur chaque builder ordonné et tire la paire par construction : le
-premier depuis sa base maintenue au plus à la plus grande valeur que la seconde base peut produire, puis
-le second depuis sa base maintenue au moins au premier. Une épingle borne l'autre tirage de la même
-façon, dans les deux sens.
+refuse dans le mauvais ordre. Deux tirages indépendants brisent cet ordre une fois sur deux, et tirer la
+fin à partir du début à la main échoue dès que les deux bases ne se recouvrent pas dans le bon sens.
+`Any.Pair(item1, item2)` existe sur chaque builder ordonné. `Having` déclare l'ordre entre les deux
+éléments, dans les mots propres au builder, et la paire le tient alors par construction : le côté du
+dessous est tiré de sa base maintenue dans ce que l'autre base peut suivre, puis l'autre côté de sa base
+maintenue du bon côté de lui.
 
 ```csharp
-AnyOrderedPair<int> datingGenerator = Any.OrderedPair(Any.Int32().Between(-800, 1600), Any.Int32().Between(-800, 1600));
+AnyPair<int> datingGenerator = Any.Pair(Any.Int32().Between(-800, 1600), Any.Int32().Between(-800, 1600))
+                                  .Having.Item1LessThanOrEqualToItem2();
 
-(int anyDatedFrom, int anyDatedTo)   = datingGenerator.Generate();                    // anyDatedFrom <= anyDatedTo
-(int anyEarlyFrom, int anyEarlyTo)   = datingGenerator.WithSecond(-500).Generate();   // the start follows the pinned end: -800 to -500
-(int anyLateFrom, int anyLateTo)     = datingGenerator.WithFirst(1500).Generate();    // the end follows the pinned start: 1500 to 1600
-(int anyStrictLow, int anyStrictHigh) = Any.OrderedPair(Any.Int32().Between(0, 100), Any.Int32().Between(0, 100), strict: true).Generate();
+(int anyDatedFrom, int anyDatedTo)   = datingGenerator.Generate();   // anyDatedFrom <= anyDatedTo
+(DateTime anyStart, DateTime anyEnd) = Any.Pair(Any.DateTime(), Any.DateTime()).Having.Item1BeforeItem2().Generate();
 ```
 
-`strict: true` place le premier strictement sous le second, par la borne stricte de la base elle-même.
-Deux épingles dans le mauvais ordre, ou une épingle qu'aucune valeur de l'autre base ne peut suivre —
-`WithFirst(1700)` quand la seconde base s'arrête à 1600 — sont refusées à l'appel en nommant les deux
-côtés. Une valeur épinglée est un littéral, comme `Any.Fixed` : elle est vérifiée contre l'autre base,
-pas contre la sienne.
+Les nombres et les durées s'ordonnent par `Item1LessThanItem2()`, `Item1LessThanOrEqualToItem2()`,
+`Item1GreaterThanItem2()` et `Item1GreaterThanOrEqualToItem2()` ; les dates par `Item1BeforeItem2()`,
+`Item1BeforeOrEqualToItem2()`, `Item1AfterItem2()` et `Item1AfterOrEqualToItem2()`. Chacune est nommée
+d'`Item1` vers `Item2`, si bien que le sujet de la relation est toujours écrit. Une paire déclare une
+relation, et un ordre qu'aucune valeur ne peut tenir — deux bases qui ne se recouvrent pas dans le bon
+sens — est refusé là où il est déclaré, en nommant les deux côtés. Déclarés sans `Having`, les deux
+éléments sont tirés indépendamment.
+
+Un côté que le test fixe n'a pas besoin de paire. Il reste un littéral, et l'autre côté le prend comme
+borne sur son propre builder :
+
+```csharp
+DateTime start  = new(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+DateTime anyEnd = Any.DateTime().AfterOrEqualTo(start).Generate();
+```
+
+Une base `DateTime` à qui `OneOf` a fourni une valeur `Local` est refusée dès qu'un ordre est déclaré :
+une valeur tirée borne alors l'autre côté, et une borne `Local` peut désigner une heure d'horloge ou un
+instant ([ADR-0114](../../for-maintainers/adr/0114-refuse-a-local-datetime-bound.fr.md)).
 
 `TimeOnly` n'a pas de paire : dès qu'une fenêtre franchit minuit son ordre est cyclique, et aucune lecture
 de « le premier avant le second » n'est la bonne partout. Trois valeurs ordonnées — un minimum, un
 optimum, un maximum — sont une paire et un `.Then(...)` qui tire celle du milieu entre les deux
-([ADR-0126](../../for-maintainers/adr/0126-draw-two-values-tied-by-an-order.fr.md)) :
+([ADR-0131](../../for-maintainers/adr/0131-draw-a-pair-from-two-bases-and-an-optional-order.fr.md)) :
 
 ```csharp
-IAny<(int Min, int Optimum, int Max)> setPointsGenerator = Any.OrderedPair(Any.Int32().Between(0, 100), Any.Int32().Between(0, 100), strict: true)
-    .Then(pair => Any.Int32().Between(pair.First, pair.Second).As(optimum => (pair.First, optimum, pair.Second)));
+IAny<(int Min, int Optimum, int Max)> setPointsGenerator = Any.Pair(Any.Int32().Between(0, 100), Any.Int32().Between(0, 100))
+    .Having.Item1LessThanItem2()
+    .Then(pair => Any.Int32().Between(pair.Item1, pair.Item2).As(optimum => (pair.Item1, optimum, pair.Item2)));
 ```
 
 ## `.OrNull()` : les valeurs optionnelles

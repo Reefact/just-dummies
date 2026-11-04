@@ -17,8 +17,9 @@ namespace JustDummies.Analyzers;
 ///     <para>
 ///         Two kinds of answer live here. The <c>TryFind…</c> readers replicate a guard exactly — the same characters,
 ///         the same arithmetic — so JD014 reports what they find as an argument the call certainly rejects.
-///         <see cref="MayRefuse" /> answers for what cannot be replicated: a <c>null</c>, which JD014 leaves to nullable
-///         analysis; a host or a domain that is not a plain DNS name, which the run time checks through
+///         <see cref="MayRefuse" /> answers for what cannot be replicated: a <c>null</c> argument, which JD014 leaves to
+///         nullable analysis — a <c>null</c> element of a value set written inline is read, since nullable analysis
+///         cannot see it once the element type is nullable; a host or a domain that is not a plain DNS name, which the run time checks through
 ///         <c>System.Uri</c>, whose parsing differs across target frameworks; and a user-info character whose invariant
 ///         lower case differs across runtimes. JD034 and JD035 stop their walk at either kind, since a call that may
 ///         throw on its argument may apply nothing after it.
@@ -115,6 +116,37 @@ internal static class ArgumentGuardFacts {
     }
 
     /// <summary>
+    ///     The first <c>null</c> element of a value set written inline. Every <c>OneOf</c> whose element type admits a
+    ///     <c>null</c> — <c>Any.OneOf&lt;T&gt;</c>, its <c>AnyContext</c> twin, <c>Any.String().OneOf</c> and a pattern's
+    ///     <c>OneOf</c> — refuses one at declaration with this wording, and nullable analysis cannot see it once the
+    ///     element type is itself nullable, as in <c>Any.OneOf&lt;byte?&gt;(null, 6)</c> (issue #436).
+    /// </summary>
+    internal static bool TryFindNullElement(IInvocationOperation call, out IOperation? offending, out string? reason) {
+        offending = null;
+        reason    = null;
+
+        if (call.TargetMethod.Name != "OneOf" || !ValueSetFacts.IsWrittenInline(call)) { return false; }
+
+        offending = ValueSetFacts.Elements(call).FirstOrDefault(IsNullElement);
+        if (offending is null) { return false; }
+
+        reason = "the values must not contain a null element; use OrNull() to make the whole generator nullable";
+
+        return true;
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="element" /> is a <c>null</c> constant, through any conversion that keeps it one. A
+    ///     user-defined conversion is a call that may turn a <c>null</c> into a value, so the reading stops at it.
+    /// </summary>
+    private static bool IsNullElement(IOperation element) {
+        IOperation value = element;
+        while (value is IConversionOperation { OperatorMethod: null } conversion) { value = conversion.Operand; }
+
+        return value.ConstantValue is { HasValue: true, Value: null };
+    }
+
+    /// <summary>
     ///     The first bound a floating-point generator rejects for not being finite: an argument of <c>Between</c>,
     ///     <c>GreaterThan(OrEqualTo)</c> or <c>LessThan(OrEqualTo)</c> on <c>Any.Double()</c>, <c>Any.Single()</c> or
     ///     <c>Any.Half()</c>, checked in parameter order as the guard checks them.
@@ -165,7 +197,7 @@ internal static class ArgumentGuardFacts {
 
     /// <summary>
     ///     Whether the call's guard may refuse one of its constant arguments where no reader here can say so for certain:
-    ///     a <c>null</c> the caller wrote, a <c>null</c> in a value set, a host or a domain that is not a plain DNS name, a
+    ///     a <c>null</c> the caller wrote, a host or a domain that is not a plain DNS name, a
     ///     user-info character whose case mapping depends on the runtime.
     /// </summary>
     internal static bool MayRefuse(IInvocationOperation call) {
@@ -174,7 +206,6 @@ internal static class ArgumentGuardFacts {
         return call.TargetMethod.Name switch {
             "WithUserInfo" or "WithLocalPart" => ConstantStrings(call).Any(part => part.Any(character => AmbiguousCase.IndexOf(character) >= 0)),
             "WithHost" or "WithDomain"        => ConstantStrings(call).Any(host => !IsPlainHostName(host)),
-            "OneOf"                           => ValueSetFacts.IsWrittenInline(call) && ValueSetFacts.Elements(call).Any(element => element.ConstantValue is { HasValue: true, Value: null }),
             _                                 => false
         };
     }

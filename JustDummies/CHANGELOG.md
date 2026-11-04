@@ -387,6 +387,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **JD012 no longer reports a pool of generators that `Then` flattens into values.**
+  `Any.ElementOf(leaves).Then(leaf => leaf)` draws one recipe, then a value from it, split across the
+  recipes and replayed from one seed — the remedy JD012's own message names — yet the rule reported the
+  pool. It now leaves a `OneOf` or `ElementOf` pool alone when it is the receiver of `Then` and `Then`'s
+  result is a value; a `Then` that still hands out recipes keeps the diagnostic (issue #435).
+
 - **A generator concatenated into a string draws JD005 alone, not JD005 and JD011.** With JD011 opted in,
   `text + Any.Int32().Between(1, 5)` and `text += …` drew both rules on the same span, because the string
   `+` reaches `object.ToString` through an implicit conversion to `object` that JD011 reports. JD011 now

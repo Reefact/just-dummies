@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 87 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 88 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -282,8 +282,9 @@ que l'option existait le jour où elle compterait.
 | [ADR-0123](0123-draw-a-decimal-on-a-steps-grid.fr.md) | Tirer un décimal sur la grille d'un pas | Accepted | consigné ici |
 | [ADR-0124](0124-arrange-a-drawn-list-in-ascending-order.fr.md) | Ranger une liste tirée dans l'ordre croissant | Accepted | consigné ici |
 | [ADR-0125](0125-let-a-time-of-day-window-cross-midnight.fr.md) | Laisser une fenêtre horaire franchir minuit | Accepted | consigné ici |
-| [ADR-0126](0126-draw-two-values-tied-by-an-order.fr.md) | Tirer deux valeurs liées par un ordre | Accepted | consigné ici |
+| [ADR-0126](0126-draw-two-values-tied-by-an-order.fr.md) | Tirer deux valeurs liées par un ordre | Superseded by ADR-0131 | consigné ici |
 | [ADR-0127](0127-draw-the-empty-value-unless-a-guard-refuses-it.fr.md) | Tirer la valeur vide sauf si une garde la refuse | Accepted | consigné ici |
 | [ADR-0128](0128-read-a-disjunction-guard-as-one-guard-per-branch.fr.md) | Lire une garde disjonctive comme une garde par branche | Accepted | consigné ici |
 | [ADR-0129](0129-report-a-chain-whose-constants-admit-exactly-one-value.fr.md) | Signaler une chaîne dont les constantes n'admettent qu'une seule valeur, sur tous les types exacts | Accepted | consigné ici |
 | [ADR-0130](0130-ship-code-fixes-beside-the-analyzers.fr.md) | Livrer des correctifs de code à côté des analyzers, pour l'unique réécriture qui garde l'intention | Accepted | consigné ici |
+| [ADR-0131](0131-draw-a-pair-from-two-bases-and-an-optional-order.fr.md) | Tirer une paire de deux bases et d'un ordre facultatif | Accepted | consigné ici |

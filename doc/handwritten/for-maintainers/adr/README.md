@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 87 decisions.
+* **recorded here** — decided in this repository, on its own. 88 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -266,8 +266,9 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0123](0123-draw-a-decimal-on-a-steps-grid.md) | Draw a decimal on a step's grid | Accepted | recorded here |
 | [ADR-0124](0124-arrange-a-drawn-list-in-ascending-order.md) | Arrange a drawn list in ascending order | Accepted | recorded here |
 | [ADR-0125](0125-let-a-time-of-day-window-cross-midnight.md) | Let a time-of-day window cross midnight | Accepted | recorded here |
-| [ADR-0126](0126-draw-two-values-tied-by-an-order.md) | Draw two values tied by an order | Accepted | recorded here |
+| [ADR-0126](0126-draw-two-values-tied-by-an-order.md) | Draw two values tied by an order | Superseded by ADR-0131 | recorded here |
 | [ADR-0127](0127-draw-the-empty-value-unless-a-guard-refuses-it.md) | Draw the empty value unless a guard refuses it | Accepted | recorded here |
 | [ADR-0128](0128-read-a-disjunction-guard-as-one-guard-per-branch.md) | Read a disjunction guard as one guard per branch | Accepted | recorded here |
 | [ADR-0129](0129-report-a-chain-whose-constants-admit-exactly-one-value.md) | Report a chain whose constants admit exactly one value, over every exact type | Accepted | recorded here |
 | [ADR-0130](0130-ship-code-fixes-beside-the-analyzers.md) | Ship code fixes beside the analyzers, for the one rewrite that keeps the intent | Accepted | recorded here |
+| [ADR-0131](0131-draw-a-pair-from-two-bases-and-an-optional-order.md) | Draw a pair from two bases and an optional order | Accepted | recorded here |

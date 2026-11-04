@@ -1563,7 +1563,9 @@ and its place reads `first unread guard at`, and the report carries `further` �
 second trial measured was a developer who fixed the named guard, deleted the sentinel, and shipped a
 generator that still threw on the one never named. A guard that ties several parameters is called
 out as such, `ties volatileRunOffDays to coreMaturityMonths`, since narrowing one of them alone has
-not resolved it; where the two are the parameters of an order drawn as a pair, and one rejection of
+not resolved it — of two parameters only where one rejection of the guard names both, the branch that
+throws deciding which condition rejects, so `!(a >= 0 && b <= 31)`, two bounds, is marked without the
+claim; where the two are the parameters of an order drawn as a pair, and one rejection of
 the guard names both — `end - start > 31`, or `start < 0 && end > 31`, which rejects only where both
 hold, never the two bounds `start < 0 || end > 31` joins — the note says where the rule belongs —
 `ties end to start; StartAndEnd() draws their order, not this guard: write it there` — since the

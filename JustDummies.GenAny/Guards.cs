@@ -593,8 +593,8 @@ internal static class Guards {
 
         // Recorded like the rule of a plain if-throw, so a pair drawing both can be named in the note (#459).
         if (rejected.Length == 2
-         && throwing is IfStatementSyntax { Condition: var decided }
-         && ARejectionTestsBoth(decided, model, method, [rejected[0]], [rejected[1]])) {
+         && throwing is IfStatementSyntax check
+         && AnIfRejectsOnBoth(check, model, method, [rejected[0]], [rejected[1]])) {
             reading.RuleBetween(rejected[0].Name, rejected[1].Name, at);
         }
 
@@ -1393,8 +1393,7 @@ internal static class Guards {
 
         return body.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
                    .OfType<IfStatementSyntax>()
-                   .Where(Throws)
-                   .Any(check => ARejectionTestsBoth(check.Condition, model, callee, fromFirst, fromSecond));
+                   .Any(check => AnIfRejectsOnBoth(check, model, callee, fromFirst, fromSecond));
     }
 
     /// <summary>The parameters of <paramref name="callee" /> that <paramref name="invocation" /> hands <paramref name="outer" /> to, bare.</summary>
@@ -2169,16 +2168,19 @@ internal static class Guards {
         // Called out as a rule between parameters (#373): a developer who narrows one of them alone has not
         // resolved it, and the trial measured exactly that — (204 days, 3 months) still throwing after both
         // named guards were fixed.
-        string?     ties = mentioned.Length < 2 ? null : "ties " + Listed(mentioned);
+        // Said of two parameters only where one rejection names both: `!(a >= 0 && b <= 31)` rejects on `a < 0` or
+        // `b > 31`, two bounds each honoured in its own recipe, and calling them a tie would send the developer to
+        // look for a relation that is not there (#459). The branch reached here is one whose `then` throws.
+        bool tiesTwo = mentioned.Length == 2 && ARejectionTestsBoth(condition, negated: false, model, method, [mentioned[0]], [mentioned[1]]);
+
+        string?     ties = mentioned.Length > 2 || tiesTwo ? "ties " + Listed(mentioned) : null;
         UnreadGuard at   = UnreadGuard.At(condition, ties);
 
         foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name, at); }
 
         // Kept so that, once the scaffolder knows which orders it draws as pairs, a rule between the same two can say
         // where it belongs — the pair's method, the one place both are drawn together (#459).
-        if (mentioned.Length == 2 && ARejectionTestsBoth(condition, model, method, [mentioned[0]], [mentioned[1]])) {
-            reading.RuleBetween(mentioned[0].Name, mentioned[1].Name, at);
-        }
+        if (tiesTwo) { reading.RuleBetween(mentioned[0].Name, mentioned[1].Name, at); }
     }
 
     /// <summary>
@@ -2195,14 +2197,42 @@ internal static class Guards {
     ///     keeping the pair out of it would be wrong the other way.
     /// </remarks>
     private static bool ARejectionTestsBoth(ExpressionSyntax condition,
+                                            bool negated,
                                             SemanticModel model,
                                             IMethodSymbol method,
                                             IReadOnlyCollection<IParameterSymbol> first,
                                             IReadOnlyCollection<IParameterSymbol> second) {
-        return IndependentRejections(condition, negated: false)
+        return IndependentRejections(condition, negated)
               .Select(rejection => Mentioned(rejection, model, method))
               .Any(tested => tested.Any(parameter => first.Contains(parameter, SymbolEqualityComparer.Default))
                           && tested.Any(parameter => second.Contains(parameter, SymbolEqualityComparer.Default)));
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="check" /> rejects on a condition one of whose independent rejections names a
+    ///     parameter of <paramref name="first" /> and one of <paramref name="second" />, taking the branch that
+    ///     throws as the rejecting one (#459).
+    /// </summary>
+    private static bool AnIfRejectsOnBoth(IfStatementSyntax check,
+                                          SemanticModel model,
+                                          IMethodSymbol method,
+                                          IReadOnlyCollection<IParameterSymbol> first,
+                                          IReadOnlyCollection<IParameterSymbol> second) {
+        return TryRejectingBranch(check, out bool negated) && ARejectionTestsBoth(check.Condition, negated, model, method, first, second);
+    }
+
+    /// <summary>
+    ///     Which branch of <paramref name="check" /> rejects: the <c>then</c> branch rejects where the condition holds,
+    ///     the <c>else</c> branch where it does not, so <paramref name="negated" /> is true for the second. False where
+    ///     both branches throw or neither does, since no one condition is then the rejection (#459).
+    /// </summary>
+    private static bool TryRejectingBranch(IfStatementSyntax check, out bool negated) {
+        bool thenThrows = Throws(check.Statement);
+        bool elseThrows = check.Else is { } otherwise && Throws(otherwise.Statement);
+
+        negated = elseThrows && !thenThrows;
+
+        return thenThrows != elseThrows;
     }
 
     /// <summary>

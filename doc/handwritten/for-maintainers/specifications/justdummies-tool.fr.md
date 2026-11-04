@@ -1653,7 +1653,9 @@ unread guard at`, et le rapport porte `further` — parce que le piège mesuré 
 développeur qui corrigeait la garde nommée, supprimait la sentinelle, et livrait un generator qui
 levait encore sur celle jamais nommée. Une garde qui lie plusieurs paramètres est signalée comme
 telle, `ties volatileRunOffDays to coreMaturityMonths`, puisque resserrer l'un d'eux seul ne la
-résout pas ; quand les deux sont les paramètres d'un ordre tiré en paire, et qu'un rejet de la garde
+résout pas — de deux paramètres, seulement quand un rejet de la garde les nomme tous deux, la branche
+qui lève décidant quelle condition rejette, si bien que `!(a >= 0 && b <= 31)`, deux bornes, est marqué
+sans cette affirmation ; quand les deux sont les paramètres d'un ordre tiré en paire, et qu'un rejet de la garde
 les nomme tous deux — `end - start > 31`, ou `start < 0 && end > 31`, qui ne rejette que si les deux
 tiennent, jamais les deux bornes que joint `start < 0 || end > 31` — la note dit où la règle a sa
 place — `ties end to start; StartAndEnd() draws their order, not this guard: write it there` —

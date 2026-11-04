@@ -220,6 +220,67 @@ public sealed class OrderedPairTests {
         Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note)).ContainsExactly(pointed, pointed);
     }
 
+    // The branch that throws is the rejecting one: a throw in the else branch rejects where the condition does NOT hold,
+    // so the same condition reads as a joint rejection or as two bounds depending on which side throws.
+    [Theory(DisplayName = "The branch that throws decides whether a condition across both sides is a rule between them.")]
+    [InlineData("if (start < 0 && end > 31) { Console.WriteLine(); } else { throw new ArgumentException(nameof(start)); }", false)]
+    [InlineData("if (start < 0 || end > 31) { Console.WriteLine(); } else { throw new ArgumentException(nameof(start)); }", true)]
+    [InlineData("if (start < 0 && end > 31) { throw new ArgumentException(nameof(start)); } else { Console.WriteLine(); }", true)]
+    [InlineData("if (start < 0 || end > 31) { throw new ArgumentException(nameof(start)); } else { Console.WriteLine(); }", false)]
+    public void TheBranchThatThrowsDecidesWhetherAConditionIsARuleBetweenThem(string guard, bool pointed) {
+        const string pointer = "ties start to end; StartAndEnd() draws their order, not this guard: write it there";
+
+        foreach (string members in new[] {
+                     $$"""
+                       public Subject(int start, int end) {
+                           if (start >= end) { throw new ArgumentException(nameof(end)); }
+                           {{guard}}
+                       }
+                       """,
+                     $$"""
+                       public Subject(int start, int end) {
+                           if (start >= end) { throw new ArgumentException(nameof(end)); }
+                           Validate(start, end);
+                       }
+
+                       private static void Validate(int start, int end) {
+                           {{guard.Replace("Console.WriteLine();", "return;")}}
+                       }
+                       """
+                 }) {
+            ScaffoldOutcome outcome = Scaffolded($$"""
+                                                   using System;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       {{members}}
+
+                                                   }
+                                                   """);
+
+            // Two independent bounds written in the constructor are read as bounds, not marked, so only the pointer is asked of
+            // every shape.
+            Check.That(outcome.Plan!.Pairings).HasSize(1);
+            Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard?.Note?.Contains(pointer) == true)).ContainsExactly(pointed, pointed);
+        }
+    }
+
+    // The note says "ties" of two parameters only where one rejection names both: `!(start >= 0 && end <= 31)` rejects on
+    // `start < 0` or on `end > 31`, two bounds, and a tie claimed for them would send the developer looking for a relation.
+    [Fact(DisplayName = "A negated conjunction of two bounds keeps both parameters marked without claiming they are tied.")]
+    public void ANegatedConjunctionOfTwoBoundsIsNotCalledATie() {
+        ScaffoldOutcome outcome = Scaffolded("int start, int end", """
+                                                                   if (start >= end) { throw new ArgumentException(nameof(end)); }
+                                                                   if (!(start >= 0 && end <= 31)) { throw new ArgumentException(nameof(start)); }
+                                                                   """);
+
+        Check.That(outcome.Plan!.Pairings).HasSize(1);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.RequiresVerification)).ContainsExactly(true, true);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note)).ContainsExactly(null, null);
+    }
+
     // The rule travels with the order through the hand-off, swapped where the hand-off swaps the values, and is named
     // after the parameters this generator draws, never after the delegated constructor's own.
     [Theory(DisplayName = "A rule between two parameters a constructor hands on points to the pair drawn for them.")]

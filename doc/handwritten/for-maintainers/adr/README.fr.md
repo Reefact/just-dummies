@@ -289,3 +289,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0129](0129-report-a-chain-whose-constants-admit-exactly-one-value.fr.md) | Signaler une chaîne dont les constantes n'admettent qu'une seule valeur, sur tous les types exacts | Accepted | consigné ici |
 | [ADR-0130](0130-ship-code-fixes-beside-the-analyzers.fr.md) | Livrer des correctifs de code à côté des analyzers, pour l'unique réécriture qui garde l'intention | Accepted | consigné ici |
 | [ADR-0131](0131-draw-a-pair-from-two-bases-and-an-optional-order.fr.md) | Tirer une paire de deux bases et d'un ordre facultatif | Accepted | consigné ici |
+| [ADR-0132](0132-let-a-declarations-sample-import-what-it-uses.fr.md) | Laisser un exemple de déclarations importer ce qu'il utilise | Accepted | consigné ici |

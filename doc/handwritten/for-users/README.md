@@ -57,7 +57,8 @@ Look-up material, organised by the type you need.
 
 ## Analyzer rules
 
-38 rules ship inside the library and run on your next build.
+38 rules ship inside the library and run on your next build. Several are Info rules, which `dotnet build`
+keeps out of the console: the index says how to see them, and how to confirm all 38 are loaded.
 → [**Rule index**](./analyzers/README.md), one page per diagnostic, in English and French. A
 diagnostic's help link points straight at its page.
 

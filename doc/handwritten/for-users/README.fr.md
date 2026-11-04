@@ -58,7 +58,9 @@ De quoi chercher, organisé par le type dont vous avez besoin.
 
 ## Règles des analyzers
 
-38 règles sont embarquées dans la bibliothèque et s'exécutent dès votre prochaine compilation.
+38 règles sont embarquées dans la bibliothèque et s'exécutent dès votre prochaine compilation. Plusieurs sont
+des règles Info, que `dotnet build` garde hors de la console : l'index dit comment les voir, et comment vérifier
+que les 38 sont chargées.
 → [**Index des règles**](./analyzers/README.fr.md), une page par diagnostic, en anglais et en
 français. Le lien d'aide d'un diagnostic pointe directement vers sa page.
 

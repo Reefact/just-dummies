@@ -137,6 +137,9 @@ the suites on it
 ### Do I have to install the analyzers separately?
 
 No. The 38 rules ship inside the `JustDummies` package itself and start working on your next build.
+Several are Info rules, which `dotnet build` keeps out of the console, so a clean build output proves
+nothing either way: the [rule index](../analyzers/README.md) says how to see them and how to confirm
+all 38 are loaded.
 The separate `JustDummies.DiagnosticCatalog` package is only needed if you want to name a rule in a
 `[SuppressMessage]` without a string literal — see
 [its page](../packages/justdummies-diagnosticcatalog.en.md).

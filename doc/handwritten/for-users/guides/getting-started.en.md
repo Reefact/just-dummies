@@ -61,7 +61,9 @@ The test now states its intent.
 dotnet add package JustDummies
 ```
 
-That is the whole install. The package also carries its 38 analyzer rules inside it, so the guards on correct usage start working on your next build with nothing further to configure.
+That is the whole install. The package also carries its 38 analyzer rules inside it, so the guards on correct usage start working on your next build with nothing further to configure. A build that prints `0 Warning(s)` does not mean they are absent: several are Info rules, which `dotnet build` keeps out of the console. The [rule index](../analyzers/README.md) says how to see them, and how to confirm all 38 are loaded.
+
+Every `Any.*` factory lives in the `JustDummies` namespace: start a test file with `using JustDummies;`, or declare it once for the whole test project with `<Using Include="JustDummies" />` in its `.csproj`.
 
 ## Your first dummies
 
@@ -201,6 +203,13 @@ public static class AnyEntry {
     }
 }
 ```
+
+`AnyEntry` is optional: `new AnyOrderReference()` works just as well. It uses a C# 14 extension member,
+`extension(Any)`, so that `Any.OrderReference()` reads like the library's own factories. Below C# 14 the
+block does not parse, and the compiler's errors (`CS1001`, `CS1513`, `CS1022`) never mention the language version:
+write an ordinary static class of your own instead and call `Arbitrary.OrderReference()`. The `any`
+scaffolder writes either form for you, `--entry-point any` or `--entry-point static:Arbitrary`
+([Reaching it as `Any.Order()`](../packages/justdummies-cli.en.md#reaching-it-as-anyorder)).
 
 The test now states even more clearly what it cares about: `AnyOrderReference` and `AnyCustomerName` no longer need the original comment to signal that neither plays any part in the discount — the generator's name says so instead, with no constraint left to distract from it.
 

@@ -42,6 +42,15 @@ dotnet_diagnostic.JD030.severity = warning
 dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
 ```
 
+**To confirm the rules are loaded**, whether or not any fires, build with a SARIF 2.1 error log:
+
+```bash
+dotnet build -p:ErrorLog="jd.sarif%2Cversion=2.1"
+```
+
+`jd.sarif` then lists every rule the compiler loaded, the 38 `JD` ids among them. The default SARIF 1.0
+log lists only the rules that reported something, so it cannot tell a silent rule from a missing one.
+
 ## Reproducibility
 
 These rules keep an asynchronous test body from silently swallowing its own failures.

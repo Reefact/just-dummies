@@ -627,7 +627,8 @@ overload you add.
 ### Adding the overload yourself
 
 The generated file is yours, and the class is `partial`. Add a file beside it with the overload you
-need:
+need. The generated file carries its own `using JustDummies;`; yours does not inherit it, so start it
+with that line too, or declare `<Using Include="JustDummies" />` once in the test project:
 
 <!-- jd:skip -->
 ```csharp

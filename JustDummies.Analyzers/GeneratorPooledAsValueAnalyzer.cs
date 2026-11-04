@@ -60,7 +60,7 @@ public sealed class GeneratorPooledAsValueAnalyzer : DiagnosticAnalyzer {
     // hands out recipes, and the pool keeps its diagnostic.
     private static bool IsFlattenedByThen(IInvocationOperation pool, INamedTypeSymbol iAny) {
         IOperation receiver = pool;
-        while (receiver.Parent is IConversionOperation { IsImplicit: true } conversion) { receiver = conversion; }
+        while (receiver.Parent is IConversionOperation { IsImplicit: true } or IParenthesizedOperation) { receiver = receiver.Parent; }
 
         if (receiver.Parent is not IArgumentOperation { Parameter.Ordinal: 0, Parent: IInvocationOperation then }) { return false; }
 

@@ -7,69 +7,75 @@ Toutes les fabriques `Any.*` de la bibliothèque, regroupées par famille, avec 
 documente. Si vous connaissez le type dont vous avez besoin, cette page vous amène aux bonnes
 contraintes en un saut.
 
+La colonne **Builder** nomme le type que retourne chaque fabrique — celui à écrire pour un champ, le type
+de retour d'un helper ou le paramètre d'une recette. Il suit le nom de la fabrique : `Any.Int32()`
+retourne un `AnyInt32`, `Any.ListOf(item)` un `AnyList<T>`. Trois font exception : `Any.StringMatching`
+retourne un `AnyPattern`, `Any.ElementOf` un `AnyOneOf<T>`, et `Any.PermutationOf` un simple
+`IAny<List<T>>`, sans contrainte propre à ajouter.
+
 ## Nombres
 
-| Fabrique | Tire | Page |
-| --- | --- | --- |
-| `Any.Byte()` | `byte` | [Nombres](./numbers.fr.md) |
-| `Any.SByte()` | `sbyte` | [Nombres](./numbers.fr.md) |
-| `Any.Int16()` | `short` | [Nombres](./numbers.fr.md) |
-| `Any.Int32()` | `int` | [Nombres](./numbers.fr.md) |
-| `Any.Int64()` | `long` | [Nombres](./numbers.fr.md) |
-| `Any.UInt16()` | `ushort` | [Nombres](./numbers.fr.md) |
-| `Any.UInt32()` | `uint` | [Nombres](./numbers.fr.md) |
-| `Any.UInt64()` | `ulong` | [Nombres](./numbers.fr.md) |
-| `Any.Decimal()` | `decimal` | [Nombres](./numbers.fr.md) |
-| `Any.Double()` | `double` | [Nombres](./numbers.fr.md) |
-| `Any.Single()` | `float` | [Nombres](./numbers.fr.md) |
-| `Any.Int128()` 🔹 | `Int128` | [Nombres](./numbers.fr.md) |
-| `Any.UInt128()` 🔹 | `UInt128` | [Nombres](./numbers.fr.md) |
-| `Any.Half()` 🔹 | `Half` | [Nombres](./numbers.fr.md) |
+| Fabrique | Builder | Tire | Page |
+| --- | --- | --- | --- |
+| `Any.Byte()` | `AnyByte` | `byte` | [Nombres](./numbers.fr.md) |
+| `Any.SByte()` | `AnySByte` | `sbyte` | [Nombres](./numbers.fr.md) |
+| `Any.Int16()` | `AnyInt16` | `short` | [Nombres](./numbers.fr.md) |
+| `Any.Int32()` | `AnyInt32` | `int` | [Nombres](./numbers.fr.md) |
+| `Any.Int64()` | `AnyInt64` | `long` | [Nombres](./numbers.fr.md) |
+| `Any.UInt16()` | `AnyUInt16` | `ushort` | [Nombres](./numbers.fr.md) |
+| `Any.UInt32()` | `AnyUInt32` | `uint` | [Nombres](./numbers.fr.md) |
+| `Any.UInt64()` | `AnyUInt64` | `ulong` | [Nombres](./numbers.fr.md) |
+| `Any.Decimal()` | `AnyDecimal` | `decimal` | [Nombres](./numbers.fr.md) |
+| `Any.Double()` | `AnyDouble` | `double` | [Nombres](./numbers.fr.md) |
+| `Any.Single()` | `AnySingle` | `float` | [Nombres](./numbers.fr.md) |
+| `Any.Int128()` 🔹 | `AnyInt128` | `Int128` | [Nombres](./numbers.fr.md) |
+| `Any.UInt128()` 🔹 | `AnyUInt128` | `UInt128` | [Nombres](./numbers.fr.md) |
+| `Any.Half()` 🔹 | `AnyHalf` | `Half` | [Nombres](./numbers.fr.md) |
 
 ## Chaînes et caractères
 
-| Fabrique | Tire | Page |
-| --- | --- | --- |
-| `Any.String()` | `string` | [Chaînes et motifs](./strings.fr.md) |
-| `Any.Char()` | `char` | [Chaînes et motifs](./strings.fr.md) |
-| `Any.StringMatching(pattern)` | une `string` satisfaisant un motif régulier | [Chaînes et motifs](./strings.fr.md) |
+| Fabrique | Builder | Tire | Page |
+| --- | --- | --- | --- |
+| `Any.String()` | `AnyString` | `string` | [Chaînes et motifs](./strings.fr.md) |
+| `Any.Char()` | `AnyChar` | `char` | [Chaînes et motifs](./strings.fr.md) |
+| `Any.StringMatching(pattern)` | `AnyPattern` | une `string` satisfaisant un motif régulier | [Chaînes et motifs](./strings.fr.md) |
 
 ## Dates et heures
 
-| Fabrique | Tire | Page |
-| --- | --- | --- |
-| `Any.DateTime()` | `DateTime` | [Dates et heures](./dates-and-times.fr.md) |
-| `Any.DateTimeOffset()` | `DateTimeOffset` | [Dates et heures](./dates-and-times.fr.md) |
-| `Any.TimeSpan()` | `TimeSpan` | [Dates et heures](./dates-and-times.fr.md) |
-| `Any.DateOnly()` 🔹 | `DateOnly` | [Dates et heures](./dates-and-times.fr.md) |
-| `Any.TimeOnly()` 🔹 | `TimeOnly` | [Dates et heures](./dates-and-times.fr.md) |
+| Fabrique | Builder | Tire | Page |
+| --- | --- | --- | --- |
+| `Any.DateTime()` | `AnyDateTime` | `DateTime` | [Dates et heures](./dates-and-times.fr.md) |
+| `Any.DateTimeOffset()` | `AnyDateTimeOffset` | `DateTimeOffset` | [Dates et heures](./dates-and-times.fr.md) |
+| `Any.TimeSpan()` | `AnyTimeSpan` | `TimeSpan` | [Dates et heures](./dates-and-times.fr.md) |
+| `Any.DateOnly()` 🔹 | `AnyDateOnly` | `DateOnly` | [Dates et heures](./dates-and-times.fr.md) |
+| `Any.TimeOnly()` 🔹 | `AnyTimeOnly` | `TimeOnly` | [Dates et heures](./dates-and-times.fr.md) |
 
 ## Collections
 
-| Fabrique | Tire | Page |
-| --- | --- | --- |
-| `Any.ArrayOf(item)` | `T[]` | [Collections](./collections.fr.md) |
-| `Any.ListOf(item)` | `List<T>` | [Collections](./collections.fr.md) |
-| `Any.SequenceOf(item)` | `IEnumerable<T>` | [Collections](./collections.fr.md) |
-| `Any.SetOf(item)` | `HashSet<T>` | [Collections](./collections.fr.md) |
-| `Any.DictionaryOf(keys, values)` | `Dictionary<TKey, TValue>` | [Collections](./collections.fr.md) |
-| `Any.PermutationOf(items)` | `List<T>`, les éléments dans un ordre aléatoire | [Collections](./collections.fr.md) |
+| Fabrique | Builder | Tire | Page |
+| --- | --- | --- | --- |
+| `Any.ArrayOf(item)` | `AnyArray<T>` | `T[]` | [Collections](./collections.fr.md) |
+| `Any.ListOf(item)` | `AnyList<T>` | `List<T>` | [Collections](./collections.fr.md) |
+| `Any.SequenceOf(item)` | `AnySequence<T>` | `IEnumerable<T>` | [Collections](./collections.fr.md) |
+| `Any.SetOf(item)` | `AnySet<T>` | `HashSet<T>` | [Collections](./collections.fr.md) |
+| `Any.DictionaryOf(keys, values)` | `AnyDictionary<TKey, TValue>` | `Dictionary<TKey, TValue>` | [Collections](./collections.fr.md) |
+| `Any.PermutationOf(items)` | `IAny<List<T>>` | `List<T>`, les éléments dans un ordre aléatoire | [Collections](./collections.fr.md) |
 
 ## Énumérations et choix
 
-| Fabrique | Tire | Page |
-| --- | --- | --- |
-| `Any.Enum<TEnum>()` | un membre déclaré de `TEnum` | [Énumérations et choix](./enums-and-choices.fr.md) |
-| `Any.OneOf(values)` | l'une des valeurs listées | [Énumérations et choix](./enums-and-choices.fr.md) |
-| `Any.ElementOf(collection)` | un élément d'une collection | [Énumérations et choix](./enums-and-choices.fr.md) |
-| `Any.Boolean()` | `bool` | [Énumérations et choix](./enums-and-choices.fr.md) |
+| Fabrique | Builder | Tire | Page |
+| --- | --- | --- | --- |
+| `Any.Enum<TEnum>()` | `AnyEnum<TEnum>` | un membre déclaré de `TEnum` | [Énumérations et choix](./enums-and-choices.fr.md) |
+| `Any.OneOf(values)` | `AnyOneOf<T>` | l'une des valeurs listées | [Énumérations et choix](./enums-and-choices.fr.md) |
+| `Any.ElementOf(collection)` | `AnyOneOf<T>` | un élément d'une collection | [Énumérations et choix](./enums-and-choices.fr.md) |
+| `Any.Boolean()` | `AnyBoolean` | `bool` | [Énumérations et choix](./enums-and-choices.fr.md) |
 
 ## Identifiants et URI
 
-| Fabrique | Tire | Page |
-| --- | --- | --- |
-| `Any.Guid()` | `Guid` | [Identifiants et URI](./guids-and-uris.fr.md) |
-| `Any.Uri()` | `Uri` — web, WebSocket, FTP, mailto ou relative | [Identifiants et URI](./guids-and-uris.fr.md) |
+| Fabrique | Builder | Tire | Page |
+| --- | --- | --- | --- |
+| `Any.Guid()` | `AnyGuid` | `Guid` | [Identifiants et URI](./guids-and-uris.fr.md) |
+| `Any.Uri()` | `AnyUri` | `Uri` — web, WebSocket, FTP, mailto ou relative | [Identifiants et URI](./guids-and-uris.fr.md) |
 
 ## Composition
 

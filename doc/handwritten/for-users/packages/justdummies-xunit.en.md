@@ -20,12 +20,13 @@ running a single test. The warning is the only hint, so if you see it, raise `xu
 
 ### Running the tests
 
-The same floor decides how `dotnet test` runs. `xunit.v3` 4.x runs only on Microsoft.Testing.Platform
-v2, and on the .NET 10 SDK `dotnet test` no longer reaches it through the VSTest target: it stops with
-an error naming the opt-in. A project on `xunit.v3` 3.x, where a plain `dotnet test` worked, meets that
-error as soon as it raises `xunit.v3` to adopt the adapter — and `dotnet test --project …` fails even
-earlier, with `MSB1001: Unknown switch`, because that switch belongs to the new experience. Opt in from
-the `global.json` beside your solution:
+The same floor decides how `dotnet test` behaves. From 4.0.0 on, `xunit.v3` turns its
+Microsoft.Testing.Platform v2 integration on by default, and on the .NET 10 SDK that integration stops a
+`dotnet test` running in its default VSTest mode, with an error naming the opt-in. A project on
+`xunit.v3` 3.x, where a plain `dotnet test` worked, meets that error as soon as it raises `xunit.v3` to
+adopt the adapter — and `dotnet test --project …` fails even earlier, with `MSB1001: Unknown switch`,
+because that switch belongs to the Microsoft.Testing.Platform mode. Opt into that mode from the
+`global.json` beside your solution:
 
 ```json
 {
@@ -35,11 +36,18 @@ the `global.json` beside your solution:
 }
 ```
 
-If you would rather leave `global.json` alone, two routes remain: run the test project itself, which
-is an executable under Microsoft.Testing.Platform (`dotnet run --project Tests`), or keep it on the
-VSTest target with `-p:IsTestingPlatformApplication=false`. The SDK's own page,
+If you would rather leave `global.json` alone, two routes remain:
+
+- run the test project itself, which is an executable: `dotnet run --project Tests`;
+- stay on VSTest with `-p:IsTestingPlatformApplication=false`, or the same property in the project
+  file. The switch only turns the Microsoft.Testing.Platform application off: discovering and running
+  the tests through VSTest still needs the `xunit.runner.visualstudio` and `Microsoft.NET.Test.Sdk`
+  package references, which a project set up for Microsoft.Testing.Platform alone may not have.
+
+xUnit's own page, [Microsoft Testing Platform](https://xunit.net/docs/getting-started/v3/microsoft-testing-platform),
+describes the integration and what each mode requires; the SDK's,
 [Testing with `dotnet test`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test),
-describes both modes and the switches each one accepts.
+describes the two modes of `dotnet test` and the switches each one accepts.
 
 ## The whole surface
 

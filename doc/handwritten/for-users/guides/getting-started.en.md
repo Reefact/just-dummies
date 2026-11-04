@@ -63,7 +63,7 @@ dotnet add package JustDummies
 
 That is the whole install. The package also carries its 38 analyzer rules inside it, so the guards on correct usage start working on your next build with nothing further to configure. A build that prints `0 Warning(s)` does not mean they are absent: several are Info rules, which `dotnet build` keeps out of the console. The [rule index](../analyzers/README.md) says how to see them, and how to confirm all 38 are loaded.
 
-Every `Any.*` factory lives in the `JustDummies` namespace: start a test file with `using JustDummies;`, or declare it once for the whole test project with `<Using Include="JustDummies" />` in its `.csproj`.
+Every `Any.*` factory lives in the `JustDummies` namespace: start a test file with `using JustDummies;`, or declare it once for the whole test project with `<Using Include="JustDummies" />` in its `.csproj`. That item makes the SDK write a `global using`, which needs C# 10 or later; below it, keep the `using` in each file.
 
 ## Your first dummies
 

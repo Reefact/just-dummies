@@ -628,11 +628,13 @@ overload you add.
 
 The generated file is yours, and the class is `partial`. Add a file beside it with the overload you
 need. The generated file carries its own `using JustDummies;`; yours does not inherit it, so start it
-with that line too, or declare `<Using Include="JustDummies" />` once in the test project:
+with that line too, or, at C# 10 or later, declare `<Using Include="JustDummies" />` once in the test project:
 
 <!-- jd:skip -->
 ```csharp
 // AnyShipment.Custom.cs: written by you, never touched by `any generate --force`.
+using JustDummies;
+
 public sealed partial class AnyShipment {
 
     public AnyShipment WithDeclaredValue(IAny<decimal?> generator) {

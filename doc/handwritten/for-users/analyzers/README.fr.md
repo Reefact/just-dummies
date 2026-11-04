@@ -44,6 +44,17 @@ dotnet_diagnostic.JD030.severity = warning
 dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
 ```
 
+**Pour vérifier que les règles sont chargées**, qu'une se déclenche ou non, compilez avec un journal d'erreurs
+SARIF 2.1 :
+
+```bash
+dotnet build -p:ErrorLog="jd.sarif%2Cversion=2.1"
+```
+
+`jd.sarif` liste alors toutes les règles que le compilateur a chargées, dont les 38 identifiants `JD`. Le journal
+SARIF 1.0 par défaut ne liste que les règles qui ont signalé quelque chose : il ne distingue donc pas une règle
+silencieuse d'une règle absente.
+
 ## Reproductibilité
 
 Ces règles empêchent un corps de test asynchrone d'avaler silencieusement ses propres échecs.

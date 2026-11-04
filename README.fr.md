@@ -62,7 +62,8 @@ dotnet add package JustDummies
 ```
 
 Aucune dépendance à l'exécution, et les 38 règles d'analyzer sont embarquées — elles se mettent à travailler dès
-votre prochaine compilation.
+votre prochaine compilation. Tout vit dans l'espace de noms `JustDummies` : `using JustDummies;` dans un fichier de
+test, ou `<Using Include="JustDummies" />` une fois dans le projet de test.
 
 ## 🔁 Reproductible par construction
 

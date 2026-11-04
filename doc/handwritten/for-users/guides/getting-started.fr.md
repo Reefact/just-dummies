@@ -61,7 +61,9 @@ Le test énonce maintenant son intention.
 dotnet add package JustDummies
 ```
 
-C'est toute l'installation. Le paquet embarque aussi ses 38 règles d'analyzer, si bien que les garde-fous du bon usage se mettent à travailler dès la compilation suivante, sans rien configurer de plus.
+C'est toute l'installation. Le paquet embarque aussi ses 38 règles d'analyzer, si bien que les garde-fous du bon usage se mettent à travailler dès la compilation suivante, sans rien configurer de plus. Un build qui affiche `0 Warning(s)` ne veut pas dire qu'elles sont absentes : plusieurs sont des règles Info, que `dotnet build` garde hors de la console. L'[index des règles](../analyzers/README.fr.md) dit comment les voir, et comment vérifier que les 38 sont chargées.
+
+Toutes les fabriques `Any.*` vivent dans l'espace de noms `JustDummies` : commencez un fichier de test par `using JustDummies;`, ou déclarez-le une fois pour tout le projet de test avec `<Using Include="JustDummies" />` dans son `.csproj`.
 
 ## Vos premiers dummies
 
@@ -201,6 +203,13 @@ public static class AnyEntry {
     }
 }
 ```
+
+`AnyEntry` est facultatif : `new AnyOrderReference()` fonctionne tout aussi bien. Il utilise un membre
+d'extension C# 14, `extension(Any)`, pour que `Any.OrderReference()` se lise comme les fabriques de la
+bibliothèque. En dessous de C# 14, le bloc ne se compile pas, et les erreurs du compilateur (`CS1001`, `CS1513`, `CS1022`)
+ne mentionnent jamais la version du langage : écrivez plutôt une classe statique ordinaire à vous et appelez
+`Arbitrary.OrderReference()`. Le scaffolder `any` écrit l'une ou l'autre forme pour vous, `--entry-point any` ou
+`--entry-point static:Arbitrary` ([L'atteindre comme `Any.Order()`](../packages/justdummies-cli.fr.md#latteindre-comme-anyorder)).
 
 Le test dit maintenant encore plus clairement ce qui compte pour lui : `AnyOrderReference` et `AnyCustomerName` n'ont plus besoin du commentaire d'origine pour signaler que ni l'un ni l'autre ne joue de rôle dans la remise — le nom du générateur le dit à la place du commentaire, sans qu'aucune contrainte ne vienne détourner l'attention.
 

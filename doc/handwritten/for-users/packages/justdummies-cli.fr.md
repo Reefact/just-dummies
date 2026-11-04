@@ -642,7 +642,9 @@ fixez-la.
 ### Ajouter la surcharge vous-même
 
 Le fichier généré vous appartient et la classe est `partial`. Ajoutez à côté un fichier contenant la
-surcharge dont vous avez besoin :
+surcharge dont vous avez besoin. Le fichier généré porte son propre `using JustDummies;` ; le vôtre n'en hérite
+pas, donc commencez-le par la même ligne, ou déclarez `<Using Include="JustDummies" />` une fois dans le projet
+de test :
 
 <!-- jd:skip -->
 ```csharp

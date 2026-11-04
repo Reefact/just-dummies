@@ -102,4 +102,46 @@ public class Jd012GeneratorPooledAsValueTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
+    // Then draws one recipe from the pool and then a value from it, so a pool flattened that way yields values, split
+    // across the recipes and replayed from one seed: the remedy the message names, not the mistake (issue #435).
+    [Theory]
+    [InlineData("IAny<int> anyLeaf = Any.ElementOf(leaves).Then(leaf => leaf);")]
+    [InlineData("IAny<int> anyLeaf = Any.OneOf(leaves[0], leaves[1]).Then(leaf => leaf);")]
+    [InlineData("IAny<int> anyLeaf = Any.WithSeed(1234).ElementOf(leaves).Then(leaf => leaf);")]
+    public async Task Does_not_report_a_pool_that_Then_flattens_into_values(string statement) {
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    AnyInt32[] leaves = { Any.Int32().Positive(), Any.Int32().Negative() };
+                    {{statement}}
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorPooledAsValueAnalyzer(), source);
+
+        Check.That(diagnostics).IsEmpty();
+    }
+
+    [Fact]
+    public async Task Still_reports_a_pool_that_Then_keeps_as_recipes() {
+        // A Then whose result is itself a generator still hands out recipes, so the pool remains the mistake.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    IAny<AnyInt32> anyRecipe = Any.OneOf(Any.Int32().Positive(), Any.Int32().Negative()).Then(recipe => Any.Fixed(recipe));
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorPooledAsValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD012");
+    }
+
 }

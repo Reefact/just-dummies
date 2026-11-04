@@ -17,6 +17,8 @@ public sealed class GeneratorPooledAsValueAnalyzer : DiagnosticAnalyzer {
 
     private const string OneOfMethodName     = "OneOf";
     private const string ElementOfMethodName = "ElementOf";
+    private const string ThenMethodName      = "Then";
+    private const string ThenContainingType  = "JustDummies.AnyExtensions";
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
@@ -46,7 +48,27 @@ public sealed class GeneratorPooledAsValueAnalyzer : DiagnosticAnalyzer {
 
         if (!GeneratorFacts.IsGenerator(method.TypeArguments[0], symbols.IAny!)) { return; }
 
+        // `.Then(recipe => recipe)` draws one recipe from the pool and then a value from it — the remedy this rule's
+        // message names, not the mistake — so a pool Then flattens into values is left alone (issue #435).
+        if (IsFlattenedByThen(invocation, symbols.IAny!)) { return; }
+
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.GeneratorPooledAsValue, invocation.Syntax.GetLocation(), method.Name));
+    }
+
+    // True when the pool is the receiver of AnyExtensions.Then and Then's result is a value rather than another
+    // generator: each draw then picks a recipe and draws from it. A Then whose result is itself a generator still
+    // hands out recipes, and the pool keeps its diagnostic.
+    private static bool IsFlattenedByThen(IInvocationOperation pool, INamedTypeSymbol iAny) {
+        IOperation receiver = pool;
+        while (receiver.Parent is IConversionOperation { IsImplicit: true } conversion) { receiver = conversion; }
+
+        if (receiver.Parent is not IArgumentOperation { Parameter.Ordinal: 0, Parent: IInvocationOperation then }) { return false; }
+
+        IMethodSymbol method = then.TargetMethod;
+        if (method.Name != ThenMethodName || !method.IsExtensionMethod || method.TypeArguments.Length != 2) { return false; }
+        if (method.ContainingType?.ToDisplayString() != ThenContainingType) { return false; }
+
+        return !GeneratorFacts.IsGenerator(method.TypeArguments[1], iAny);
     }
 
     // Both entry points are mirrored on Any and AnyContext (SurfaceParityTests enforces the mirror), so the rule must

@@ -18,6 +18,29 @@ the same version: with an older `xunit.v3` the restore pulls the extensibility p
 one `xunit.v3.core` pins, warns about it (`NU1608`), and the test process then crashes instead of
 running a single test. The warning is the only hint, so if you see it, raise `xunit.v3` to match.
 
+### Running the tests
+
+The same floor decides how `dotnet test` runs. `xunit.v3` 4.x runs only on Microsoft.Testing.Platform
+v2, and on the .NET 10 SDK `dotnet test` no longer reaches it through the VSTest target: it stops with
+an error naming the opt-in. A project on `xunit.v3` 3.x, where a plain `dotnet test` worked, meets that
+error as soon as it raises `xunit.v3` to adopt the adapter — and `dotnet test --project …` fails even
+earlier, with `MSB1001: Unknown switch`, because that switch belongs to the new experience. Opt in from
+the `global.json` beside your solution:
+
+```json
+{
+  "test": {
+    "runner": "Microsoft.Testing.Platform"
+  }
+}
+```
+
+If you would rather leave `global.json` alone, two routes remain: run the test project itself, which
+is an executable under Microsoft.Testing.Platform (`dotnet run --project Tests`), or keep it on the
+VSTest target with `-p:IsTestingPlatformApplication=false`. The SDK's own page,
+[Testing with `dotnet test`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test),
+describes both modes and the switches each one accepts.
+
 ## The whole surface
 
 `ReproducibleAttribute`, in the `JustDummies.Xunit` namespace, with a settable `Seed`. That is all of it — the adapter is deliberately thin,

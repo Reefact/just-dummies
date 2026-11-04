@@ -296,4 +296,24 @@ public class Jd009DrawInStaticInitializerTests {
         Check.That(diagnostics.Length).IsEqualTo(9);
     }
 
+    // The rule reads the initializer's own code and does not follow the methods it calls: a helper whose body draws is
+    // the documented blind spot, and returning the generator from the helper is the remedy (issue #439).
+    [Fact]
+    public async Task Does_not_follow_a_static_initializer_into_a_helper_that_draws() {
+        const string source = """
+            using JustDummies;
+
+            public static class Fixtures {
+                public static int Rate(int floor) => Any.Int32().GreaterThanOrEqualTo(floor).Generate();
+            }
+
+            public static class Sample {
+                private static readonly int ViaHelper = Fixtures.Rate(1);
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawInStaticInitializerAnalyzer(), source);
+
+        Check.That(diagnostics).IsEmpty();
+    }
 }

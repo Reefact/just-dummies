@@ -58,7 +58,7 @@ public sealed class AnyInt16 : IAny<short>, IHasRandomSource, ICardinalityHint<s
 
     bool ICardinalityHint<short>.Contains(short value) => _spec.Contains(Ord(value));
 
-    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    /// <summary>The largest value this generator can produce, for a pair to bound the side its order puts below (ADR-0131).</summary>
     internal short Largest() {
         return Val(_spec.Largest());
     }

@@ -111,7 +111,7 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
 
     bool ICardinalityHint<DateTimeOffset>.Contains(DateTimeOffset value) => _spec.Contains(Ord(value));
 
-    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    /// <summary>The largest value this generator can produce, for a pair to bound the side its order puts below (ADR-0131).</summary>
     internal DateTimeOffset Largest() {
         return Val(_spec.Largest());
     }

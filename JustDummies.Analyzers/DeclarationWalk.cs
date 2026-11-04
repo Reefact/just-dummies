@@ -50,7 +50,6 @@ internal static class DeclarationWalk {
     private const string ExactCount        = "exact count";
     private const string StringOwner       = "AnyString";
     private const string DecimalOwner      = "AnyDecimal";
-    private const string PairOwner         = "AnyOrderedPair";
     private const string ScaleName         = "WithScale";
     private const string Step              = "step";
     private const string GuidOwner         = "AnyGuid";
@@ -192,8 +191,6 @@ internal static class DeclarationWalk {
             OffsetName or OffsetRangeName                             => "offset",
             "WithCount"                                               => ExactCount,
             "Ordered"                                                 => "order",
-            "WithFirst" when owner == PairOwner                       => "first value",
-            "WithSecond" when owner == PairOwner                      => "second value",
             "Empty" when owner is "AnyCollection" or "AnyDictionary"  => ExactCount,
             // A Guid is either pinned to Guid.Empty or kept away from it: the two calls fill one slot, so a repetition
             // is JD035's and the pair is a conflict the run time refuses in either order (issue #366).

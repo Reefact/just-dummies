@@ -79,15 +79,6 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     }
 
     /// <summary>
-    ///     Builds the exception for an ordered pair one of whose bases admits no value on the side the order requires
-    ///     — no first value at or below the largest second, no second value at or above a pinned first — quoting the
-    ///     refusal that base raised, so both sides are named (ADR-0126).
-    /// </summary>
-    internal static ConflictingAnyConstraintException OrderedPairHasNoValue(ConstraintCall applying, string missing, ConflictingAnyConstraintException refusal) {
-        return Sentence(applying, $"{missing}: {refusal.Reason ?? refusal.Message}");
-    }
-
-    /// <summary>
     ///     Builds the exception for a pair whose order leaves the side below with no value — none at or below the
     ///     largest value the other base can produce — quoting the refusal that side's base raised, so both sides are
     ///     named (ADR-0131).

@@ -66,6 +66,56 @@ public sealed class OrderedPairTests {
         Check.That(outcome.File!.SourceText).Contains("— ties end to start; StartAndEnd() draws their order, not this guard: write it there — then delete these two lines.");
     }
 
+    // Reached outside TieOrMark: a throwing branch that does something else first is marked as a rejection, not read,
+    // and a guard below the scan is read on a reading of its own. Both are still rules between the two paired ones.
+    [Theory(DisplayName = "A rule between two paired parameters points to the pair whatever path marks it.")]
+    [InlineData("""
+                if (start >= end) { throw new ArgumentException(nameof(end)); }
+                if (end - start > 31) { Console.WriteLine(); throw new ArgumentException(nameof(end)); }
+                """)]
+    [InlineData("""
+                if (start >= end) { throw new ArgumentException(nameof(end)); }
+                Kept = start;
+                if (end - start > 31) { throw new ArgumentException(nameof(end)); }
+                """)]
+    public void AnUnreadRuleBetweenPairedParametersPointsToThePairOnEveryPath(string body) {
+        ScaffoldOutcome outcome = Scaffolded("int start, int end", body);
+
+        Check.That(outcome.Plan!.Pairings).HasSize(1);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note))
+             .ContainsExactly("ties end to start; StartAndEnd() draws their order, not this guard: write it there",
+                              "ties end to start; StartAndEnd() draws their order, not this guard: write it there");
+    }
+
+    // The rule travels with the order through the hand-off, swapped where the hand-off swaps the values, and is named
+    // after the parameters this generator draws, never after the delegated constructor's own.
+    [Theory(DisplayName = "A rule between two parameters a constructor hands on points to the pair drawn for them.")]
+    [InlineData("public Subject(int low, int high) : this(low, high, true) { }", "ties high to low; LowAndHigh()")]
+    [InlineData("public Subject(int low, int high) : this(high, low, true) { }", "ties low to high; HighAndLow()")]
+    public void AnUnreadRuleTravelsThroughAHandOff(string handOff, string pointer) {
+        ScaffoldOutcome outcome = Scaffolded($$"""
+                                               using System;
+
+                                               namespace Shop.Domain;
+
+                                               public sealed class Subject {
+
+                                                   private Subject(int min, int max, bool checkedOnce) {
+                                                       if (min > max) { throw new ArgumentException(nameof(min)); }
+                                                       if (max - min > 31) { throw new ArgumentException(nameof(max)); }
+                                                   }
+
+                                                   {{handOff}}
+
+                                               }
+                                               """);
+
+        Check.That(outcome.Plan!.Pairings).HasSize(1);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note))
+             .ContainsExactly(pointer + " draws their order, not this guard: write it there",
+                              pointer + " draws their order, not this guard: write it there");
+    }
+
     [Fact(DisplayName = "A rule between two parameters that are not paired keeps its plain note.")]
     public void AnUnreadRuleBetweenUnpairedParametersKeepsItsNote() {
         ScaffoldOutcome outcome = Scaffolded("int start, int end", "if (end - start > 31) { throw new ArgumentException(nameof(end)); }");

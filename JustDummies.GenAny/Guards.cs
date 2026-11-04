@@ -326,6 +326,14 @@ internal static class Guards {
             if (from is not null) { reading.MarkUnread(from, at); }
             if (to is not null) { reading.MarkUnread(to, at); }
         }
+
+        // A rule the delegated constructor could not read between two of its parameters is one between the outer
+        // parameters handed to both, so it can still be pointed to the pair that draws them (#459).
+        foreach ((string first, string second, UnreadGuard at) in delegated?.RulesBetweenTwo ?? []) {
+            if (handed.TryGetValue(first, out string? outerFirst) && handed.TryGetValue(second, out string? outerSecond) && outerFirst != outerSecond) {
+                reading.RuleBetween(outerFirst, outerSecond, at);
+            }
+        }
     }
 
     /// <summary>
@@ -578,8 +586,13 @@ internal static class Guards {
 
         string? pattern = RegexPatternIn(throwing, model);
 
-        foreach (IParameterSymbol parameter in Mentioned(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(throwing, pattern: pattern)); }
-        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(throwing, pattern: pattern)); }
+        UnreadGuard        at       = UnreadGuard.At(throwing, pattern: pattern);
+        IParameterSymbol[] rejected = [.. Mentioned(statement, model, method, ignoresWhatIsThrown: true).Concat(ReachedThroughCopies(statement, model, method, ignoresWhatIsThrown: true)).Distinct<IParameterSymbol>(SymbolEqualityComparer.Default)];
+
+        foreach (IParameterSymbol parameter in rejected) { reading.MarkUnread(parameter.Name, at); }
+
+        // Recorded like the rule of a plain if-throw, so a pair drawing both can be named in the note (#459).
+        if (rejected.Length == 2) { reading.RuleBetween(rejected[0].Name, rejected[1].Name, at); }
 
         MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), throwing, model, method, reading);
     }
@@ -1157,6 +1170,9 @@ internal static class Guards {
             reading.MarkUnread(pairing.First, at);
             reading.MarkUnread(pairing.Second, at);
         }
+
+        // A rule between two parameters below the scan is still one a pair drawn above it can be named for (#459).
+        foreach ((string first, string second, UnreadGuard at) in wouldHaveRead.RulesBetweenTwo) { reading.RuleBetween(first, second, at); }
     }
 
     /// <summary>Reads every call under <paramref name="statement" /> the closed set recognises as a guard.</summary>

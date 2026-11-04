@@ -21,15 +21,19 @@ import. A declarations sample is whole types, which is what a reader copies into
 The third developer-UX trial met the consequence of the injected imports in five domains (DOCS-11): a reader who
 copied a declarations sample into a test file met `CS0103` on `Any`, or a missing `[Fact]`, because the page compiled
 with imports the reader's file did not have. The harness hid the gap from the build: under a namespace inside
-`JustDummies`, the library's types resolved through the enclosing namespace even without an import. The first
-recommendation of the same trial, removing the injection, had already been carried out for the xUnit adapter's page
-alone.
+`JustDummies`, the library's types resolved through the enclosing namespace even without an import. An earlier UX
+trial had already recommended removing the injection ([XU-D1](../../../../tools/ux-trial/REPORT.md#xu-d1)); that
+recommendation was carried out for the xUnit adapter's page only.
+
+A test project on the SDK gets a set of implicit imports, `System` among them, without writing a line: the SDK's
+project templates enable them by default. They stay a project setting, though, and a project that disables them has
+to write those imports in every file.
 
 ## Decision
 
-A declarations sample states the imports it uses, and the harness compiles it with only what a test project supplies
-unwritten — the SDK's implicit imports and the shared illustrative domain — in a namespace outside `JustDummies`; a
-statements sample keeps the shared imports.
+A declarations sample states the imports it uses beyond the SDK's implicit ones, and the harness compiles it with only
+what a test project with implicit imports enabled supplies unwritten — those implicit imports and the shared
+illustrative domain — in a namespace outside `JustDummies`; a statements sample keeps the shared imports.
 
 ## Rationale
 
@@ -45,9 +49,12 @@ for declarations samples makes the page show that line instead of assuming it.
 import; there, the shared imports are the only way to compile at all, and the reader copies a fragment into a method
 that already has its file's imports.
 
-**What a test project supplies unwritten is the honest baseline.** The SDK's implicit imports are in every reader's
-project without a line of theirs, and the illustrative domain is the one thing ADR-0055 lets a page assume. Anything
-beyond that is a line the reader must write, so the sample writes it too.
+**The default test project is the honest baseline, and it is named as such.** The SDK's implicit imports are in a
+reader's project without a line of theirs for as long as the project keeps the templates' default, and the
+illustrative domain is the one thing ADR-0055 lets a page assume. Anything beyond that is a line the reader must
+write, so the sample writes it too. A project that disables implicit imports already writes `System` and its
+neighbours in every file it has; repeating them in every sample would show most readers lines they never write, so
+the baseline stays the default and the decision says so rather than claiming every project.
 
 ## Alternatives Considered
 
@@ -65,13 +72,16 @@ compiling at all, and the compile contract of ADR-0055 is the point.
 
 ### Positive
 
-* A declarations sample is copyable as it stands: the page shows the imports the reader's file needs.
+* A declarations sample is copyable as it stands into a test project that keeps the SDK's implicit imports: the page
+  shows the imports the reader's file needs beyond them.
 * A sample that forgets an import fails the build, and a contract test keeps the harness from supplying it again.
 
 ### Negative
 
 * A declarations sample is longer by its import lines, and every new one has to state them.
 * The contract of ADR-0055 now differs by mode, which a writer has to know.
+* A reader whose project disables implicit imports still adds `System` and its neighbours to a copied sample, as
+  they do to every file of theirs.
 
 ### Risks
 

@@ -667,7 +667,7 @@ public static class JustDummiesRule {
 
     }
 
-    /// <summary>A floating-point dummy that declares no range, so one draw in ten spans the whole type</summary>
+    /// <summary>A double, float or decimal dummy that declares no range, so one draw in ten spans the whole type</summary>
     [DiagnosticRule]
     public static class JD036 {
 
@@ -678,7 +678,7 @@ public static class JustDummiesRule {
         public const string Category = JustDummiesCategory.Constraints;
 
         /// <summary>The one-line summary the IDE shows beside the rule.</summary>
-        public const string Title = "A floating-point dummy that declares no range";
+        public const string Title = "A double, float or decimal dummy that declares no range";
 
         /// <summary>The page explaining the condition this diagnostic detects.</summary>
         public const string HelpLinkUri = HelpLinkBase + nameof(JD036) + HelpLinkSuffix;

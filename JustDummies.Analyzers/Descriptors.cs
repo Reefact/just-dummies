@@ -299,7 +299,7 @@ internal static class Descriptors {
     public static readonly DiagnosticDescriptor UndeclaredNumericRange = new(
         id: JustDummiesRule.JD036.Id,
         title: JustDummiesRule.JD036.Title,
-        messageFormat: "This floating-point dummy declares no range: one draw in ten spans the whole type",
+        messageFormat: "This {0} dummy declares no range: one draw in ten spans the whole type",
         category: JustDummiesRule.JD036.Category,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,

@@ -135,7 +135,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   same instance every time, so pin an immutable value. It never qualifies the replay hint of a
   composition it is part of (ADR-0118, issue #397).
 
-- **JD036 names the range a floating-point dummy left unsaid.** An `Any.Double()`, `Any.Single()` or
+- **JD036 names the range a `double`, `float` or `decimal` dummy left unsaid.** An `Any.Double()`, `Any.Single()` or
   `Any.Decimal()` chain that declares no range bounded on both sides now draws one value in ten across
   the whole type (see *Changed*), and a value near `double.MaxValue` in a failure message does not say
   what to write instead. JD036 says it at the call site, at information severity, like JD030 for a
@@ -143,7 +143,10 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   value set, a pin and a bound written against the type's own edge — `Between(0, double.MaxValue)`
   closes nothing — are read the way the run time reads them (ADR-0117, issue #402). The `any`
   scaffolder's output raises it on a floating-point parameter whose domain states no range, as it
-  raises JD030 on a string: the tool does not invent a bound the domain never stated.
+  raises JD030 on a string: the tool does not invent a bound the domain never stated. The message names
+  the type it fired on — `This decimal dummy declares no range: …` — since the library keeps `decimal`
+  apart from the binary floating-point builders, and "floating-point dummy" on an `Any.Decimal()` chain
+  stopped readers (issue #438).
 
 - **Every `OneOf` now accepts a sequence as well as a list of values.** `AnyString` was the only one
   of the twenty-three generators with an `IEnumerable<T>` overload. The other twenty-two now have one

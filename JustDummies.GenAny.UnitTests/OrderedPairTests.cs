@@ -143,6 +143,44 @@ public sealed class OrderedPairTests {
         Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note)).ContainsExactly(null, null);
     }
 
+    // A condition naming both through separate tests is two bounds, each honoured in its own recipe: the marks stay, and
+    // no note sends the developer to the pair's method for them.
+    [Theory(DisplayName = "Separate tests on each side of a pair are not called a rule between them.")]
+    [InlineData("""
+                public Subject(int start, int end) {
+                    if (start >= end) { throw new ArgumentException(nameof(end)); }
+                    Validate(start, end);
+                }
+
+                private static void Validate(int start, int end) {
+                    if (start < 0 || end > 31) { throw new ArgumentException(nameof(start)); }
+                }
+                """)]
+    [InlineData("""
+                public Subject(int start, int end) {
+                    if (start >= end) { throw new ArgumentException(nameof(end)); }
+                    if (start < 0 || end > 31) { Console.WriteLine(); throw new ArgumentException(nameof(start)); }
+                }
+                """)]
+    public void SeparateTestsOnEachSideAreNotARuleBetweenThem(string members) {
+        ScaffoldOutcome outcome = Scaffolded($$"""
+                                               using System;
+
+                                               namespace Shop.Domain;
+
+                                               public sealed class Subject {
+
+                                                   {{members}}
+
+                                               }
+                                               """);
+
+        Check.That(outcome.Plan!.Pairings).HasSize(1);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.RequiresVerification)).ContainsExactly(true, true);
+        Check.That(outcome.Plan.Parameters.Select(parameter => parameter.UnreadGuard!.Note ?? string.Empty))
+             .ContainsOnlyElementsThatMatch(note => !note.Contains("StartAndEnd()"));
+    }
+
     // The rule travels with the order through the hand-off, swapped where the hand-off swaps the values, and is named
     // after the parameters this generator draws, never after the delegated constructor's own.
     [Theory(DisplayName = "A rule between two parameters a constructor hands on points to the pair drawn for them.")]

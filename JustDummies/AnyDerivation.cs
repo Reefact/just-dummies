@@ -134,6 +134,11 @@ internal static class AnyDerivation {
     ///     that through would replace the diagnostic being built with an unrelated failure, hiding the constraint
     ///     conflict or factory rejection the caller needs to read, so a throwing rendering falls back to the type
     ///     name: the message loses a detail, never the report it was explaining.
+    ///     <para>
+    ///         A temporal value is printed in the round-trip "O" format the generators print their bounds in, so a
+    ///         sentence never mixes two date formats, and two distinct values never render the same by losing their
+    ///         sub-seconds (issue #429).
+    ///     </para>
     /// </summary>
     internal static string Display(object? value) {
         switch (value) {
@@ -141,12 +146,23 @@ internal static class AnyDerivation {
             case string text: return "\"" + CharacterPools.Escape(text) + "\"";
             default:
                 try {
-                    return CharacterPools.Escape(value is IFormattable formattable
-                                                     ? formattable.ToString(null, CultureInfo.InvariantCulture)
-                                                     : value.ToString() ?? value.GetType().Name);
+                    return CharacterPools.Escape(Render(value));
                 } catch (Exception) {
                     return value.GetType().Name;
                 }
+        }
+    }
+
+    private static string Render(object value) {
+        switch (value) {
+            case DateTime dateTime:             return dateTime.ToString("O", CultureInfo.InvariantCulture);
+            case DateTimeOffset dateTimeOffset: return dateTimeOffset.ToString("O", CultureInfo.InvariantCulture);
+#if NET8_0_OR_GREATER
+            case DateOnly date: return date.ToString("O", CultureInfo.InvariantCulture);
+            case TimeOnly time: return time.ToString("O", CultureInfo.InvariantCulture);
+#endif
+            case IFormattable formattable: return formattable.ToString(null, CultureInfo.InvariantCulture);
+            default:                       return value.ToString() ?? value.GetType().Name;
         }
     }
 

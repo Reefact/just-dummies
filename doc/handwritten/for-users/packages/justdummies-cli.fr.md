@@ -424,7 +424,8 @@ Info n'est jamais affiché par `dotnet build` ;
 
 `AnyValid…()` retourne le constructeur que l'outil a choisi pour le type : `AnyString` pour une `string`.
 Remplacez `Any.String()` par `Any.StringMatching("[A-Z]{3}")` et le fichier ne compile plus
-(`CS0029`), parce que cet appel retourne un `AnyPattern`. L'ancien type figure sur trois lignes de plus, et ce
+(`CS0029`), parce que cet appel retourne un `AnyPattern` ; la [référence des générateurs](../generators/README.fr.md)
+nomme le builder que retourne chaque fabrique. L'ancien type figure sur trois lignes de plus, et ce
 sont toutes les modifications à faire — le champ de recette, le paramètre du constructeur de recettes, et le
 `Func<…>` de la surcharge d'affinage placée à côté de la fixation :
 

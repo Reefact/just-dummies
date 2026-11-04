@@ -415,7 +415,8 @@ Info never prints in `dotnet build`;
 
 `AnyValid…()` returns the builder the tool chose for the type: `AnyString` for a `string`. Replace
 `Any.String()` with `Any.StringMatching("[A-Z]{3}")` and the file stops compiling
-(`CS0029`), because that call returns an `AnyPattern`. The old type is on three more lines, and they
+(`CS0029`), because that call returns an `AnyPattern`; the [generator reference](../generators/README.md)
+names the builder each factory returns. The old type is on three more lines, and they
 are the whole of the edit — the recipe field, the recipe constructor's parameter, and the `Func<…>`
 of the refining overload beside the pin:
 

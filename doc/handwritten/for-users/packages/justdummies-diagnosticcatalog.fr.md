@@ -13,6 +13,8 @@ Une suppression nomme normalement sa règle par deux littéraux de chaîne :
 
 <!-- jd:declarations -->
 ```csharp
+using System.Diagnostics.CodeAnalysis;
+
 internal static class LegacyArrangements {
 
     [SuppressMessage("JustDummies.Usage", "JD006:DiscardedGeneratorResult", Justification = "Mesuré : la contrainte est appliquée en amont.")]
@@ -34,6 +36,10 @@ Référencez le catalogue et nommez la règle via des constantes que le compilat
 
 <!-- jd:declarations -->
 ```csharp
+using System.Diagnostics.CodeAnalysis;
+
+using JustDummies.Diagnostics;
+
 internal static class LegacyArrangements {
 
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = "Mesuré : la contrainte est appliquée en amont.")]

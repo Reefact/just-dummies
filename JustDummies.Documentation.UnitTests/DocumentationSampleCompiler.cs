@@ -83,8 +83,36 @@ internal static class DocumentationSampleCompiler {
         return $"{page.RelativePath}:{pageLine}: {diagnostic.Id} {diagnostic.GetMessage()}";
     }
 
+    /// <summary>
+    ///     What a declarations sample may lean on without writing it: the implicit usings of a test project on the SDK,
+    ///     and the illustrative domain of <see cref="Fixtures" />. Everything else a sample names — <c>JustDummies</c>,
+    ///     <c>Xunit</c>, an attribute's namespace — it imports itself, as the file a reader copies it into has to.
+    /// </summary>
+    /// <remarks>
+    ///     The namespace stays outside <c>JustDummies</c> on purpose: a sample declared under it would see the library's
+    ///     types through its enclosing namespace and compile without the <c>using JustDummies;</c> a reader's file
+    ///     needs, which is how a missing import once stayed hidden on every page (UX trial 3, DOCS-11). Statements
+    ///     samples keep <see cref="SamplePrelude" />: a fragment of a method body has nowhere to write a <c>using</c>.
+    /// </remarks>
+    private const string DeclarationsPrelude = """
+                                               #pragma warning disable CS1998
+                                               global using System;
+                                               global using System.Collections.Generic;
+                                               global using System.IO;
+                                               global using System.Linq;
+                                               global using System.Net.Http;
+                                               global using System.Threading;
+                                               global using System.Threading.Tasks;
+
+                                               global using JustDummies.Documentation.UnitTests.Fixtures;
+
+                                               namespace Shop.Tests;
+
+
+                                               """;
+
     private static string Wrap(CodeFence fence, out int preludeLines) {
-        string prelude = SamplePrelude;
+        string prelude = fence.Mode == SampleMode.Declarations ? DeclarationsPrelude : SamplePrelude;
         string body;
 
         if (fence.Mode == SampleMode.Declarations) {

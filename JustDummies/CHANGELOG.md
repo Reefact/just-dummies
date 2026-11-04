@@ -387,6 +387,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A generator concatenated into a string draws JD005 alone, not JD005 and JD011.** With JD011 opted in,
+  `text + Any.Int32().Between(1, 5)` and `text += …` drew both rules on the same span, because the string
+  `+` reaches `object.ToString` through an implicit conversion to `object` that JD011 reports. JD011 now
+  leaves the string `+` and `+=` to JD005, which already names the mistake as a generator rendered as
+  text; the same generator stored as `object` still draws JD011 (ADR-0078, issue #437).
+
 - **A message prints a date or a time in the format of the bounds beside it.** A value quoted in a
   refusal or a failure went through the invariant culture's general format, so one sentence could read
   `lies below 12/31/2024 10:00:00` next to `Between(2026-01-01T00:00:00.0000000Z, …)`, and two values

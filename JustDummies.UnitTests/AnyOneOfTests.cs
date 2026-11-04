@@ -135,6 +135,7 @@ public sealed class AnyOneOfTests {
     }
 
     [Fact(DisplayName = "The null-element message points the caller at OrNull().")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void NullElementMessagePointsAtOrNull() {
         ArgumentException error = Assert.Throws<ArgumentException>(() => Any.OneOf("a", null!));
 

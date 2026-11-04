@@ -387,6 +387,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **JD014 reports a `null` element in a `OneOf` value set.** `Any.OneOf<byte?>(null, (byte)6, (byte)17)`
+  and `Any.OneOf("a", null)` compiled clean and threw at declaration every time: nullable analysis, to
+  which the rule left a `null`, cannot see one once the element type is itself nullable. The rule now
+  reports the element with the guard's own wording, on `Any.OneOf`, its `AnyContext` twin,
+  `Any.String().OneOf` and a pattern's `OneOf`, when the value set is written at the call site
+  (issue #436).
 - **The JD009 and JD007 pages say a draw inside a helper is not followed.** Both rules read the
   initializer's or the constructor's own code, so `private static readonly int Rate = Fixtures.Rate(1);`,
   whose `Rate` draws, is not flagged though it draws outside the scope all the same. The pages now name

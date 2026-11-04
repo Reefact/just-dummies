@@ -186,6 +186,14 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Half().GreaterThan((Half)(-65520.0))",            "not accepted as a bound")]
     [InlineData("Any.Half().Between((Half)1, (Half)100000)",           "not accepted as a bound")]
     [InlineData("Any.Half().OneOf((Half)1, (Half)65520f)",             "finite")]
+    // A null element in a value set written inline: nullable analysis cannot see it once T is itself nullable, and
+    // every OneOf refuses it at declaration (issue #436).
+    [InlineData("Any.OneOf<byte?>(null, (byte)6, (byte)17)",            "the values must not contain a null element; use OrNull() to make the whole generator nullable")]
+    [InlineData("Any.OneOf(\"a\", null)",                              "null element")]
+    [InlineData("Any.OneOf<string?>([\"a\", null])",                   "null element")]
+    [InlineData("Any.OneOf(new string?[] { \"a\", null })",            "null element")]
+    [InlineData("Any.WithSeed(1).OneOf(\"a\", null)",                  "null element")]
+    [InlineData("Any.String().OneOf(\"EUR\", null)",                   "null element")]
     public async Task Reports_a_uri_component_an_offset_or_a_value_the_guard_rejects(string expression, string expectedFragment) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
 
@@ -207,6 +215,8 @@ public class Jd014RejectedConstantArgumentTests {
     // The generic entry points carry no finiteness rule and no membership rule, by construction.
     [InlineData("Any.OneOf(double.NaN, 1.0)")]
     [InlineData("Any.OneOf((Status)99)")]
+    // A nullable element type is not a null element.
+    [InlineData("Any.OneOf<string?>(\"a\", \"b\")")]
     // On a [Flags] enumeration a combination of declared members is accepted, and the zero value when it is declared.
     [InlineData("Any.Enum<Access>().OneOf(Access.Read | Access.Exec)")]
     [InlineData("Any.Enum<Access>().OneOf((Access)0)")]

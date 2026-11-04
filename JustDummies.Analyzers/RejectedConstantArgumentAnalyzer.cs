@@ -141,8 +141,11 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
             case "WithOffset" or "WithOffsetBetween":
                 return ArgumentGuardFacts.TryFindRejectedOffset(invocation, out offending, out reason);
 
+            // The guards check in this order: a value at all, then no null element, then each element's own rule.
             case "OneOf":
-                return TryCheckNonEmptyPool(invocation, out offending, out reason) || ArgumentGuardFacts.TryFindRejectedElement(invocation, out offending, out reason);
+                return TryCheckNonEmptyPool(invocation, out offending, out reason)
+                    || ArgumentGuardFacts.TryFindNullElement(invocation, out offending, out reason)
+                    || ArgumentGuardFacts.TryFindRejectedElement(invocation, out offending, out reason);
 
             default:
                 return false;

@@ -382,6 +382,8 @@ un fichier à part, que `any generate --force` laisse donc tranquille — c'est 
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public static class AnimalIdRecipes {
 
     public static AnyAnimalId French(this AnyAnimalId animalIds) {

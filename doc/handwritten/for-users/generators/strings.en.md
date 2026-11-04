@@ -369,6 +369,8 @@ with a name. Beside the generator `any` scaffolded for the id — in a file of i
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public static class AnimalIdRecipes {
 
     public static AnyAnimalId French(this AnyAnimalId animalIds) {

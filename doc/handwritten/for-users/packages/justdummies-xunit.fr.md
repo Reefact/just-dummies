@@ -92,7 +92,10 @@ un niveau extérieur n'écrit rien, puisque rejouer sa graine ne reproduirait ri
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
 using JustDummies.Xunit;
+
+using Xunit;
 
 // Sur une classe : chaque test qu'elle déclare est reproductible.
 [Reproducible]

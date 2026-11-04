@@ -19,6 +19,8 @@ That leaves deciding how to produce these values. The usual reflex is to hard-co
 
 <!-- jd:declarations -->
 ```csharp
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -39,6 +41,10 @@ JustDummies replaces the literal with a declaration of the constraints the value
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -113,6 +119,8 @@ Written with literals, all four arguments look equally deliberate:
 
 <!-- jd:declarations -->
 ```csharp
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -136,6 +144,10 @@ Written with dummies, the test states which values it does not care about:
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -162,6 +174,10 @@ Of course, the goal is to factor that generation into named, reusable generators
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -184,6 +200,8 @@ public sealed class OrderTests {
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed class AnyOrderReference : IAny<OrderReference> {
     public OrderReference Generate() {
         return Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
@@ -234,6 +252,10 @@ Keeping a constraint as an invariant of the domain, never as a restatement of th
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
+using Xunit;
+
 public sealed class StringTests {
 
     [Fact]
@@ -331,6 +353,8 @@ If the test fails, the seed is reported in the test's output, the same way as wi
 <!-- jd:declarations -->
 ```csharp
 using JustDummies.Xunit;
+
+using Xunit;
 
 public sealed class OrderTests {
 

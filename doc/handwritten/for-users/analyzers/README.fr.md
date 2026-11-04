@@ -130,6 +130,13 @@ nomme la règle par le [catalogue](../packages/justdummies-diagnosticcatalog.fr.
 
 <!-- jd:declarations -->
 ```csharp
+using System.Diagnostics.CodeAnalysis;
+
+using JustDummies;
+using JustDummies.Diagnostics;
+
+using Xunit;
+
 public sealed class BoundsTests {
 
     [Fact]

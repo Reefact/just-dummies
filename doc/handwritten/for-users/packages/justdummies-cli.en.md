@@ -244,6 +244,8 @@ concrete generators:
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public interface IRowElement {
     int Produces { get; }
 }
@@ -391,6 +393,8 @@ route that `any` could not read, so it marked the parameter `to verify`, and the
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed partial class AnyShipment {
 
     private static AnyRoute AnyValidRoute() {
@@ -422,6 +426,8 @@ of the refining overload beside the pin:
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed class Currency {
 
     public Currency(string code) {
@@ -559,6 +565,8 @@ overload wrote:
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public static class CombinationRecipes {
 
     public static AnyCombination WithHorsesAmong(this AnyCombination combinations, int fieldSize) {
@@ -723,6 +731,8 @@ land before it, so the rule holds by construction instead of by retrying:
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed class Booking {
 
     public Booking(DateTime start, DateTime end) {
@@ -769,6 +779,8 @@ method changes, plus one helper; the sample keeps just the members it reads:
 
 <!-- jd:declarations net8 -->
 ```csharp
+using JustDummies;
+
 public sealed class BillingPeriod {
 
     public BillingPeriod(DateOnly start, DateOnly end) {
@@ -836,6 +848,8 @@ keeping its two recipes compatible.
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public static class CardNumberGenerators {
 
     public static IAny<string> CardNumbers() {
@@ -869,6 +883,8 @@ else ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generat
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed class Crossing {
 
     public Crossing(string reference, string alternate) {

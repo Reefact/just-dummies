@@ -90,7 +90,10 @@ prints nothing, since replaying its seed would reproduce nothing:
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
 using JustDummies.Xunit;
+
+using Xunit;
 
 // On a class: every test it declares is reproducible.
 [Reproducible]

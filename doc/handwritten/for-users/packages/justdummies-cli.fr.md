@@ -248,6 +248,8 @@ choisit parmi vos générateurs concrets :
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public interface IRowElement {
     int Produces { get; }
 }
@@ -399,6 +401,8 @@ et la base est devenue :
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed partial class AnyShipment {
 
     private static AnyRoute AnyValidRoute() {
@@ -431,6 +435,8 @@ sont toutes les modifications à faire — le champ de recette, le paramètre du
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed class Currency {
 
     public Currency(string code) {
@@ -570,6 +576,8 @@ niveau de la liste qu'un test écrit ensuite s'applique à la recette que la sur
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public static class CombinationRecipes {
 
     public static AnyCombination WithHorsesAmong(this AnyCombination combinations, int fieldSize) {
@@ -739,6 +747,8 @@ retomber avant lui : la règle tient par construction, pas par nouveaux tirages 
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed class Booking {
 
     public Booking(DateTime start, DateTime end) {
@@ -785,6 +795,8 @@ sens. Seule cette méthode change, plus une méthode d'aide ; l'exemple ne garde
 
 <!-- jd:declarations net8 -->
 ```csharp
+using JustDummies;
+
 public sealed class BillingPeriod {
 
     public BillingPeriod(DateOnly start, DateOnly end) {
@@ -852,6 +864,8 @@ et `.As(…)` en est la forme en une ligne :
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public static class CardNumberGenerators {
 
     public static IAny<string> CardNumbers() {
@@ -885,6 +899,8 @@ d'autre ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-gene
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed class Crossing {
 
     public Crossing(string reference, string alternate) {

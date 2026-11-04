@@ -13,6 +13,8 @@ A suppression normally names its rule as two string literals:
 
 <!-- jd:declarations -->
 ```csharp
+using System.Diagnostics.CodeAnalysis;
+
 internal static class LegacyArrangements {
 
     [SuppressMessage("JustDummies.Usage", "JD006:DiscardedGeneratorResult", Justification = "Measured: the constraint is applied upstream.")]
@@ -33,6 +35,10 @@ Reference the catalogue and name the rule through constants the compiler resolve
 
 <!-- jd:declarations -->
 ```csharp
+using System.Diagnostics.CodeAnalysis;
+
+using JustDummies.Diagnostics;
+
 internal static class LegacyArrangements {
 
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = "Measured: the constraint is applied upstream.")]

@@ -19,6 +19,8 @@ Reste à décider comment produire ces valeurs. Le réflexe habituel est de les 
 
 <!-- jd:declarations -->
 ```csharp
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -39,6 +41,10 @@ JustDummies remplace le littéral par une déclaration des contraintes que la va
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -113,6 +119,8 @@ Avec des littéraux, les quatre arguments paraissent tout aussi délibérés :
 
 <!-- jd:declarations -->
 ```csharp
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -136,6 +144,10 @@ Rien dans ce test ne porte sur Alice, rien ne porte sur la commande `12345678` �
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -162,6 +174,10 @@ Bien sûr, le but est de factoriser cette génération dans des générateurs no
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact]
@@ -184,6 +200,8 @@ public sealed class OrderTests {
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
 public sealed class AnyOrderReference : IAny<OrderReference> {
     public OrderReference Generate() {
         return Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
@@ -234,6 +252,10 @@ Garder une contrainte comme un invariant du domaine, jamais comme une reformulat
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+
+using Xunit;
+
 public sealed class StringTests {
 
     [Fact]
@@ -331,6 +353,8 @@ Si le test échoue, la graine est rapportée dans la sortie du test, comme pour 
 <!-- jd:declarations -->
 ```csharp
 using JustDummies.Xunit;
+
+using Xunit;
 
 public sealed class OrderTests {
 

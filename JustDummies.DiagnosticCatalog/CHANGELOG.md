@@ -18,7 +18,7 @@ retired, a category changed — which is not when the library or the adapter mov
   `JustDummies.Constraints`.
 - `JustDummiesRule.JD035` — *A constraint repeated identically, which changes nothing*, category
   `JustDummies.Constraints`.
-- `JustDummiesRule.JD036` — *A floating-point dummy that declares no range*, category
+- `JustDummiesRule.JD036` — *A double, float or decimal dummy that declares no range*, category
   `JustDummies.Constraints`.
 - `JustDummiesRule.JD037` — *A draw made inside the lambda of As or Combine*, category
   `JustDummies.Reproducibility`.

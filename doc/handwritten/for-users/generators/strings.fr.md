@@ -327,7 +327,7 @@ de garder un analyseur maison et de refuser bruyamment est
 ### Caractères au-delà du plan multilingue de base
 
 Un motif est lu en unités de code UTF-16, exactement comme le moteur .NET le lit, et un caractère
-au-delà du plan multilingue de base — `𠀀`, un emoji — en occupe deux, une paire de substituts. Le
+au-delà du plan multilingue de base — `𠀀`, un idéogramme CJK — en occupe deux, une paire de substituts. Le
 générateur tire ce que le moteur accepte, d'où trois lectures qui sont rarement celle voulue :
 
 * un quantificateur placé après un tel caractère ne répète que son substitut bas : `"\U00020000{3}"`

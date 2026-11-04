@@ -318,7 +318,7 @@ parser and refuse loudly instead is
 ### Characters beyond the Basic Multilingual Plane
 
 A pattern is read in UTF-16 code units, exactly as the .NET engine reads it, and a character beyond
-the Basic Multilingual Plane — `𠀀`, an emoji — is two of them, a surrogate pair. The generator
+the Basic Multilingual Plane — `𠀀`, a CJK ideograph — is two of them, a surrogate pair. The generator
 draws what the engine accepts, so three readings follow that are rarely the one meant:
 
 * a quantifier after such a character repeats its low surrogate only: `"\U00020000{3}"` yields the

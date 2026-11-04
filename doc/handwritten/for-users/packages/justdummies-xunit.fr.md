@@ -23,11 +23,12 @@ voyez, montez `xunit.v3` au même niveau.
 
 Le même plancher décide du comportement de `dotnet test`. À partir de 4.0.0, `xunit.v3` active par
 défaut son intégration Microsoft.Testing.Platform v2, et sur le SDK .NET 10 cette intégration arrête un
-`dotnet test` exécuté dans son mode VSTest par défaut, sur une erreur qui nomme l'opt-in. Un projet en
-`xunit.v3` 3.x, où un simple `dotnet test` fonctionnait, rencontre cette erreur dès qu'il monte
-`xunit.v3` pour adopter l'adaptateur — et `dotnet test --project …` échoue plus tôt encore, avec
-`MSB1001: Unknown switch`, parce que ce commutateur appartient au mode Microsoft.Testing.Platform.
-Activez ce mode depuis le `global.json` placé à côté de votre solution :
+`dotnet test` exécuté dans son mode VSTest par défaut, en affichant un message d'erreur demandant
+d'activer explicitement Microsoft.Testing.Platform. Un projet en `xunit.v3` 3.x, où un simple
+`dotnet test` fonctionnait, rencontre cette erreur dès qu'il monte `xunit.v3` pour adopter
+l'adaptateur — et `dotnet test --project …` échoue plus tôt encore, avec `MSB1001: Unknown switch`,
+parce que ce commutateur appartient au mode Microsoft.Testing.Platform. Activez ce mode depuis le
+`global.json` placé à côté de votre solution :
 
 ```json
 {
@@ -45,7 +46,7 @@ Si vous préférez ne pas toucher à `global.json`, deux voies restent ouvertes 
   exécuter les tests par VSTest exige toujours les références de paquets `xunit.runner.visualstudio` et
   `Microsoft.NET.Test.Sdk`, qu'un projet configuré pour Microsoft.Testing.Platform seul peut ne pas avoir.
 
-La page d'xUnit lui-même, [Microsoft Testing Platform](https://xunit.net/docs/getting-started/v3/microsoft-testing-platform),
+La documentation officielle de xUnit, [Microsoft Testing Platform](https://xunit.net/docs/getting-started/v3/microsoft-testing-platform),
 décrit l'intégration et ce que chaque mode exige ; celle du SDK,
 [Tester avec `dotnet test`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test),
 décrit les deux modes de `dotnet test` et les commutateurs que chacun accepte.

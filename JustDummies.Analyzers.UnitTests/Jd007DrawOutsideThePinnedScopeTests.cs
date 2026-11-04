@@ -516,4 +516,34 @@ public class Jd007DrawOutsideThePinnedScopeTests {
         Check.That(diagnostics.Length).IsEqualTo(12);
     }
 
+    // Like JD009, the rule reads the member's own code and does not follow the methods it calls: a constructor that
+    // calls a helper whose body draws is not flagged, the documented blind spot (issue #439).
+    [Fact]
+    public async Task Does_not_follow_a_constructor_into_a_helper_that_draws() {
+        const string source = """
+            using JustDummies;
+            using JustDummies.Xunit;
+            using Xunit;
+
+            public static class Fixtures {
+                public static string Reference() => Any.String().NonEmpty().Generate();
+            }
+
+            [Reproducible]
+            public class Sample {
+                private readonly string _reference;
+
+                public Sample() {
+                    _reference = Fixtures.Reference();
+                }
+
+                [Fact]
+                public void T() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawOutsideThePinnedScopeAnalyzer(), source);
+
+        Check.That(diagnostics).IsEmpty();
+    }
 }

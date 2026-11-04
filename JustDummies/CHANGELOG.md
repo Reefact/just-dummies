@@ -387,6 +387,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **The JD009 and JD007 pages say a draw inside a helper is not followed.** Both rules read the
+  initializer's or the constructor's own code, so `private static readonly int Rate = Fixtures.Rate(1);`,
+  whose `Rate` draws, is not flagged though it draws outside the scope all the same. The pages now name
+  that blind spot and its remedy — have the helper return the generator and draw it in the test — and a
+  test of each rule pins it (issue #439).
+
 - **JD012 no longer reports a pool of generators that `Then` flattens into values.**
   `Any.ElementOf(leaves).Then(leaf => leaf)` draws one recipe, then a value from it, split across the
   recipes and replayed from one seed — the remedy JD012's own message names — yet the rule reported the

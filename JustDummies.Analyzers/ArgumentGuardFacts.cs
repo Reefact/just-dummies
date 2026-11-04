@@ -136,14 +136,25 @@ internal static class ArgumentGuardFacts {
     }
 
     /// <summary>
-    ///     Whether <paramref name="element" /> is a <c>null</c> constant, through any conversion that keeps it one. A
-    ///     user-defined conversion is a call that may turn a <c>null</c> into a value, so the reading stops at it.
+    ///     Whether <paramref name="element" /> is a <c>null</c> constant, through any conversion that keeps it one: a
+    ///     built-in conversion whose every step has a type that holds a <c>null</c>. A conversion to one that cannot —
+    ///     <c>(int)(int?)null</c>, an unboxing — throws while the argument is evaluated, before the guard runs; a
+    ///     user-defined conversion is a call that may turn a <c>null</c> into a value. The reading stops at either.
     /// </summary>
     private static bool IsNullElement(IOperation element) {
         IOperation value = element;
-        while (value is IConversionOperation { OperatorMethod: null } conversion) { value = conversion.Operand; }
+        while (true) {
+            if (value.Type is { } type && !HoldsNull(type)) { return false; }
+            if (value is not IConversionOperation { OperatorMethod: null } conversion) { break; }
+
+            value = conversion.Operand;
+        }
 
         return value.ConstantValue is { HasValue: true, Value: null };
+    }
+
+    private static bool HoldsNull(ITypeSymbol type) {
+        return type.IsReferenceType || type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
     }
 
     /// <summary>

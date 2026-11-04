@@ -758,6 +758,76 @@ does not read. And pinning one side of a tie while the other is still drawn on i
 only on the draws where it happens to: the test then depends on the seed. Pin both, or write the tie
 in `Generate()`.
 
+**Hold an order and a maximum gap together.** A constructor that refuses an `end` on or before `start`,
+and one more than 31 days after it, gets its order paired and its gap marked `to verify`: `Any.Pair`
+carries an order, never a distance. Both belong in the scaffolded `StartAndEnd()`. Bound each side by
+the other, on the pinned paths and on the drawn one alike, and every pin keeps its meaning. Only that
+method changes, plus one helper; the sample keeps just the members it reads:
+
+<!-- jd:declarations net8 -->
+```csharp
+public sealed class BillingPeriod {
+
+    public BillingPeriod(DateOnly start, DateOnly end) {
+        if (start >= end) { throw new ArgumentException("A period ends after it starts.", nameof(end)); }
+        if (end.DayNumber - start.DayNumber > 31) { throw new ArgumentException("A period spans 31 days at most.", nameof(end)); }
+
+        Start = start;
+        End   = end;
+    }
+
+    public DateOnly Start { get; }
+    public DateOnly End   { get; }
+
+}
+
+public sealed partial class AnyBillingPeriod : IAny<BillingPeriod> {
+
+    private const int MaxDays = 31;
+
+    private AnyDateOnly _startRecipe = AnyValidStart();
+    private AnyDateOnly _endRecipe   = Any.DateOnly();
+
+    private DateOnly? _startPin;
+    private DateOnly? _endPin;
+
+    private static AnyDateOnly AnyValidStart() {
+        return Any.DateOnly().Between(new DateOnly(2000, 1, 1), new DateOnly(2099, 12, 31));
+    }
+
+    private (DateOnly Start, DateOnly End) StartAndEnd() {
+        if (_startPin is { } start) { return (start, _endPin ?? EndWithin(start).Generate()); }
+        if (_endPin is { } end) { return (_startRecipe.Before(end).AfterOrEqualTo(end.AddDays(-MaxDays)).Generate(), end); }
+
+        return _startRecipe.Then(drawnStart => EndWithin(drawnStart).As(drawnEnd => (drawnStart, drawnEnd))).Generate();
+    }
+
+    private AnyDateOnly EndWithin(DateOnly start) {
+        return _endRecipe.After(start).BeforeOrEqualTo(start.AddDays(MaxDays));
+    }
+
+    public AnyBillingPeriod WithStart(DateOnly value) {
+        return new AnyBillingPeriod { _startRecipe = _startRecipe, _endRecipe = _endRecipe, _startPin = value, _endPin = _endPin };
+    }
+
+    public AnyBillingPeriod WithEnd(DateOnly value) {
+        return new AnyBillingPeriod { _startRecipe = _startRecipe, _endRecipe = _endRecipe, _startPin = _startPin, _endPin = value };
+    }
+
+    public BillingPeriod Generate() {
+        (DateOnly start, DateOnly end) = StartAndEnd();
+
+        return new BillingPeriod(start, end);
+    }
+
+}
+```
+
+Give the start's recipe room for a window after it, as `AnyValidStart()` does here: a start drawn on
+the type's last day has no end to follow it, and the draw fails. A refinement of `end` that leaves no
+day inside the window of a drawn start fails the same way, at the draw. The tie is yours, and so is
+keeping its two recipes compatible.
+
 **Draw the body, then derive the check digit.** A check digit is not drawn, it is computed, and
 `.As(…)` is the one-line form:
 

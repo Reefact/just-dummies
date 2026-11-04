@@ -773,6 +773,76 @@ ne lit pas. Et fixer un côté d'un lien pendant que l'autre est encore tiré se
 tirages où elle tient par hasard : le test dépend alors de la graine. Fixez les deux, ou écrivez le lien dans
 `Generate()`.
 
+**Tenez ensemble un ordre et un écart maximal.** Un constructeur qui refuse un `end` antérieur ou égal à
+`start`, et un `end` plus de 31 jours après lui, voit son ordre apparié et son écart marqué `to verify` :
+`Any.Pair` porte un ordre, jamais une distance. Les deux ont leur place dans le `StartAndEnd()` généré.
+Bornez chaque côté par l'autre, sur les chemins fixés comme sur le chemin tiré, et chaque pin garde son
+sens. Seule cette méthode change, plus une méthode d'aide ; l'exemple ne garde que les membres qu'elle lit :
+
+<!-- jd:declarations net8 -->
+```csharp
+public sealed class BillingPeriod {
+
+    public BillingPeriod(DateOnly start, DateOnly end) {
+        if (start >= end) { throw new ArgumentException("A period ends after it starts.", nameof(end)); }
+        if (end.DayNumber - start.DayNumber > 31) { throw new ArgumentException("A period spans 31 days at most.", nameof(end)); }
+
+        Start = start;
+        End   = end;
+    }
+
+    public DateOnly Start { get; }
+    public DateOnly End   { get; }
+
+}
+
+public sealed partial class AnyBillingPeriod : IAny<BillingPeriod> {
+
+    private const int MaxDays = 31;
+
+    private AnyDateOnly _startRecipe = AnyValidStart();
+    private AnyDateOnly _endRecipe   = Any.DateOnly();
+
+    private DateOnly? _startPin;
+    private DateOnly? _endPin;
+
+    private static AnyDateOnly AnyValidStart() {
+        return Any.DateOnly().Between(new DateOnly(2000, 1, 1), new DateOnly(2099, 12, 31));
+    }
+
+    private (DateOnly Start, DateOnly End) StartAndEnd() {
+        if (_startPin is { } start) { return (start, _endPin ?? EndWithin(start).Generate()); }
+        if (_endPin is { } end) { return (_startRecipe.Before(end).AfterOrEqualTo(end.AddDays(-MaxDays)).Generate(), end); }
+
+        return _startRecipe.Then(drawnStart => EndWithin(drawnStart).As(drawnEnd => (drawnStart, drawnEnd))).Generate();
+    }
+
+    private AnyDateOnly EndWithin(DateOnly start) {
+        return _endRecipe.After(start).BeforeOrEqualTo(start.AddDays(MaxDays));
+    }
+
+    public AnyBillingPeriod WithStart(DateOnly value) {
+        return new AnyBillingPeriod { _startRecipe = _startRecipe, _endRecipe = _endRecipe, _startPin = value, _endPin = _endPin };
+    }
+
+    public AnyBillingPeriod WithEnd(DateOnly value) {
+        return new AnyBillingPeriod { _startRecipe = _startRecipe, _endRecipe = _endRecipe, _startPin = _startPin, _endPin = value };
+    }
+
+    public BillingPeriod Generate() {
+        (DateOnly start, DateOnly end) = StartAndEnd();
+
+        return new BillingPeriod(start, end);
+    }
+
+}
+```
+
+Laissez à la recette du début la place d'une fenêtre après lui, comme le fait ici `AnyValidStart()` : un
+début tiré le dernier jour du type n'a aucune fin pour le suivre, et le tirage échoue. Un affinage de `end`
+qui ne laisse aucun jour dans la fenêtre d'un début tiré échoue de la même façon, au tirage. Le lien est à
+vous, et garder ses deux recettes compatibles aussi.
+
 **Tirez le corps, puis dérivez le chiffre de contrôle.** Un chiffre de contrôle ne se tire pas, il se calcule,
 et `.As(…)` en est la forme en une ligne :
 

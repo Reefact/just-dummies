@@ -90,7 +90,7 @@ internal static class Shapes {
 
     /// <summary>
     ///     Two parameters a guard ties by an order — <c>if (start &gt; end) { throw … }</c> — drawn together through
-    ///     <c>Any.OrderedPair</c>, beside one drawn on its own (§4.2, #405).
+    ///     <c>Any.Pair</c>, beside one drawn on its own (§4.2, #405).
     /// </summary>
     internal static ScaffoldPlan Booking() {
         return new ScaffoldPlan(new TargetType("Booking", "Shop.Domain", NamespaceStyle.FileScoped),

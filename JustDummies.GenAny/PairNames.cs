@@ -9,20 +9,15 @@ namespace JustDummies.GenAny;
 ///     the file already declares before it decides to draw the pair (#405).
 /// </summary>
 /// <remarks>
-///     A parameter named <c>startAndEnd</c> beside a pair of <c>start</c> and <c>end</c>, or one named
-///     <c>startPin</c>, declares the very field the pair would add, and two pairs can synthesise one name
-///     (<c>(a, bAndC)</c> and <c>(aAndB, c)</c>). Such a scaffold failed to compile (<c>CS0102</c>). The pair is
-///     then left <c>to verify</c>, as any order the engine does not draw is: a refusal at the edge rather than a
-///     renaming scheme nobody can predict from the parameter names (ADR-0046).
+///     A parameter named <c>startPin</c> beside a pair of <c>start</c> and <c>end</c> declares the very field the
+///     pair would add, and two pairs can synthesise one name (<c>(a, bAndC)</c> and <c>(aAndB, c)</c>). Such a
+///     scaffold failed to compile (<c>CS0102</c>). The pair is then left <c>to verify</c>, as any order the engine
+///     does not draw is: a refusal at the edge rather than a renaming scheme nobody can predict from the parameter
+///     names (ADR-0046).
 /// </remarks>
 internal static class PairNames {
 
-    /// <summary>The field the pair is drawn from — <c>_startAndEnd</c>.</summary>
-    internal static string Field(OrderedPairing pairing) {
-        return ScaffoldedParameter.FieldNameOf(pairing.First) + "And" + ScaffoldedParameter.PascalCasedNameOf(pairing.Second);
-    }
-
-    /// <summary>The private method that rebuilds the pair — <c>StartAndEnd()</c>.</summary>
+    /// <summary>The private method that draws the pair — <c>StartAndEnd()</c>.</summary>
     internal static string Method(OrderedPairing pairing) {
         return ScaffoldedParameter.PascalCasedNameOf(pairing.First) + "And" + ScaffoldedParameter.PascalCasedNameOf(pairing.Second);
     }
@@ -34,7 +29,7 @@ internal static class PairNames {
 
     /// <summary>Everything <paramref name="pairing" /> adds to the file's declaration space.</summary>
     internal static IReadOnlyList<string> Added(OrderedPairing pairing) {
-        return [Field(pairing), Method(pairing), Pin(pairing.First), Pin(pairing.Second)];
+        return [Method(pairing), Pin(pairing.First), Pin(pairing.Second)];
     }
 
     /// <summary>

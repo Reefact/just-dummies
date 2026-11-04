@@ -36,7 +36,7 @@ public sealed class ScaffoldPlan {
     ///     through the nested <c>FixedValue</c> helper the file then declares (ADR-0059, ADR-0118).
     /// </param>
     /// <param name="pairings">
-    ///     The parameters drawn two by two through <c>Any.OrderedPair</c>, because a guard ties them by an order
+    ///     The parameters drawn two by two through <c>Any.Pair</c>, because a guard ties them by an order
     ///     (§5.3); none when null.
     /// </param>
     /// <exception cref="ArgumentNullException">Any argument but <paramref name="factory" /> and <paramref name="pairings" /> is null.</exception>
@@ -104,7 +104,7 @@ public sealed class ScaffoldPlan {
     /// </summary>
     public bool PinsThroughAnyFixed { get; }
 
-    /// <summary>The parameters drawn two by two through <c>Any.OrderedPair</c> (§4.2, §5.3).</summary>
+    /// <summary>The parameters drawn two by two through <c>Any.Pair</c> (§4.2, §5.3).</summary>
     public IReadOnlyList<OrderedPairing> Pairings { get; }
 
     /// <summary>The pairing that ties <paramref name="parameter" />, or null when none does.</summary>

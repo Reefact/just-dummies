@@ -590,15 +590,19 @@ public sealed partial class AnyOrder : IAny<Order> {
   le fait un pin. La lambda d'affinage décrit une valeur et ne rend jamais `null`, et
   `With{Param}(null)` est ambigu entre les deux surcharges (`CS0121`) : l'absence reçoit donc une
   méthode à elle. Un paramètre dont une garde refuse `null` n'en reçoit pas (#411).
-* Pour chaque paire de paramètres qu'une garde lie par un ordre (§5.3), un champ `_{first}And{Second}`
-  de type `AnyOrderedPair<T>` à la place de leurs deux champs de tirage, un champ `_{param}Pin` à côté
-  de chaque recette, et une méthode privée `{First}And{Second}()` qui construit la paire à partir des
-  deux recettes courantes — `strict: true` pour `>=` — et applique chaque pin par `WithFirst` ou
-  `WithSecond`. Les deux surcharges `With…` d'un paramètre apparié gardent leur sens : celle par valeur
-  range le pin et celle d'affinage prend sa place, et chacune reconstruit la paire, si bien qu'un pin
-  d'un côté borne l'autre et survit à un affinage de celui-ci, et que deux pins dans le mauvais ordre
-  sont refusés au second appel. `Generate()` tire la paire avant la construction et passe chaque côté
-  par son nom (#405).
+* Pour chaque paire de paramètres qu'une garde lie par un ordre (§5.3), aucun champ de tirage pour
+  l'un ni l'autre, un champ `_{param}Pin` à côté de chaque recette, et une méthode privée
+  `{First}And{Second}()`, appelée par `Generate()`, qui décide du tirage une fois que le test a tout
+  dit des deux. Aucun des deux épinglé, ils sont tirés comme un seul `Any.Pair(…)` sur leurs recettes
+  courantes, ordonnés par `Having` dans le vocabulaire propre au builder —
+  `Item1LessThanOrEqualToItem2()` ou `Item1BeforeOrEqualToItem2()`, la relation stricte pour `>=`.
+  L'un épinglé, l'autre est tiré de sa recette bornée par le pin, dans ce même vocabulaire —
+  `AfterOrEqualTo(start)`, `LessThan(end)`. Les deux épinglés, les deux valeurs sont passées telles
+  quelles au constructeur, dont la propre garde juge leur ordre. Les deux surcharges `With…` d'un
+  paramètre apparié gardent leur sens — celle par valeur range le pin, celle d'affinage prend sa
+  place — et aucune ne tire ni ne vérifie rien, si bien que l'ordre dans lequel le test les écrit ne
+  peut pas changer le résultat. `Generate()` tire la paire avant la construction et passe chaque côté
+  par son nom (#405, #428, ADR-0131).
 * `using System;` est ouvert dès qu'une surcharge d'affinage est émise, pour son `Func<,>`.
 * `public {Type} Generate()` appelant le constructeur avec le `Generate()` de chaque champ.
 * Un épinglage écrit `Any.Fixed(value)` : il accepte `null` (ce que `Any.OneOf(value)` refuse) et ne
@@ -1014,7 +1018,7 @@ L'ensemble reconnu est clos :
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | aucune — `Any.Double()` et `Any.Single()` ne tirent que des valeurs finies (ADR-0031), **là où `p` est de ce type** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **là où `p` est de type `E`** |
-| `a > b`, `a >= b`, `b < a`, `b <= a`, où `a` et `b` sont deux paramètres d'un même type ordonné | aucune sur l'une ou l'autre chaîne : les deux sont tirés comme un seul `Any.OrderedPair(` sur leurs deux recettes, `strict: true` pour `>=` (§4.2), **là où la bibliothèque porte une paire pour ce type et où aucun des deux paramètres n'est pris dans un autre ordre** |
+| `a > b`, `a >= b`, `b < a`, `b <= a`, où `a` et `b` sont deux paramètres d'un même type ordonné | aucune sur l'une ou l'autre chaîne : les deux sont tirés comme un seul `Any.Pair(` sur leurs deux recettes, ordonnés par `Having` dans le vocabulaire du builder, la relation stricte pour `>=` (§4.2), **là où la bibliothèque porte une paire pour ce type et où aucun des deux paramètres n'est pris dans un autre ordre** |
 | `!(p > 0)`, `!(p.Length > N)` — la négation de toute comparaison ci-dessus | la ligne de la comparaison opposée : `.Positive()`, `.WithMaxLength(N)` |
 | `p < TimeSpan.FromSeconds(5)`, `ThrowIfLessThan(p, TimeSpan.Zero)` — une borne `TimeSpan` écrite `TimeSpan.Zero`, `MinValue`, `MaxValue` ou `TimeSpan.FromX(constante)` | les lignes numériques ci-dessus, la borne épelée comme écrite : `.GreaterThanOrEqualTo(TimeSpan.FromSeconds(5))`, `.GreaterThanOrEqualTo(TimeSpan.Zero)` |
 | `ThrowIfGreaterThan(p.Length, N)`, et les autres throw helpers arithmétiques sur `p.Length` ou `p.Count` | les lignes de taille ci-dessus : `.WithMaxLength(N)`, `.WithMinCount(N)`, `.NonEmpty()` |
@@ -1052,16 +1056,17 @@ est lue là où son sujet **est** le
 paramètre, comme toute autre ligne l'exige.
 
 **Un ordre entre deux paramètres est la seule règle entre paramètres tirée plutôt que marquée.**
-`if (arrival > departure) { throw … }` est ce que `Any.OrderedPair` tire par construction — le premier
-gardé au plus à la plus grande valeur que le second peut prendre, puis le second au moins à lui — donc
+`if (arrival > departure) { throw … }` est ce que `Any.Pair` tire par construction une fois que
+`Having` déclare l'ordre — le premier gardé au plus à la plus grande valeur que le second peut prendre,
+puis le second au moins à lui — donc
 l'honorer ne demande aucun solveur (ADR-0046), et la paire est générée plutôt que laissée à vérifier,
 si bien qu'un `--force` ultérieur ne perd rien (#405). Chaque paramètre garde ses propres gardes sur sa
 propre recette. La ligne est lue là où la comparaison nomme les deux paramètres eux-mêmes, d'un même
 type valeur non nullable, et elle est placée comme toute autre garde ; le scaffolder ne tire ensuite la
-paire que là où la bibliothèque porte `Any.OrderedPair` sur le generator de ce type, où aucun des
-deux paramètres n'est pris dans un autre ordre — `a ≤ b ≤ c` est une relation à trois — et où les
-identifiants que la paire ajoute au fichier (§4.2) sont libres : un paramètre nommé `startAndEnd` ou
-`startPin` à côté de `start` et `end`, ou deux paires synthétisant un même nom, déclareraient un champ
+paire que là où la bibliothèque porte `Any.Pair`, ses relations et ses bornes sur le generator de ce
+type, où aucun des deux paramètres n'est pris dans un autre ordre — `a ≤ b ≤ c` est une relation à
+trois — et où les identifiants que la paire ajoute au fichier (§4.2) sont libres : un paramètre nommé
+`startPin` à côté de `start` et `end`, ou deux paires synthétisant un même nom, déclareraient un membre
 deux fois. Partout ailleurs, et pour toute autre règle entre paramètres — calculée (`a + 1 > b`), entre deux types, à
 travers un membre, ou à trois —, les deux paramètres sont marqués `unread guards` comme avant. C'est le
 retour de terrain que l'ADR-0085 demande : le second essai d'expérience développeur a rencontré cette

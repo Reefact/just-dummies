@@ -100,14 +100,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   Re-scaffolding with `--force` brings the new comments; nothing else in the file changes (issue #391).
 - **Two parameters a guard ties by an order are drawn as one pair.** Where the constructor compares two
   parameters of one ordered type directly — `if (start > end) { throw … }`, `>=`, or the mirrored `end < start` —
-  the scaffold draws both through `Any.OrderedPair` instead of marking them `to verify`, so the order holds by
-  construction and a later `--force` loses nothing. `WithStart(…)` and `WithEnd(…)` keep their meaning: a pin on
-  one side bounds the other and survives a refinement of it, and two pins out of order are refused at the second
-  call. Every other rule between parameters — computed, across types, a chain of three, or an order whose pair
-  would redeclare a name the file already has — is still marked `to
-  verify`, and the CLI page now says how to write it in `Generate()`. A pair is drawn ahead of the construction, so
-  a generator re-scaffolded with `--force` draws its other parameters from different positions of the same seed
-  (ADR-0049 permits it below 1.0) (issue #405).
+  the scaffold draws both through `Any.Pair` and the order its `Having` declares, instead of marking them `to
+  verify`, so the order holds by construction and a later `--force` loses nothing. `WithStart(…)` and `WithEnd(…)`
+  keep their meaning, and the draw decides once both are known: a pin on one side bounds the other in the
+  builder's own words — `AfterOrEqualTo(start)` — and survives a refinement of it, two pins are handed to the
+  constructor, whose guard judges their order, and the order the test writes them in never changes the outcome.
+  Every other rule between parameters — computed, across types, a chain of three, or an order whose pair would
+  redeclare a name the file already has — is still marked `to verify`, and the CLI page now says how to write it
+  in `Generate()`. A pair is drawn ahead of the construction, so a generator re-scaffolded with `--force` draws
+  its other parameters from different positions of the same seed (ADR-0049 permits it below 1.0) (issues #405 and
+  #428, ADR-0131).
 - **A nullable parameter draws `null` one draw in ten, unless a guard refuses it (ADR-0117).** Its type
   declares `null` valid, so the recipe constructor now draws `<base>.OrNull()` instead of a recipe that never
   yields `null`. Only the default does: a refining `With…(x => …)` describes a value and never yields `null` —

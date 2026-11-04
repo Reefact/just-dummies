@@ -187,17 +187,14 @@ public static class GeneratorEmitter {
     ///     </para>
     /// </remarks>
     private static void WriteFields(StringBuilder file, ScaffoldPlan plan, string indent) {
-        int width = GeneratorTypeWidth(plan);
+        int                       width    = GeneratorTypeWidth(plan);
+        List<ScaffoldedParameter> unpaired = [.. plan.Parameters.Where(parameter => plan.PairingOf(parameter) is null)];
 
-        foreach (ScaffoldedParameter parameter in plan.Parameters) {
-            if (plan.PairingOf(parameter) is not { } pairing) {
-                Line(file, $"{indent}private {GeneratorTypeOf(parameter).PadRight(width)} {parameter.FieldName};");
-            } else if (OpensPair(plan, parameter, pairing)) {
-                Line(file, $"{indent}private {PairTypeOf(plan, pairing).PadRight(width)} {PairFieldName(pairing)};");
-            }
+        foreach (ScaffoldedParameter parameter in unpaired) {
+            Line(file, $"{indent}private {GeneratorTypeOf(parameter).PadRight(width)} {parameter.FieldName};");
         }
 
-        Line(file, string.Empty);
+        if (unpaired.Count > 0) { Line(file, string.Empty); }
 
         List<ScaffoldedParameter> resolved = Resolved(plan);
 
@@ -419,11 +416,6 @@ public static class GeneratorEmitter {
             }
         }
 
-        // Last, once both recipes are in place: the pair is drawn from them.
-        foreach (OrderedPairing pairing in plan.Pairings) {
-            Line(file, $"{indent}{Indent}{PairFieldName(pairing).PadRight(assignment)} = {PairMethodName(pairing)}();");
-        }
-
         Line(file, $"{indent}}}");
         Line(file, string.Empty);
     }
@@ -448,8 +440,6 @@ public static class GeneratorEmitter {
 
             if (pairing is null) {
                 Line(file, $"{indent}{Indent}{parameter.FieldName.PadRight(assignment)} = from.{parameter.FieldName};");
-            } else if (OpensPair(plan, parameter, pairing)) {
-                Line(file, $"{indent}{Indent}{PairFieldName(pairing).PadRight(assignment)} = from.{PairFieldName(pairing)};");
             }
 
             if (!parameter.IsUnresolved) {
@@ -465,37 +455,36 @@ public static class GeneratorEmitter {
         Line(file, string.Empty);
     }
 
-    /// <summary>The width the assignments of both constructors align on: the longest field name, recipes included.</summary>
+    /// <summary>The width the assignments of both constructors align on: the longest field name, recipes and pins included.</summary>
     private static int AssignmentWidth(ScaffoldPlan plan) {
         int parameters = plan.Parameters.Max(parameter => parameter.IsUnresolved ? parameter.FieldName.Length : parameter.RecipeFieldName.Length);
 
-        return plan.Pairings.Select(pairing => PairFieldName(pairing).Length).Aggregate(parameters, Math.Max);
+        return Paired(plan).Select(parameter => PinFieldName(parameter).Length).Aggregate(parameters, Math.Max);
     }
 
     /// <summary>
-    ///     One private method per pair (§4.2): the two parameters drawn together from their current recipes,
-    ///     through <c>Any.OrderedPair</c>, so the first never follows the second, with any pin either carries. Every
-    ///     <c>With…</c> of either parameter rebuilds the pair through it, so a pin on one side survives a
-    ///     refinement of the other, and two pins the guard refuses are refused at the second call (#405).
+    ///     One private method per pair (§4.2), called by <c>Generate()</c>: the two parameters drawn so that the first
+    ///     never follows the second, decided at the draw, once the test has said everything about both. Neither
+    ///     pinned, they are drawn together through <c>Any.Pair</c> and the order its <c>Having</c> declares; one
+    ///     pinned, the other is drawn from its recipe bounded by the pin, in the builder's own vocabulary; both
+    ///     pinned, they are handed over as they are, and the constructor's own guard judges their order. A pin is a
+    ///     literal, so no pair carries it, and no call order can change the outcome (ADR-0131, #428).
     /// </summary>
     private static void WritePairs(StringBuilder file, ScaffoldPlan plan, string indent) {
         string body = indent + Indent;
 
         foreach (OrderedPairing pairing in plan.Pairings) {
-            ScaffoldedParameter first  = Named(plan, pairing.First);
-            ScaffoldedParameter second = Named(plan, pairing.Second);
-            string              type   = PairTypeOf(plan, pairing);
-            string              order  = pairing.Strict ? "always before" : "never after";
-            string              strict = pairing.Strict ? ", strict: true" : string.Empty;
+            ScaffoldedParameter first      = Named(plan, pairing.First);
+            ScaffoldedParameter second     = Named(plan, pairing.Second);
+            PairVocabulary      vocabulary = PairVocabulary.For(first.GeneratorType!);
+            string              order      = pairing.Strict ? "always before" : "never after";
 
-            Line(file, $"{indent}/// <summary>Draws <c>{first.Name}</c> and <c>{second.Name}</c> together, <c>{first.Name}</c> {order} <c>{second.Name}</c> as the constructor requires, each from its current recipe and pin.</summary>");
-            Line(file, $"{indent}private {type} {PairMethodName(pairing)}() {{");
-            Line(file, $"{body}{type} pair = Any.OrderedPair({first.RecipeFieldName}, {second.RecipeFieldName}{strict});");
+            Line(file, $"{indent}/// <summary>Draws <c>{first.Name}</c> and <c>{second.Name}</c>, <c>{first.Name}</c> {order} <c>{second.Name}</c> as the constructor requires: together when neither is pinned, one bounded by the other's pin, and two pins as they are, for the constructor to judge.</summary>");
+            Line(file, $"{indent}private ({first.TypeDisplay} {first.PascalCasedName}, {second.TypeDisplay} {second.PascalCasedName}) {PairMethodName(pairing)}() {{");
+            Line(file, $"{body}if ({PinFieldName(first)} is {{ }} {first.Identifier}) {{ return ({first.Identifier}, {PinFieldName(second)} ?? {second.RecipeFieldName}.{vocabulary.From(pairing.Strict)}({first.Identifier}).Generate()); }}");
+            Line(file, $"{body}if ({PinFieldName(second)} is {{ }} {second.Identifier}) {{ return ({first.RecipeFieldName}.{vocabulary.UpTo(pairing.Strict)}({second.Identifier}).Generate(), {second.Identifier}); }}");
             Line(file, string.Empty);
-            Line(file, $"{body}if ({PinFieldName(first)} is {{ }} {first.Identifier}) {{ pair = pair.WithFirst({first.Identifier}); }}");
-            Line(file, $"{body}if ({PinFieldName(second)} is {{ }} {second.Identifier}) {{ pair = pair.WithSecond({second.Identifier}); }}");
-            Line(file, string.Empty);
-            Line(file, $"{body}return pair;");
+            Line(file, $"{body}return Any.Pair({first.RecipeFieldName}, {second.RecipeFieldName}).Having.{vocabulary.Relation(pairing.Strict)}().Generate();");
             Line(file, $"{indent}}}");
             Line(file, string.Empty);
         }
@@ -565,22 +554,19 @@ public static class GeneratorEmitter {
 
     /// <summary>
     ///     The two <c>With…</c> overloads of a paired parameter, which keep their meaning: the pin is kept beside the
-    ///     recipe, the refinement takes the pin's place, and either rebuilds the pair, so the other side is drawn
-    ///     in order with what this one now is.
+    ///     recipe, the refinement takes the pin's place. Neither draws nor checks anything: the pair is decided at the
+    ///     draw, once both sides are known, so the order the test writes them in cannot matter (ADR-0131).
     /// </summary>
     private static void WritePairedWithMethods(StringBuilder file, ScaffoldPlan plan, ScaffoldedParameter parameter, OrderedPairing pairing, string indent) {
-        string body   = indent + Indent;
-        string pair   = PairFieldName(pairing);
-        string pin    = PinFieldName(parameter);
-        string other  = Named(plan, pairing.First == parameter.Name ? pairing.Second : pairing.First).Name;
-        string redraw = $"copy.{PairMethodName(pairing)}()";
-        int    width  = Math.Max(parameter.RecipeFieldName.Length, Math.Max(pin.Length, pair.Length));
+        string body  = indent + Indent;
+        string pin   = PinFieldName(parameter);
+        string other = Named(plan, pairing.First == parameter.Name ? pairing.Second : pairing.First).Name;
+        int    width = Math.Max(parameter.RecipeFieldName.Length, pin.Length);
 
         Line(file, $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to a fixed value, which bounds <c>{other}</c>; its recipe is kept for a later refinement.</summary>");
         Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}({parameter.TypeDisplay} value) {{");
         WriteCopy(file, plan, body);
         Line(file, $"{body}copy.{pin.PadRight(width)} = value;");
-        Line(file, $"{body}copy.{pair.PadRight(width)} = {redraw};");
         WriteReturnCopy(file, body);
         Line(file, $"{indent}}}");
         Line(file, string.Empty);
@@ -592,7 +578,6 @@ public static class GeneratorEmitter {
         WriteCopy(file, plan, body);
         Line(file, $"{body}copy.{parameter.RecipeFieldName.PadRight(width)} = configure({parameter.RecipeFieldName});");
         Line(file, $"{body}copy.{pin.PadRight(width)} = null;");
-        Line(file, $"{body}copy.{pair.PadRight(width)} = {redraw};");
         WriteReturnCopy(file, body);
         Line(file, $"{indent}}}");
         Line(file, string.Empty);
@@ -690,13 +675,13 @@ public static class GeneratorEmitter {
         Line(file, string.Empty);
     }
 
-    /// <summary>A pair is drawn as one, ahead of the construction, and each side handed over by name.</summary>
+    /// <summary>A pair is drawn as one, at the draw and ahead of the construction, and each side handed over by name.</summary>
     private static void WritePairDraws(StringBuilder file, ScaffoldPlan plan, string indent) {
         foreach (OrderedPairing pairing in plan.Pairings) {
             ScaffoldedParameter first  = Named(plan, pairing.First);
             ScaffoldedParameter second = Named(plan, pairing.Second);
 
-            Line(file, $"{indent}({first.TypeDisplay} {first.Identifier}, {second.TypeDisplay} {second.Identifier}) = {PairFieldName(pairing)}.Generate();");
+            Line(file, $"{indent}({first.TypeDisplay} {first.Identifier}, {second.TypeDisplay} {second.Identifier}) = {PairMethodName(pairing)}();");
         }
 
         if (plan.Pairings.Count > 0) { Line(file, string.Empty); }
@@ -742,12 +727,10 @@ public static class GeneratorEmitter {
     }
 
     private static int GeneratorTypeWidth(ScaffoldPlan plan) {
-        int parameters = plan.Parameters.Where(parameter => plan.PairingOf(parameter) is null)
-                             .Select(parameter => GeneratorTypeOf(parameter).Length)
-                             .DefaultIfEmpty(0)
-                             .Max();
-
-        return plan.Pairings.Select(pairing => PairTypeOf(plan, pairing).Length).Aggregate(parameters, Math.Max);
+        return plan.Parameters.Where(parameter => plan.PairingOf(parameter) is null)
+                   .Select(parameter => GeneratorTypeOf(parameter).Length)
+                   .DefaultIfEmpty(0)
+                   .Max();
     }
 
     /// <summary>The paired parameters, in declaration order.</summary>
@@ -759,22 +742,7 @@ public static class GeneratorEmitter {
         return plan.Parameters.First(parameter => parameter.Name == name);
     }
 
-    /// <summary>Whether <paramref name="parameter" /> is the one of its pair declared first, where the pair's field sits.</summary>
-    private static bool OpensPair(ScaffoldPlan plan, ScaffoldedParameter parameter, OrderedPairing pairing) {
-        return plan.Parameters.First(candidate => pairing.Ties(candidate.Name)) == parameter;
-    }
-
-    /// <summary>The pair's own type — <c>AnyOrderedPair&lt;DateTime&gt;</c>.</summary>
-    private static string PairTypeOf(ScaffoldPlan plan, OrderedPairing pairing) {
-        return $"AnyOrderedPair<{Named(plan, pairing.First).TypeDisplay}>";
-    }
-
-    /// <summary>The field the pair is drawn from — <c>_startAndEnd</c> (<see cref="PairNames" />).</summary>
-    private static string PairFieldName(OrderedPairing pairing) {
-        return PairNames.Field(pairing);
-    }
-
-    /// <summary>The private method that rebuilds the pair — <c>StartAndEnd()</c> (<see cref="PairNames" />).</summary>
+    /// <summary>The private method that draws the pair — <c>StartAndEnd()</c> (<see cref="PairNames" />).</summary>
     private static string PairMethodName(OrderedPairing pairing) {
         return PairNames.Method(pairing);
     }

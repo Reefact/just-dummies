@@ -2071,7 +2071,7 @@ internal static class Guards {
     /// </summary>
     /// <remarks>
     ///     The one rule between parameters that is read rather than marked (#405): a direct comparison of two
-    ///     parameters of one type is the order <c>Any.OrderedPair</c> draws by construction, placed by the same
+    ///     parameters of one type is the order <c>Any.Pair</c> draws by construction, placed by the same
     ///     questions a guard on one parameter answers. Whether the type has a pair to draw is the scaffolder's
     ///     question, and it marks both, as here, where it has none.
     /// </remarks>

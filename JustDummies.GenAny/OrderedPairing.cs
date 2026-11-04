@@ -4,11 +4,11 @@ namespace JustDummies.GenAny;
 
 /// <summary>
 ///     Two parameters a constructor's guard ties by an order — <c>if (start &gt; end) { throw … }</c> — drawn together
-///     through <c>Any.OrderedPair</c>, so the first never follows the second (§4.2, §5.3, #405).
+///     through <c>Any.Pair</c>, so the first never follows the second (§4.2, §5.3, #405).
 /// </summary>
 /// <remarks>
 ///     The one cross-parameter rule the engine writes rather than marks: a direct comparison of two parameters of one
-///     ordered type is exactly what <c>OrderedPair</c> draws by construction, so honouring it takes no solver
+///     ordered type is exactly what <c>Any.Pair</c> draws by construction, so honouring it takes no solver
 ///     (ADR-0046). Every other rule between parameters stays <c>to verify</c>.
 /// </remarks>
 public sealed class OrderedPairing {

@@ -84,6 +84,17 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
         return Val(_spec.Largest());
     }
 
+    /// <summary>
+    ///     A <c>Local</c> value supplied to <see cref="OneOf(DateTime[])" /> that the constraints still allow, rendered,
+    ///     or <c>null</c>. A pair refuses it once an order makes a drawn value bound the other side (ADR-0131, ADR-0114).
+    /// </summary>
+    internal string? SuppliedLocalValue() {
+        return _allowedOriginals?.Where(original => original.Value.Kind == DateTimeKind.Local && _spec.Contains(original.Key))
+                                 .OrderBy(original => original.Key)
+                                 .Select(original => V(original.Value))
+                                 .FirstOrDefault();
+    }
+
     // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
     // belong in the completion list a caller writes constraints in (ADR-0067). Val projects the engine's
     // ordinal back to the caller's own type.

@@ -556,3 +556,78 @@ static JustDummies.Any.OrderedPair(JustDummies.AnyTimeSpan! first, JustDummies.A
 static JustDummies.Any.OrderedPair(JustDummies.AnyUInt16! first, JustDummies.AnyUInt16! second, bool strict = false) -> JustDummies.AnyOrderedPair<ushort>!
 static JustDummies.Any.OrderedPair(JustDummies.AnyUInt32! first, JustDummies.AnyUInt32! second, bool strict = false) -> JustDummies.AnyOrderedPair<uint>!
 static JustDummies.Any.OrderedPair(JustDummies.AnyUInt64! first, JustDummies.AnyUInt64! second, bool strict = false) -> JustDummies.AnyOrderedPair<ulong>!
+JustDummies.AnyPair<T>
+JustDummies.AnyPair<T>.Generate() -> (T Item1, T Item2)
+JustDummies.AnyPair<T>.Having.get -> JustDummies.AnyPairRelation<T>!
+JustDummies.AnyPairRelation<T>
+JustDummies.AnyPairRelations
+static JustDummies.Any.Pair(JustDummies.AnyInt32! item1, JustDummies.AnyInt32! item2) -> JustDummies.AnyPair<int>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<int>! having) -> JustDummies.AnyPair<int>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<int>! having) -> JustDummies.AnyPair<int>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<int>! having) -> JustDummies.AnyPair<int>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<int>! having) -> JustDummies.AnyPair<int>!
+static JustDummies.Any.Pair(JustDummies.AnyByte! item1, JustDummies.AnyByte! item2) -> JustDummies.AnyPair<byte>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<byte>! having) -> JustDummies.AnyPair<byte>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<byte>! having) -> JustDummies.AnyPair<byte>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<byte>! having) -> JustDummies.AnyPair<byte>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<byte>! having) -> JustDummies.AnyPair<byte>!
+static JustDummies.Any.Pair(JustDummies.AnySByte! item1, JustDummies.AnySByte! item2) -> JustDummies.AnyPair<sbyte>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<sbyte>! having) -> JustDummies.AnyPair<sbyte>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<sbyte>! having) -> JustDummies.AnyPair<sbyte>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<sbyte>! having) -> JustDummies.AnyPair<sbyte>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<sbyte>! having) -> JustDummies.AnyPair<sbyte>!
+static JustDummies.Any.Pair(JustDummies.AnyInt16! item1, JustDummies.AnyInt16! item2) -> JustDummies.AnyPair<short>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<short>! having) -> JustDummies.AnyPair<short>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<short>! having) -> JustDummies.AnyPair<short>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<short>! having) -> JustDummies.AnyPair<short>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<short>! having) -> JustDummies.AnyPair<short>!
+static JustDummies.Any.Pair(JustDummies.AnyUInt16! item1, JustDummies.AnyUInt16! item2) -> JustDummies.AnyPair<ushort>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<ushort>! having) -> JustDummies.AnyPair<ushort>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<ushort>! having) -> JustDummies.AnyPair<ushort>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<ushort>! having) -> JustDummies.AnyPair<ushort>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<ushort>! having) -> JustDummies.AnyPair<ushort>!
+static JustDummies.Any.Pair(JustDummies.AnyUInt32! item1, JustDummies.AnyUInt32! item2) -> JustDummies.AnyPair<uint>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<uint>! having) -> JustDummies.AnyPair<uint>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<uint>! having) -> JustDummies.AnyPair<uint>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<uint>! having) -> JustDummies.AnyPair<uint>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<uint>! having) -> JustDummies.AnyPair<uint>!
+static JustDummies.Any.Pair(JustDummies.AnyInt64! item1, JustDummies.AnyInt64! item2) -> JustDummies.AnyPair<long>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<long>! having) -> JustDummies.AnyPair<long>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<long>! having) -> JustDummies.AnyPair<long>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<long>! having) -> JustDummies.AnyPair<long>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<long>! having) -> JustDummies.AnyPair<long>!
+static JustDummies.Any.Pair(JustDummies.AnyUInt64! item1, JustDummies.AnyUInt64! item2) -> JustDummies.AnyPair<ulong>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<ulong>! having) -> JustDummies.AnyPair<ulong>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<ulong>! having) -> JustDummies.AnyPair<ulong>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<ulong>! having) -> JustDummies.AnyPair<ulong>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<ulong>! having) -> JustDummies.AnyPair<ulong>!
+static JustDummies.Any.Pair(JustDummies.AnySingle! item1, JustDummies.AnySingle! item2) -> JustDummies.AnyPair<float>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<float>! having) -> JustDummies.AnyPair<float>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<float>! having) -> JustDummies.AnyPair<float>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<float>! having) -> JustDummies.AnyPair<float>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<float>! having) -> JustDummies.AnyPair<float>!
+static JustDummies.Any.Pair(JustDummies.AnyDouble! item1, JustDummies.AnyDouble! item2) -> JustDummies.AnyPair<double>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<double>! having) -> JustDummies.AnyPair<double>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<double>! having) -> JustDummies.AnyPair<double>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<double>! having) -> JustDummies.AnyPair<double>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<double>! having) -> JustDummies.AnyPair<double>!
+static JustDummies.Any.Pair(JustDummies.AnyDecimal! item1, JustDummies.AnyDecimal! item2) -> JustDummies.AnyPair<decimal>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<decimal>! having) -> JustDummies.AnyPair<decimal>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<decimal>! having) -> JustDummies.AnyPair<decimal>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<decimal>! having) -> JustDummies.AnyPair<decimal>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<decimal>! having) -> JustDummies.AnyPair<decimal>!
+static JustDummies.Any.Pair(JustDummies.AnyTimeSpan! item1, JustDummies.AnyTimeSpan! item2) -> JustDummies.AnyPair<System.TimeSpan>!
+static JustDummies.AnyPairRelations.Item1LessThanItem2(this JustDummies.AnyPairRelation<System.TimeSpan>! having) -> JustDummies.AnyPair<System.TimeSpan>!
+static JustDummies.AnyPairRelations.Item1LessThanOrEqualToItem2(this JustDummies.AnyPairRelation<System.TimeSpan>! having) -> JustDummies.AnyPair<System.TimeSpan>!
+static JustDummies.AnyPairRelations.Item1GreaterThanItem2(this JustDummies.AnyPairRelation<System.TimeSpan>! having) -> JustDummies.AnyPair<System.TimeSpan>!
+static JustDummies.AnyPairRelations.Item1GreaterThanOrEqualToItem2(this JustDummies.AnyPairRelation<System.TimeSpan>! having) -> JustDummies.AnyPair<System.TimeSpan>!
+static JustDummies.Any.Pair(JustDummies.AnyDateTime! item1, JustDummies.AnyDateTime! item2) -> JustDummies.AnyPair<System.DateTime>!
+static JustDummies.AnyPairRelations.Item1BeforeItem2(this JustDummies.AnyPairRelation<System.DateTime>! having) -> JustDummies.AnyPair<System.DateTime>!
+static JustDummies.AnyPairRelations.Item1BeforeOrEqualToItem2(this JustDummies.AnyPairRelation<System.DateTime>! having) -> JustDummies.AnyPair<System.DateTime>!
+static JustDummies.AnyPairRelations.Item1AfterItem2(this JustDummies.AnyPairRelation<System.DateTime>! having) -> JustDummies.AnyPair<System.DateTime>!
+static JustDummies.AnyPairRelations.Item1AfterOrEqualToItem2(this JustDummies.AnyPairRelation<System.DateTime>! having) -> JustDummies.AnyPair<System.DateTime>!
+static JustDummies.Any.Pair(JustDummies.AnyDateTimeOffset! item1, JustDummies.AnyDateTimeOffset! item2) -> JustDummies.AnyPair<System.DateTimeOffset>!
+static JustDummies.AnyPairRelations.Item1BeforeItem2(this JustDummies.AnyPairRelation<System.DateTimeOffset>! having) -> JustDummies.AnyPair<System.DateTimeOffset>!
+static JustDummies.AnyPairRelations.Item1BeforeOrEqualToItem2(this JustDummies.AnyPairRelation<System.DateTimeOffset>! having) -> JustDummies.AnyPair<System.DateTimeOffset>!
+static JustDummies.AnyPairRelations.Item1AfterItem2(this JustDummies.AnyPairRelation<System.DateTimeOffset>! having) -> JustDummies.AnyPair<System.DateTimeOffset>!
+static JustDummies.AnyPairRelations.Item1AfterOrEqualToItem2(this JustDummies.AnyPairRelation<System.DateTimeOffset>! having) -> JustDummies.AnyPair<System.DateTimeOffset>!

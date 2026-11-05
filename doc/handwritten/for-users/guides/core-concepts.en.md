@@ -26,8 +26,9 @@ int anySecond = anyQuantity.Generate();
 ```
 
 Usually, not always: two draws may be equal, and that is a valid outcome of what was declared. When the
-code needs them to differ, that is a constraint to declare — `anyQuantity.DifferentFrom(anyFirst)` — not
-a likelihood to count on.
+code needs them to differ, that is a constraint to declare on the second draw — `int anySecond =
+anyQuantity.DifferentFrom(anyFirst).Generate();` — not a likelihood to count on. `DifferentFrom` returns a new
+generator and leaves `anyQuantity` as it was, so it is drawn from directly.
 
 This is the distinction the whole API rests on, and the reason the package ships analyzers: a recipe
 and a value satisfy many of the same signatures, so the compiler cannot tell you when you have

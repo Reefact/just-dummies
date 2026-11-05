@@ -23,6 +23,11 @@ explore un espace, JustDummies retire les littéraux dénués de sens des tests 
 ordinaires. Si vous voulez du rétrécissement, prenez une bibliothèque à base de propriétés —
 celle-ci ne fera pas semblant.
 
+Pour répartir une suite entre les deux, lisez chaque assertion. Celle qui doit tenir sur tout un espace
+d'entrées — « pour tout texte, l'inverser deux fois le rend » — est une propriété, et revient à la
+bibliothèque à base de propriétés. Celle qui porte sur un seul cas, dont les autres entrées ne la
+concernent pas, est un test par l'exemple, et ces autres entrées sont les dummies de JustDummies.
+
 ### Pourquoi n'y a-t-il pas d'`Any.Object<T>()` qui remplirait tout un graphe d'objets ?
 
 Parce qu'un générateur qui réfléchit sur votre type doit deviner ce qui rend une instance valide, et
@@ -65,6 +70,17 @@ Non — c'est l'unique habitude qui décide si le test vaut quelque chose. Une c
 **invariant du domaine**. Si vous en ajoutez une pour faire passer une assertion, le test prouve
 désormais que le code est d'accord avec la supposition du test lui-même, et il continuera de passer
 après un changement de règle.
+
+Une valeur dont le scénario a besoin mais que l'assertion ne vérifie pas — le statut en attente dont une
+commande a besoin pour qu'une remise s'applique — est un prérequis : épinglez-la, et laissez le reste tiré.
+Voir [Arbitraire ne veut pas dire dummy](./core-concepts.fr.md#arbitraire-ne-veut-pas-dire-dummy).
+
+### Le code testé prend sa propre graine. Dois-je la tirer ?
+
+Appliquez la même règle qu'à toute valeur. Si l'assertion tient quelle que soit la graine — un mélange
+garde toutes les cartes, une simulation reste dans ses bornes — la graine est un dummy : tirez-la,
+`Any.Int32().Generate()`. Si l'assertion dépend de ce que cette graine produit — l'ordre exact que donne un
+mélange — c'est la valeur testée : écrivez-la en littéral, à côté du résultat attendu qu'elle produit.
 
 ### Mes contraintes ont levé `ConflictingAnyConstraintException`. Est-ce un bogue ?
 

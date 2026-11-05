@@ -22,6 +22,11 @@ The two solve different problems and coexist happily: property-based testing exp
 JustDummies removes meaningless literals from ordinary example-based tests. If you want shrinking,
 use a property-based library — this one will not pretend to.
 
+To split a suite between the two, read each assertion. One that must hold over a space of inputs — "for
+any text, reversing it twice gives it back" — is a property, and belongs to the property-based library.
+One about a single case, whose other inputs it does not depend on, is an example test, and those other
+inputs are JustDummies' dummies.
+
 ### Why is there no `Any.Object<T>()` that fills a whole object graph?
 
 Because a generator that reflects over your type has to guess what makes an instance valid, and it
@@ -62,6 +67,17 @@ When the code needs the two to differ, declare it: `anyQuantity.DifferentFrom(an
 No — this is the one habit that decides whether the test is worth anything. A constraint states an
 **invariant of the domain**. If you add one so an assertion passes, the test now proves that the
 code agrees with the test's own assumption, and it will keep passing after the rule changes.
+
+A value the scenario needs but the assertion does not verify — the pending status an order needs for a
+discount to apply — is a prerequisite: pin it, and leave the rest drawn. See
+[Arbitrary does not mean dummy](./core-concepts.en.md#arbitrary-does-not-mean-dummy).
+
+### The code under test takes its own seed. Do I draw it?
+
+Apply the same rule as for any value. If the assertion holds whatever the seed is — a shuffle keeps every
+card, a simulation stays within its bounds — the seed is a dummy: draw it, `Any.Int32().Generate()`. If
+the assertion depends on what that seed produces — the exact order a shuffle yields — it is the value
+under test: write it as a literal, beside the expected outcome it produces.
 
 ### My constraints threw `ConflictingAnyConstraintException`. Is that a bug?
 

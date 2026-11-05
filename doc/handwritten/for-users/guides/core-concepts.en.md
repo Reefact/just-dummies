@@ -248,7 +248,7 @@ is a literal that looks deliberate, which is the very thing this library exists 
 
 ### An object that reaches the assertion only by identity
 
-One case sits on the line, and it is common:
+A common borderline case:
 
 <!-- jd:declarations -->
 ```csharp
@@ -291,13 +291,18 @@ public sealed class InvoiceTests {
 
 Strictly, `anyCustomer` is not a dummy: the assertion is about it, and the test checks a property —
 whatever the customer, the invoice holds that very one — with a sample size of one. The library
-tolerates it all the same, because the property is trivial: passing a reference through computes
-nothing, so no other customer could make it fail, and the alternative, a customer built from literals
-nobody chose for a reason, is the very thing this library exists to remove. Keep the `any` name: the
+tolerates it all the same where the property is trivial, and the assertion's shape is not what makes it
+so: the code under test is. This `Invoice` stores the reference it is given, unconditionally, so it
+computes nothing from the customer and no other customer could make the test fail; and the
+alternative, a customer built from literals nobody chose for a reason, is the very thing this library
+exists to remove. An `Invoice` that kept the reference only for some customers, say by their name,
+would pass the same `Assert.Same` for one draw and fail it for another: the content would decide the
+outcome, and the tolerance would not apply. Keep the `any` name: the
 customer's content is arbitrary, and the test never reads it.
 
-The tolerance stops at identity. Once the assertion reads a field of the object, compares its
-content, or checks something computed from it — `Assert.Equal(anyCustomer.Name, invoice.CustomerName)`
+The tolerance stops at an unconditional pass-through, checked by identity. Once the code under test
+reads the object to decide what it keeps, or the assertion reads a field of it, compares its content,
+or checks something computed from it — `Assert.Equal(anyCustomer.Name, invoice.CustomerName)`
 — the value is the subject of a real property: write it as a literal, or take the question to a
 property-based library.
 

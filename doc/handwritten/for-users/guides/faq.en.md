@@ -73,7 +73,8 @@ A value the scenario needs but the assertion does not verify — the pending sta
 discount to apply — is a prerequisite: pin it, and leave the rest drawn. See
 [Arbitrary does not mean dummy](./core-concepts.en.md#arbitrary-does-not-mean-dummy). An object the
 assertion only checks by identity — `Assert.Same(anyCustomer, invoice.Customer)` — is a trivial property
-the library tolerates, as long as nothing reads its content; see
+the library tolerates when the code under test passes it through unconditionally and nothing reads its
+content; see
 [An object that reaches the assertion only by identity](./core-concepts.en.md#an-object-that-reaches-the-assertion-only-by-identity).
 
 ### The code under test takes its own seed. Do I draw it?

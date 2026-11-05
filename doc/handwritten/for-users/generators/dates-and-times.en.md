@@ -92,9 +92,8 @@ DateOnly anyBusinessDay = Any.DateOnly()
 ```
 
 `.As(...)` returns an `IAny<DateOnly>`, no longer an `AnyDateOnly`, so every builder constraint goes
-before it. The bounds keep the move inside the type — a Saturday on `DateOnly.MaxValue` has no Monday —
-and an upper bound that falls on a weekend lets the move carry a day past it, which `Between` alone
-would not.
+before it. The bounds constrain the draw, not the move: the move may
+carry a day past the upper bound when that bound falls on a weekend, which `Between` alone would not.
 Public holidays are your calendar too, and belong in that same function.
 
 ## `DateTime` draws are `Kind.Utc`, and a `Local` bound is refused

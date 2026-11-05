@@ -56,7 +56,8 @@ même chaîne, en information et non en verdict ; la paire reste correcte dans l
 
 **Un entier non contraint parcourt tout son type.** Ne déclarez rien et le tirage est uniforme sur
 toute la plage, et c'est délibéré
-([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md), remplacée par l'[ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md), puis par l'[ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)) :
+([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md), remplacée par l'[ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md), puis par l'[ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md), pour les seuls tirages à virgule flottante et `decimal` :
+le tirage limite d'un sur dix de l'ADR-0117 ne s'applique pas aux entiers) :
 un grand entier reste un entier ordinaire, là où un grand `double` cesse de se comporter comme de
 l'arithmétique — la règle sur la virgule flottante, plus bas, est l'exception et non la norme.
 Uniforme sur une plage signifie aussi que l'essentiel de cette plage se trouve près de ses extrêmes :
@@ -138,6 +139,9 @@ Elle décrit un treillis de valeurs, pas une représentation. Un tirage porte en
 tirage qui finit par un zéro peut le perdre, environ un sur dix sous `WithScale(28)`. Comparez des valeurs,
 pas leur texte. Une valeur fournie par `OneOf`
 ou par un intervalle réduit à un point est rendue telle qu'écrite ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.fr.md)).
+
+`WithScale` appartient à `decimal`. Un `double` au centième se tire comme un nombre entier de centièmes,
+puis se divise : `Any.Int32().Between(0, 100_000).As(hundredths => hundredths / 100d)` tire de 0 à 1000,00.
 
 `decimal` prend aussi un pas, pour une grille qui n'est pas un nombre de décimales — un pas de cotation
 de `0.25`, une note au demi-point. La valeur est tirée comme un nombre entier de pas, jamais arrondie

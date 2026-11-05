@@ -34,6 +34,12 @@ nommée : la fabrique est la vraie. Si les contraintes sont trop lâches, la fab
 exception, et vous l'apprenez immédiatement au lieu de livrer un dummy qui n'aurait jamais pu
 exister en production.
 
+L'échec vous parvient comme une `AnyGenerationException`, et non comme l'exception propre de la fabrique,
+et c'est délibéré : le message nomme les valeurs tirées et la graine qui les rejoue, et l'exception de la
+fabrique est conservée comme son `InnerException`. Un composeur passé à `Any.Combine` qui lève est
+rapporté de la même façon. Un test qui porte sur le refus de la fabrique appelle donc la fabrique
+elle-même — `OrderReference.Create("REF-1")` — plutôt que de l'atteindre par un générateur.
+
 ## `Any.Combine` : plusieurs générateurs en un seul
 
 Quand un type demande plus d'une entrée, `Any.Combine` tire de chaque générateur et alimente un
@@ -218,8 +224,16 @@ combien de valeurs distinctes il a le droit de puiser, et en demanderait plus qu
 ISet<OrderStatus?> anyStatuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
 ```
 
-Un générateur scaffoldé par `any` écrit `.AsNullable()` pour chaque paramètre nullable de type
-valeur, exactement pour cette raison.
+`.AsNullable()` est réservé aux types valeur. Un générateur d'un type référence est déjà un `IAny<T?>`
+— un type référence nullable est une annotation sur le même type — si bien que `IAny<string?>
+nameGenerator = Any.String().Alpha();` compile tel quel, tandis que `.AsNullable()` dessus ne compile pas
+(CS0453). `IAny<T>` est en outre covariant : le même générateur sert aussi là où un `IAny` d'un type de
+base est attendu.
+
+Un générateur scaffoldé par `any` écrit `.AsNullable()` là où un paramètre nullable de type valeur est
+raffiné, puisqu'un raffinement décrit une valeur. La valeur par défaut du paramètre est `.OrNull()`,
+`null` un tirage sur dix, sauf si une garde refuse `null`
+([ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)).
 
 ## `Any.Fixed` : une valeur que vous avez choisie, sous la forme d'un générateur
 
@@ -279,7 +293,7 @@ int anyCells    = Any.Int32().GreaterThanOrEqualTo(1).LessThan(anyCapacity).Gene
 C'est idiomatique à un site d'appel : la borne est une valeur ordinaire, et les deux tirages se rejouent depuis
 la même graine. Si la règle appartient au type plutôt qu'à ce test, écrivez-la une fois dans le générateur,
 comme un seul générateur qui tire les deux ensemble : [Quand une garde relie deux paramètres](../packages/justdummies-cli.fr.md#quand-une-garde-relie-deux-paramètres)
-montre les trois formes, et [Principes de conception](./design-principles.fr.md#ce-que-cela-change-au-quotidien)
+montre les formes qui couvrent la plupart des cas, et [Principes de conception](./design-principles.fr.md#ce-que-cela-change-au-quotidien)
 dit pourquoi la bibliothèque vous le laisse.
 
 ## `.Then(...)` : un tirage qui dépend d'un autre
@@ -308,6 +322,27 @@ Choisir parmi des générateurs est le même geste : la branche non retenue n'es
 ```csharp
 IAny<int> signedGenerator = Any.Boolean().Then(positive => positive ? Any.Int32().Positive() : Any.Int32().Negative());
 ```
+
+Deux agrégats qui doivent partager une valeur tirée font le même geste : tirez le fait partagé une fois,
+puis épinglez-le sur les deux. Ici, deux commandes passées par un même client :
+
+```csharp
+IAny<OrderReference> referenceGenerator = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create);
+
+IAny<(Order First, Order Second)> sameCustomerGenerator = Any.String().Alpha().WithLengthBetween(3, 20)
+    .Then(customerName => {
+        IAny<Order> orderGenerator = Any.Combine(referenceGenerator,
+                                                 Any.Decimal().Between(1m, 1_000m).WithScale(2),
+                                                 (reference, amount) => new Order(reference, customerName, amount));
+
+        return Any.Combine(orderGenerator, orderGenerator, (first, second) => (first, second));
+    });
+
+(Order anyFirstOrder, Order anySecondOrder) = sameCustomerGenerator.Generate();
+```
+
+Au point d'appel, tirer le nom avec `Generate()` et le passer aux deux constructeurs dit la même chose ;
+`.Then(...)` est la forme que prend une recette gardée pour être réutilisée.
 
 ## Construire un agrégat entier
 

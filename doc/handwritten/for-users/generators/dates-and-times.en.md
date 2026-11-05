@@ -39,6 +39,14 @@ TimeSpan anyNonZero  = Any.TimeSpan().NonZero().Generate();
 TimeSpan anyShorter  = Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).Generate();
 ```
 
+"A later day" needs no invented upper bound. When the earlier date is a literal, it bounds the later
+one: `Any.DateOnly().After(start)`. When both are drawn, `Any.Pair` draws them with their order held
+by construction ([Composition](../guides/composition.en.md#anypair-two-values-tied-by-an-order)):
+
+```csharp
+(DateOnly anyCheckIn, DateOnly anyCheckOut) = Any.Pair(Any.DateOnly(), Any.DateOnly()).Having.Item1BeforeItem2().Generate();
+```
+
 ## Granularity
 
 `WithGranularity` snaps the drawn value onto a grid. It is what turns a raw instant into one your

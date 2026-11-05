@@ -24,6 +24,16 @@ IEnumerable<Guid> anyIds       = Any.SequenceOf(Any.Guid().NonEmpty()).WithCount
 HashSet<OrderStatus> anyStates = Any.SetOf(Any.Enum<OrderStatus>()).WithMaxCount(3).Generate();
 ```
 
+## À quoi ressemble une collection non contrainte
+
+Sans effectif déclaré, une collection tire entre 0 et 8 éléments, et peut donc être vide : déclarez
+`NonEmpty()` quand le code a besoin de contenu. Un plancher déplace cette fenêtre au lieu de l'élargir —
+`WithMinCount(3)` tire de 3 à 11 éléments, tout comme trois valeurs qu'un `Containing(...)` exige — et un
+maximum déclaré remplace tout à fait l'étendue : `WithCountBetween(2, 500)` tire n'importe où entre 2 et
+500 ([ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.fr.md)). Un
+ensemble, ou une collection distincte, sur un petit domaine ne contient pas plus de valeurs que ce
+domaine n'en a.
+
 ## Le vocabulaire d'effectif partagé
 
 Tout générateur de collection porte les mêmes six contraintes d'effectif :

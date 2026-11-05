@@ -54,7 +54,8 @@ sit in one chain, as information rather than as a verdict; the pair stays correc
 
 **An unconstrained integer spans its whole type.** Declare nothing and the draw is uniform over the
 full range, and that is deliberate
-([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md), superseded by [ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md), then by [ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)):
+([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md), superseded by [ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md), then by [ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md), for the floating-point and `decimal` draws only:
+the one-in-ten limit draw of ADR-0117 does not apply to integers):
 a large integer is still an ordinary integer, where a large `double` stops behaving like arithmetic
 — the floating-point rule below is the exception, not the norm. Uniform over a range also means most
 of that range sits near its extremes: an unconstrained `Int128` carries 38 or 39 digits in about 94
@@ -131,6 +132,9 @@ It describes a lattice of values, not a representation. A draw usually carries t
 `5.30` under `WithScale(2)` — but that is not promised: at the highest scales the type allows, a draw
 ending in zero may lose that zero, about one in ten under `WithScale(28)`. Compare values, not their text. A value you supply through `OneOf` or a
 single-point range is returned as written, so `OneOf(5.3m)` gives `5.3`, not `5.30` ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.md)).
+
+`WithScale` is `decimal`'s. A `double` in hundredths is drawn as a whole number of hundredths, then
+divided: `Any.Int32().Between(0, 100_000).As(hundredths => hundredths / 100d)` draws 0 to 1000.00.
 
 `decimal` takes a step too, for a grid that is not a number of places — a tick size of `0.25`, a
 half-point grade. The value is drawn as a whole number of steps, never rounded onto them:

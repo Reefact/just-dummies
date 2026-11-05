@@ -42,6 +42,11 @@ dotnet_diagnostic.JD030.severity = warning
 dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
 ```
 
+A category key names one category, and there are four: `JustDummies.Reproducibility`,
+`JustDummies.Usage`, `JustDummies.Constraints` and `JustDummies.Composition`. Raising every rule takes
+one line per category. `category-JustDummies.severity` names no category, so it raises nothing, and no
+warning says so.
+
 **To confirm the rules are loaded**, whether or not any fires, build with a SARIF 2.1 error log:
 
 ```bash

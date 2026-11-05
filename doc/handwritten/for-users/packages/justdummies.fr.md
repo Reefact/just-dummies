@@ -61,6 +61,11 @@ dotnet_diagnostic.JD030.severity = warning
 dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
 ```
 
+Une clé de catégorie nomme une seule catégorie, et il y en a quatre : `JustDummies.Reproducibility`,
+`JustDummies.Usage`, `JustDummies.Constraints` et `JustDummies.Composition`. Relever toutes les règles
+demande une ligne par catégorie. `category-JustDummies.severity` ne nomme aucune catégorie : il ne relève
+donc rien, et aucun avertissement ne le signale.
+
 ## Frameworks cibles
 
 | Asset | Porte |

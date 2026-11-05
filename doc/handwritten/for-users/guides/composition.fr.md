@@ -294,7 +294,7 @@ une clé doit différer ([Collections](../generators/collections.fr.md#distincti
 inférer, plutôt que la liste qu'il a reçue.
 
 Les valeurs sont comparées avec l'égalité par défaut du type, `EqualityComparer<T>.Default` : une
-implémentation d'`IEquatable<T>` ou un `Equals` redéfini. Un type qui n'a ni l'un ni l'autre compare des
+implémentation d'`IEquatable<T>` ou un `Equals` redéfini. Un type référence qui n'a ni l'un ni l'autre compare des
 références : la même instance est donc toujours exclue, mais une instance créée à part, aux champs
 identiques, compte comme différente et passe, alors qu'un lecteur y verrait la même valeur — la mise en garde
 que porte aussi la [distinction](../generators/collections.fr.md#distinction).

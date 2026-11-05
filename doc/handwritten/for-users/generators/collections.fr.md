@@ -32,7 +32,7 @@ Sans effectif déclaré, une collection tire entre 0 et 8 éléments, et peut do
 maximum déclaré remplace tout à fait l'étendue : `WithCountBetween(2, 500)` tire n'importe où entre 2 et
 500 ([ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.fr.md)). Un
 ensemble, ou une collection distincte, sur un petit domaine ne contient pas plus de valeurs que ce
-domaine n'en a.
+domaine n'en a, auxquelles s'ajoute toute valeur qu'un `Containing(...)` épingle hors de lui.
 
 ## Le vocabulaire d'effectif partagé
 

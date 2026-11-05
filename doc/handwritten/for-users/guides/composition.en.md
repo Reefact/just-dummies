@@ -32,9 +32,13 @@ the factory is your real one. If the constraints are too loose, the factory thro
 immediately rather than shipping a dummy that could never exist in production.
 
 The failure reaches you as an `AnyGenerationException`, not as the factory's own exception, and that is
-deliberate: the message names the values that were drawn and the seed that replays them, and the
-factory's exception is kept as its `InnerException`. A composer handed to `Any.Combine` that throws is
-reported the same way. So a test about the factory's refusal calls the factory itself —
+deliberate: the message names the values that were drawn, and the factory's exception is kept as its
+`InnerException`. A composer handed to `Any.Combine` that throws is reported the same way. The library's
+own exceptions are not wrapped: a `ConflictingAnyConstraintException` raised by a generator the factory
+calls reaches you as it is. The message also carries the seed when the generator draws from one —
+`Any.Fixed(...).As(...)` draws nothing, so there is none — and that seed replays the whole value only
+when every operand draws from it; over a generator the library cannot replay, the message says the
+replay is partial. So a test about the factory's refusal calls the factory itself —
 `OrderReference.Create("REF-1")` — rather than reaching it through a generator.
 
 ## `Any.Combine`: several generators into one

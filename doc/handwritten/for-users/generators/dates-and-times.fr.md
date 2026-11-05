@@ -59,8 +59,8 @@ DateTime anyAppointment = Any.DateTime()
                              .WithGranularity(TimeSpan.FromMinutes(1))
                              .Generate();
 
-// Jours entiers.
-DateTime anyBusinessDay = Any.DateTime().WithGranularity(TimeSpan.FromDays(1)).Generate();
+// Jours entiers, à minuit.
+DateTime anyMidnight = Any.DateTime().WithGranularity(TimeSpan.FromDays(1)).Generate();
 
 // Une durée en secondes entières.
 TimeSpan anyRetryAfter = Any.TimeSpan().Positive().WithGranularity(TimeSpan.FromSeconds(1)).Generate();
@@ -72,6 +72,31 @@ testé. Déclarer la granularité que votre stockage a réellement est le remèd
 invariant du domaine plutôt qu'un contournement.
 
 `DateOnly` n'a pas de contrainte de granularité — c'est déjà un jour entier.
+
+## Jours ouvrés
+
+Il n'y a pas de contrainte de jour de semaine ni de jour ouvré, et c'est une décision : quels jours
+comptent est un calendrier, et le calendrier appartient à votre domaine. Tirez un jour, puis amenez-le
+sur un jour ouvré par `.As(...)` :
+
+```csharp
+static DateOnly NextBusinessDay(DateOnly day) => day.DayOfWeek switch {
+    DayOfWeek.Saturday => day.AddDays(2),
+    DayOfWeek.Sunday   => day.AddDays(1),
+    _                  => day
+};
+
+DateOnly anyBusinessDay = Any.DateOnly()
+                             .Between(new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31))
+                             .As(NextBusinessDay)
+                             .Generate();
+```
+
+`.As(...)` renvoie un `IAny<DateOnly>`, et non plus un `AnyDateOnly` : toute contrainte du builder se
+place donc avant. Les bornes gardent le déplacement à l'intérieur du type — un samedi sur
+`DateOnly.MaxValue` n'a pas de lundi — et une borne haute qui tombe un week-end laisse le déplacement
+emporter un jour au-delà d'elle, ce que `Between` seul ne ferait pas. Les jours fériés relèvent aussi de
+votre calendrier, et trouvent leur place dans cette même fonction.
 
 ## Les tirages `DateTime` sont `Kind.Utc`, et une borne `Local` est refusée
 

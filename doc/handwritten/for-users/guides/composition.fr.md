@@ -245,10 +245,15 @@ par tout ce que le générateur construit ([ADR-0118](../../for-maintainers/adr/
 
 Chaque builder typé porte un `DifferentFrom` qui lui est propre, vérifié à la déclaration. Un générateur vu
 seulement comme un `IAny<T>` — construit par `As` ou `Combine`, ou scaffoldé — en reçoit un aussi : il
-retire tant que la valeur égale celle donnée, un nombre borné de fois, et échoue avec sa graine quand le
-générateur ne produit rien d'autre. Un générateur dont on sait déjà qu'il ne produit que cette valeur —
-`Any.Fixed(value)`, un ensemble d'une seule valeur, un builder épinglé sur une valeur — est refusé dès son
-premier `Generate()`, sans retirage, avec un message qui le dit au lieu de rapporter un budget épuisé.
+retire tant que la valeur égale celle donnée, un nombre borné de fois. Deux échecs en découlent, et ils
+diffèrent :
+
+* quand on sait déjà que le générateur ne produit que cette valeur — `Any.Fixed(value)`, un ensemble d'une
+  seule valeur, un builder épinglé sur une valeur — le premier `Generate()` refuse aussitôt, sans retirage,
+  en disant que le générateur ne produit que cette valeur. Ce refus ne porte aucune graine : aucun tirage
+  ne l'a décidé, et toute graine refuserait de même ;
+* tout autre générateur qui ne produit rien d'autre épuise le retirage borné et échoue avec la graine qui
+  le rejoue, quand il tire d'une graine.
 
 ```csharp
 IAny<string> pitchGenerator = Any.Combine(Any.OneOf("A", "B", "C"), Any.OneOf("3", "4"), (note, octave) => note + octave);

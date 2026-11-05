@@ -116,12 +116,14 @@ draws a fresh seed, so the first way is to run the test again until it fails, fr
 until ! dotnet test --project Tests -- --filter-method "*A_20_percent_discount*"; do :; done
 ```
 
-The second is a sweep: a throwaway loop over seeds, each one pinned with `Any.UseSeed`, that stops at the
-first seed that fails and names it.
+The second is a sweep: a throwaway loop over seeds, each one run through the seeded `Any.Reproducibly`,
+which reports its seed whatever throws — a draw, a factory, the code under test or the assertion — so the
+sweep stops at the first failing seed and names it. Where `Console.Error` is not shown, pass the report
+sink described above.
 
 ```csharp
 for (int seed = 0; seed < 10_000; seed++) {
-    using (IDisposable scope = Any.UseSeed(seed)) {
+    Any.Reproducibly(seed, () => {
         OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
         string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
@@ -129,8 +131,8 @@ for (int seed = 0; seed < 10_000; seed++) {
 
         order.ApplyDiscount(20);
 
-        Assert.True(order.Total == 80m, $"Fails with seed {seed}.");
-    }
+        Assert.Equal(80m, order.Total);
+    });
 }
 ```
 

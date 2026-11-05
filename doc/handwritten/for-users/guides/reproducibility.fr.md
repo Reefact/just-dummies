@@ -120,12 +120,14 @@ jusqu'à ce qu'il échoue, depuis une boucle du shell :
 until ! dotnet test --project Tests -- --filter-method "*A_20_percent_discount*"; do :; done
 ```
 
-La seconde est un balayage : une boucle jetable sur les graines, chacune épinglée par `Any.UseSeed`, qui
-s'arrête à la première graine en échec et la nomme.
+La seconde est un balayage : une boucle jetable sur les graines, chacune exécutée par l'`Any.Reproducibly`
+à graine, qui rapporte sa graine quoi qui lève — un tirage, une fabrique, le code testé ou l'assertion —
+si bien que le balayage s'arrête à la première graine en échec et la nomme. Là où `Console.Error` n'est pas
+affiché, passez le second argument décrit plus haut pour envoyer le rapport ailleurs.
 
 ```csharp
 for (int seed = 0; seed < 10_000; seed++) {
-    using (IDisposable scope = Any.UseSeed(seed)) {
+    Any.Reproducibly(seed, () => {
         OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
         string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
@@ -133,8 +135,8 @@ for (int seed = 0; seed < 10_000; seed++) {
 
         order.ApplyDiscount(20);
 
-        Assert.True(order.Total == 80m, $"Fails with seed {seed}.");
-    }
+        Assert.Equal(80m, order.Total);
+    });
 }
 ```
 

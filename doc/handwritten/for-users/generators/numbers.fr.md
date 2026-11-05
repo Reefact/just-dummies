@@ -239,6 +239,52 @@ ne porte aucune règle de finitude :
 double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 ```
 
+## Un type sans générateur : `BigInteger`
+
+`System.Numerics.BigInteger` n'a pas de fabrique. Le type n'a pas de limite, donc ni bord que le
+dixième tirage atteindrait, ni magnitude ordinaire où rester : une valeur par défaut serait une borne
+inventée par la bibliothèque, que chaque lecteur devrait aller chercher
+([ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.fr.md),
+[ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)). Les
+générateurs ci-dessus en composent déjà un, la borne écrite là où elle est choisie :
+
+<!-- jd:declarations -->
+```csharp
+using System.Numerics;
+
+using JustDummies;
+
+public static class AnyBigInteger {
+
+    // Any non-negative value below 2^256: thirty-two bytes, read as an unsigned number.
+    public static IAny<BigInteger> Unbounded() {
+        return Any.ArrayOf(Any.Byte()).WithCount(32).As(bytes => new BigInteger(bytes, isUnsigned: true));
+    }
+
+    // A closed range whose bounds fit in a long: exact, and every constraint of Any.Int64() still applies.
+    public static IAny<BigInteger> Between(long min, long max) {
+        return Any.Int64().Between(min, max).As(value => new BigInteger(value));
+    }
+
+    // A wider closed range: thirty-two bytes cover any span up to 2^256.
+    public static IAny<BigInteger> Between(BigInteger min, BigInteger max) {
+        if (max < min) { throw new ArgumentException("max must not be lower than min.", nameof(max)); }
+        BigInteger span = max - min + 1;
+
+        return Any.ArrayOf(Any.Byte()).WithCount(32).As(bytes => min + new BigInteger(bytes, isUnsigned: true) % span);
+    }
+
+}
+```
+
+Préférez la forme `long` dès que les bornes le permettent : elle est exacte, et `Except`, `MultipleOf`
+et les contraintes de signe continuent de s'appliquer avant la conversion. La forme large replie les
+octets sur l'intervalle par un modulo, si bien que certaines valeurs sortent un peu plus souvent que
+d'autres — chaque valeur tirée reste dans les bornes déclarées, et c'est tout ce qu'un dummy demande. Le
+constructeur `isUnsigned` existe depuis .NET Core 2.1 ; sur .NET Framework, ajoutez plutôt un octet nul —
+`new BigInteger(bytes.Concat(new byte[] { 0 }).ToArray())` lit les mêmes trente-deux octets comme un
+nombre positif ou nul.
+
 ## Matrice de disponibilité
 
 | Contrainte | entiers signés | `UInt*`, `byte` | `decimal` | `double`, `float`, `Half` |

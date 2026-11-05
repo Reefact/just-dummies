@@ -223,6 +223,51 @@ finiteness rule:
 double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 ```
 
+## A type with no generator: `BigInteger`
+
+`System.Numerics.BigInteger` has no factory. The type has no limit, so it has no edge for the tenth
+draw to reach and no ordinary magnitude to stay within: a default would be a bound the library invents
+and every reader must look up
+([ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.md),
+[ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)). The
+generators above already compose into one, with the bound written where it is chosen:
+
+<!-- jd:declarations -->
+```csharp
+using System.Numerics;
+
+using JustDummies;
+
+public static class AnyBigInteger {
+
+    // Any non-negative value below 2^256: thirty-two bytes, read as an unsigned number.
+    public static IAny<BigInteger> Unbounded() {
+        return Any.ArrayOf(Any.Byte()).WithCount(32).As(bytes => new BigInteger(bytes, isUnsigned: true));
+    }
+
+    // A closed range whose bounds fit in a long: exact, and every constraint of Any.Int64() still applies.
+    public static IAny<BigInteger> Between(long min, long max) {
+        return Any.Int64().Between(min, max).As(value => new BigInteger(value));
+    }
+
+    // A wider closed range: thirty-two bytes cover any span up to 2^256.
+    public static IAny<BigInteger> Between(BigInteger min, BigInteger max) {
+        if (max < min) { throw new ArgumentException("max must not be lower than min.", nameof(max)); }
+        BigInteger span = max - min + 1;
+
+        return Any.ArrayOf(Any.Byte()).WithCount(32).As(bytes => min + new BigInteger(bytes, isUnsigned: true) % span);
+    }
+
+}
+```
+
+Reach for the `long` form whenever the bounds allow it: it is exact, and `Except`, `MultipleOf` and the
+sign constraints keep working before the conversion. The wider form folds the bytes onto the span with a
+modulo, so some values come up slightly more often than others — every value it draws lies within the
+bounds you declared, which is all a dummy needs. The `isUnsigned` constructor exists from .NET Core 2.1;
+on .NET Framework, append a zero byte instead — `new BigInteger(bytes.Concat(new byte[] { 0 }).ToArray())`
+reads the same thirty-two bytes as a non-negative number.
+
 ## Support matrix
 
 | Constraint | integers | `UInt*`, `byte` | `decimal` | `double`, `float`, `Half` |

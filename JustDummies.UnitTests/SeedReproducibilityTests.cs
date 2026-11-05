@@ -56,13 +56,21 @@ public sealed class SeedReproducibilityTests {
                            maybe?.ToString() ?? "null", coded);
     }
 
+    /// <summary>Fails the way a body does after it drew: the seed served a draw, so it has something to replay.</summary>
+    [DoesNotReturn]
+    private static void DrawThenThrow(Exception failure) {
+        Any.Int32().Generate();
+
+        throw failure;
+    }
+
     #endregion
 
     [Fact(DisplayName = "Reproducibly reports the seed and rethrows the original exception on failure.")]
     public void ReproduciblyReportsTheSeedAndRethrows() {
         string?                   reported = null;
         InvalidOperationException boom     = new("boom");
-        Action                    failing  = () => throw boom;
+        Action                    failing  = () => DrawThenThrow(boom);
 
         InvalidOperationException thrown = Assert.Throws<InvalidOperationException>(
             () => Any.Reproducibly(4242, failing, message => reported = message));
@@ -71,6 +79,43 @@ public sealed class SeedReproducibilityTests {
         Check.That(reported).IsNotNull();
         Check.That(reported!).Contains("4242");
         Check.That(reported!).Contains("Any.Reproducibly(");
+    }
+
+    [Fact(DisplayName = "Reproducibly reports nothing when the body failed without drawing.")]
+    public void ReproduciblyIsSilentWhenNothingWasDrawn() {
+        // Issue #440: a seed no value came from replays nothing, and sends the reader looking for a drawn value.
+        string? reported = null;
+
+        Assert.Throws<InvalidOperationException>(
+            () => Any.Reproducibly(4242, () => throw new InvalidOperationException("literal"), message => reported = message));
+
+        Check.That(reported).IsNull();
+    }
+
+    [Fact(DisplayName = "ReproduciblyAsync reports nothing when the body failed without drawing.")]
+    public async Task AsyncReproduciblyIsSilentWhenNothingWasDrawn() {
+        string? reported = null;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Any.ReproduciblyAsync(7, async () => {
+                await Task.Yield();
+
+                throw new InvalidOperationException("literal");
+            }, message => reported = message));
+
+        Check.That(reported).IsNull();
+    }
+
+    [Fact(DisplayName = "Nested Reproducibly reports the seed the body drew from, and only that one.")]
+    public void NestedReproduciblyReportsOnlyTheSeedDrawnFrom() {
+        // The double line the issue describes: an outer seed that served no draw must not be named beside the inner one.
+        List<string> reported = [];
+
+        Assert.Throws<InvalidOperationException>(
+            () => Any.Reproducibly(111, () => Any.Reproducibly(222, () => DrawThenThrow(new InvalidOperationException("boom")), reported.Add), reported.Add));
+
+        Check.That(reported).HasSize(1);
+        Check.That(reported[0]).Contains("222");
     }
 
     [Fact(DisplayName = "Reproducibly does not report when the body succeeds.")]
@@ -86,7 +131,7 @@ public sealed class SeedReproducibilityTests {
     [Fact(DisplayName = "Reproducibly without a seed reports a replayable seed on failure.")]
     public void ReproduciblyWithoutSeedStillReportsAReplayableSeed() {
         string? reported = null;
-        Action  failing  = () => throw new InvalidOperationException("x");
+        Action  failing  = () => DrawThenThrow(new InvalidOperationException("x"));
 
         Assert.Throws<InvalidOperationException>(
             () => Any.Reproducibly(failing, message => reported = message));
@@ -103,7 +148,7 @@ public sealed class SeedReproducibilityTests {
             () => Any.ReproduciblyAsync(7, async () => {
                 await Task.Yield();
 
-                throw new InvalidOperationException("boom");
+                DrawThenThrow(new InvalidOperationException("boom"));
             }, message => reported = message));
 
         Check.That(reported).IsNotNull();
@@ -141,7 +186,7 @@ public sealed class SeedReproducibilityTests {
         // The seed report is a best-effort aid: a sink that throws must never replace the failure it exists to
         // help diagnose. The body's exception — not the sink's — must reach the test runner, unchanged.
         InvalidOperationException thrown = Assert.Throws<InvalidOperationException>(
-            () => Any.Reproducibly(4242, () => throw boom, throwingSink));
+            () => Any.Reproducibly(4242, () => DrawThenThrow(boom), throwingSink));
 
         Check.That(ReferenceEquals(thrown, boom)).IsTrue();
         Check.That(thrown.Message).IsEqualTo("real body failure");
@@ -156,7 +201,7 @@ public sealed class SeedReproducibilityTests {
             () => Any.ReproduciblyAsync(7, async () => {
                 await Task.Yield();
 
-                throw boom;
+                DrawThenThrow(boom);
             }, throwingSink));
 
         Check.That(ReferenceEquals(thrown, boom)).IsTrue();
@@ -170,7 +215,7 @@ public sealed class SeedReproducibilityTests {
         Console.SetError(captured);
         try {
             Assert.Throws<InvalidOperationException>(
-                () => Any.Reproducibly(6006, () => throw new InvalidOperationException("boom"),
+                () => Any.Reproducibly(6006, () => DrawThenThrow(new InvalidOperationException("boom")),
                                        _ => throw new Exception("sink down")));
         } finally {
             Console.SetError(original);
@@ -188,7 +233,7 @@ public sealed class SeedReproducibilityTests {
         string? reported = null;
         try {
             Assert.Throws<InvalidOperationException>(
-                () => Any.Reproducibly(5005, () => throw new InvalidOperationException("boom"),
+                () => Any.Reproducibly(5005, () => DrawThenThrow(new InvalidOperationException("boom")),
                                        message => reported = message));
         } finally {
             Console.SetError(original);

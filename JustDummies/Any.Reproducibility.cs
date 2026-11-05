@@ -59,8 +59,11 @@ public static partial class Any {
     ///     </example>
     /// </remarks>
     /// <param name="seed">The seed pinning the ambient context's value sequence.</param>
-    /// <returns>A handle that restores the previous ambient context when disposed.</returns>
-    public static IDisposable UseSeed(int seed) {
+    /// <returns>
+    ///     A handle that restores the previous ambient context when disposed, and tells whether its seed served any
+    ///     draw (<see cref="SeedScope.HasDrawn" />).
+    /// </returns>
+    public static SeedScope UseSeed(int seed) {
         return AmbientRandomSource.UseSeed(seed);
     }
 
@@ -91,10 +94,13 @@ public static partial class Any {
     /// </remarks>
     /// <param name="seed">The seed pinning the ambient context's value sequence.</param>
     /// <param name="replaySnippet">The code a reader copies to replay this run, quoted verbatim into generation-failure guidance.</param>
-    /// <returns>A handle that restores the previous ambient context when disposed.</returns>
+    /// <returns>
+    ///     A handle that restores the previous ambient context when disposed, and tells whether its seed served any
+    ///     draw (<see cref="SeedScope.HasDrawn" />): report the seed only when it did.
+    /// </returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="replaySnippet" /> is <c>null</c>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="replaySnippet" /> is empty or white space.</exception>
-    public static IDisposable UseSeed(int seed, string replaySnippet) {
+    public static SeedScope UseSeed(int seed, string replaySnippet) {
         if (replaySnippet is null) { throw new ArgumentNullException(nameof(replaySnippet)); }
         if (replaySnippet.Trim().Length == 0) { throw new ArgumentException("The replay snippet must be the code a reader copies to replay the run; pass a non-blank snippet, or use the overload without one to name Any.Reproducibly(seed, ...).", nameof(replaySnippet)); }
 
@@ -116,6 +122,10 @@ public static partial class Any {
     ///         message.
     ///     </para>
     ///     <para>
+    ///         A body that failed without drawing from the seed — on a literal, or inside a nested scope whose own seed
+    ///         served every draw — reports nothing: replaying a seed no value came from would reproduce nothing.
+    ///     </para>
+    ///     <para>
     ///         Reproducing a run needs the same sequence of draws, so a body whose generation order depends on
     ///         non-deterministic external state is not fully replayable from the seed alone.
     ///     </para>
@@ -130,7 +140,8 @@ public static partial class Any {
     /// <summary>
     ///     Replays <paramref name="body" /> with the ambient random context pinned to <paramref name="seed" />, so a
     ///     run first seen through the parameterless <see cref="Reproducibly(Action, Action{string})" /> overload can
-    ///     be reproduced exactly. If the body throws, the seed is reported before the exception propagates.
+    ///     be reproduced exactly. If the body throws after drawing from the seed, the seed is reported before the exception
+    ///     propagates.
     /// </summary>
     /// <param name="seed">The seed to replay — typically the one a previous failure reported.</param>
     /// <param name="body">The test body to run under the seeded random context.</param>
@@ -139,11 +150,11 @@ public static partial class Any {
     public static void Reproducibly(int seed, Action body, Action<string>? report = null) {
         if (body is null) { throw new ArgumentNullException(nameof(body)); }
 
-        using (AmbientRandomSource.UseSeed(seed)) {
+        using (SeedScope scope = AmbientRandomSource.UseSeed(seed)) {
             try {
                 body();
             } catch {
-                Report(report, seed);
+                if (scope.HasDrawn) { Report(report, seed); }
 
                 throw;
             }
@@ -188,11 +199,11 @@ public static partial class Any {
     // Kept separate from the public entry so the null-argument guard above throws synchronously at the call site,
     // rather than being deferred into the returned task's fault — which a caller who forgets to await would miss.
     private static async Task RunReproduciblyAsync(int seed, Func<Task> body, Action<string>? report) {
-        using (AmbientRandomSource.UseSeed(seed)) {
+        using (SeedScope scope = AmbientRandomSource.UseSeed(seed)) {
             try {
                 await body().ConfigureAwait(false);
             } catch {
-                Report(report, seed);
+                if (scope.HasDrawn) { Report(report, seed); }
 
                 throw;
             }

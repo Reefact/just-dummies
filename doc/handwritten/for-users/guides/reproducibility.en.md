@@ -33,7 +33,9 @@ sequenceDiagram
     T->>S: close scope
 ```
 
-The seed is reported **only when the run fails**. A green suite stays silent.
+The seed is reported **only when the run fails**, and only when something was drawn from it. A green
+suite stays silent, and so does a test that failed on a literal: replaying a seed no value came from
+would reproduce nothing.
 
 ## `Any.Reproducibly`: one pinned scope per test
 
@@ -182,7 +184,8 @@ using (IDisposable scope = Any.UseSeed(1743029518)) {
 
 This is the form a test-framework adapter uses, because it observes a test through hooks that run
 before and after it. It does **not** report the seed on failure — that is `Reproducibly`'s job — so
-inside a test body prefer `Reproducibly`.
+inside a test body prefer `Reproducibly`. What the handle does tell its opener is whether the seed
+served any draw, through `HasDrawn`: an adapter reports the seed only when it did.
 
 Discarding the handle leaves the seed pinned for whatever runs next, which is why doing so is
 diagnostic [JD004](../analyzers/JD004.en.md). A second overload takes the **replay snippet** an

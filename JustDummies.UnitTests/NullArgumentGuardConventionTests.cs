@@ -388,6 +388,11 @@ public sealed class NullArgumentGuardConventionTests {
         seed(new FixedRandomSource(0));
         seed(new SeededRandom(0));
 
+        // A scope closed as soon as it is opened: an IDisposable sample that pins nothing for the rest of the run.
+        SeedScope closed = AmbientRandomSource.UseSeed(0);
+        closed.Dispose();
+        seed(closed);
+
         foreach (MethodInfo factory in typeof(AnyContext).GetMethods(BindingFlags.Public | BindingFlags.Instance)) {
             if (factory.DeclaringType == typeof(object)) { continue; }
             if (factory.IsSpecialName || factory.GetParameters().Length != 0) { continue; }

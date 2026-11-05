@@ -293,6 +293,43 @@ public sealed class AmbientSeedScopeTests {
         Check.ThatCode(() => Any.UseSeed(1, instruction)).Throws<ArgumentException>();
     }
 
+    [Fact(DisplayName = "A seed scope nothing drew from says so, and says otherwise once a value is drawn.")]
+    public void ASeedScopeTellsWhetherItWasDrawnFrom() {
+        // Issue #440: an adapter reports the seed only when replaying it would reproduce something.
+        SeedScope scope = Any.UseSeed(1234);
+        bool      before;
+        try {
+            before = scope.HasDrawn;
+            Any.Int32().Generate();
+        } finally {
+            scope.Dispose();
+        }
+
+        Check.That(before).IsFalse();
+        Check.That(scope.HasDrawn).IsTrue();
+    }
+
+    [Fact(DisplayName = "The draws of a nested scope do not count for the scope around it.")]
+    public void ANestedScopeDrawsForItselfOnly() {
+        using SeedScope outer = Any.UseSeed(1);
+        using (SeedScope inner = Any.UseSeed(2)) {
+            Any.Int32().Generate();
+
+            Check.That(inner.HasDrawn).IsTrue();
+        }
+
+        Check.That(outer.HasDrawn).IsFalse();
+    }
+
+    [Fact(DisplayName = "The draws of an explicit context do not count for the ambient scope.")]
+    public void AnExplicitContextDrawsForItselfOnly() {
+        using SeedScope scope = Any.UseSeed(1);
+
+        Any.WithSeed(7).Int32().Generate();
+
+        Check.That(scope.HasDrawn).IsFalse();
+    }
+
     #region Nested types
 
     /// <summary>A generator carrying no random source, so a derivation over it cannot promise a full replay.</summary>

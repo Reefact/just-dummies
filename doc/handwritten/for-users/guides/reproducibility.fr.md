@@ -35,7 +35,9 @@ sequenceDiagram
     T->>S: fermer la portée
 ```
 
-La graine n'est rapportée **que si l'exécution échoue**. Une suite verte reste silencieuse.
+La graine n'est rapportée **que si l'exécution échoue**, et seulement si quelque chose en a été tiré.
+Une suite verte reste silencieuse, tout comme un test qui a échoué sur un littéral : rejouer une graine
+dont aucune valeur n'est issue ne reproduirait rien.
 
 ## `Any.Reproducibly` : une portée épinglée par test
 
@@ -188,7 +190,9 @@ using (IDisposable scope = Any.UseSeed(1743029518)) {
 
 C'est la forme qu'utilise un adaptateur de framework de test, car il observe un test via des crochets
 qui s'exécutent avant et après lui. Elle ne rapporte **pas** la graine en cas d'échec — c'est le rôle
-de `Reproducibly` — donc dans un corps de test, préférez `Reproducibly`.
+de `Reproducibly` — donc dans un corps de test, préférez `Reproducibly`. Ce que la poignée dit en
+revanche à qui l'a ouverte, c'est si la graine a servi à un tirage, par `HasDrawn` : un adaptateur ne
+rapporte la graine que dans ce cas.
 
 Jeter la poignée laisse la graine épinglée pour ce qui s'exécute ensuite, d'où le diagnostic
 [JD004](../analyzers/JD004.fr.md). Une seconde surcharge prend le **fragment de rejeu** qu'un

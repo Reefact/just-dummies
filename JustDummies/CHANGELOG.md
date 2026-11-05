@@ -221,6 +221,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **`Any.UseSeed` returns a `SeedScope`, which says whether its seed served a draw.** The handle is still
+  disposed to close the scope; its new `HasDrawn` tells whoever opened it whether replaying the seed would
+  reproduce anything, so an adapter names a seed only when one was used. Source written against the
+  `IDisposable` return still compiles; code compiled against a preview has to be recompiled (issue #440,
+  ADR-0134).
 - **JD023 and JD024 read `decimal` and the temporal generators.** The folding covered the integer
   generators only, so `Any.Decimal().GreaterThan(100m).LessThan(10m)` and
   `Any.DateOnly().After(later).Before(earlier)` compiled clean and threw on every run. Both rules now read
@@ -446,6 +451,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`Any.Reproducibly` no longer reports a seed for a body that drew nothing.** A body failing on a literal,
+  or one whose draws all came from a nested `Any.Reproducibly`, was told a seed no value came from; it now
+  reports only the seed it drew from (issue #440).
 - **`DifferentFrom` on an `IAny<T>` refuses a single-valued generator with a definite message.**
   `Any.Fixed(s).DifferentFrom(s)` spent its 1,000 redraws and reported an exhausted budget, "rather than
   a proof", although the generator already knew its domain held that one value. When the operand is known

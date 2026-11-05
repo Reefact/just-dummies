@@ -276,3 +276,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0131](0131-draw-a-pair-from-two-bases-and-an-optional-order.md) | Draw a pair from two bases and an optional order | Accepted | recorded here |
 | [ADR-0132](0132-let-a-declarations-sample-import-what-it-uses.md) | Let a declarations sample import what it uses | Accepted | recorded here |
 | [ADR-0133](0133-exclude-a-set-of-values-from-any-generator-by-redrawing.md) | Exclude a set of values from any generator by redrawing | Accepted | recorded here |
+| [ADR-0134](0134-tell-the-opener-of-a-seed-scope-whether-it-was-drawn-from.md) | Tell the opener of a seed scope whether it was drawn from | Accepted | recorded here |

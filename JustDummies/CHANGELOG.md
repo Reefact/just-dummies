@@ -342,6 +342,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The reference pages fill the gaps the third UX trial found.** The collections page says an
+  unconstrained collection draws 0 to 8 elements, a floor moving that window and a maximum replacing it;
+  composition and errors-and-conflicts say a throwing `As` or `Combine` factory surfaces as an
+  `AnyGenerationException` that keeps the drawn values, the seed and the factory's exception, so a
+  constructor's refusal is tested on the constructor; composition says `AsNullable()` is for value types,
+  a reference-type generator already being an `IAny<T?>`, states the scaffolder's actual nullable rule
+  (`OrNull()` by default since ADR-0117), and shows two aggregates sharing one drawn value through
+  `.Then(...)`; the numbers page cites ADR-0031 for the integers' full range and shows a `double` in
+  hundredths; the dates page points to `Any.Pair` for "a later day"; and the enums page shows how to draw
+  an undeclared value for a refusal test (issue #446).
 - **The strings page says what a pool and a free pattern position can hold.** A `WithChars` pool is
   UTF-16 code units within the Basic Multilingual Plane, so astral text is drawn whole through
   `OneOf(...)`; `Any.Char()` has no `Between`, and a range the families do not name is a value set such

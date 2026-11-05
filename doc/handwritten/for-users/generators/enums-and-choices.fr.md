@@ -22,6 +22,19 @@ Le tirage reste à l'intérieur des membres déclarés. Il n'invente jamais de v
 déclarée, bien que le CLR l'autoriserait — un dummy qui le ferait testerait votre `switch` contre un
 état que votre domaine ne possède pas.
 
+Un test dont le sujet est le refus d'une valeur non déclarée la tire de l'entier sous-jacent, en excluant
+chaque membre déclaré, si bien que la valeur reste non déclarée quand un membre est ajouté plus tard :
+
+```csharp
+OrderStatus anyUndeclared = Any.Int32()
+                               .Except(Enum.GetValues<OrderStatus>().Select(status => (int)status))
+                               .As(value => (OrderStatus)value)
+                               .Generate();
+```
+
+Sur une énumération `[Flags]`, une combinaison de membres déclarés est une valeur définie : excluez-les
+aussi, ou choisissez un bit qu'aucun membre n'utilise.
+
 Les exclusions qui vident l'univers sont refusées nommément, et l'analyzer
 [JD017](../analyzers/JD017.fr.md) signale les cas constants dès la compilation. Une liste d'exclusion — un tableau
 ou toute séquence — elle-même vide ne retire rien et est acceptée

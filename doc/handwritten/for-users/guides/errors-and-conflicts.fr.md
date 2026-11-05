@@ -127,6 +127,11 @@ En rencontrer un signifie généralement que la spécification est plus serrée 
 bibliothèque a abandonné trop tôt. Élargissez l'intervalle, retirez une exclusion, ou demandez moins
 d'éléments distincts.
 
+Une fabrique passée à `As`, ou un composeur passé à `Any.Combine`, qui lève est rapporté lui aussi comme
+une `AnyGenerationException`. L'enveloppe est délibérée : le message nomme les valeurs tirées et la graine
+qui les rejoue, et l'exception propre de la fabrique est l'`InnerException`. Testez le refus d'un
+constructeur sur le constructeur lui-même plutôt qu'à travers un générateur.
+
 ## `UnsupportedRegexException` : hors du sous-ensemble régulier
 
 `Any.StringMatching` construit une valeur à partir du motif au lieu de tester des candidats contre

@@ -31,6 +31,12 @@ This is the supported route to a type with a stricter contract, and it has a pro
 the factory is your real one. If the constraints are too loose, the factory throws, and you find out
 immediately rather than shipping a dummy that could never exist in production.
 
+The failure reaches you as an `AnyGenerationException`, not as the factory's own exception, and that is
+deliberate: the message names the values that were drawn and the seed that replays them, and the
+factory's exception is kept as its `InnerException`. A composer handed to `Any.Combine` that throws is
+reported the same way. So a test about the factory's refusal calls the factory itself —
+`OrderReference.Create("REF-1")` — rather than reaching it through a generator.
+
 ## `Any.Combine`: several generators into one
 
 When a type needs more than one input, `Any.Combine` draws from each generator and feeds a composer:
@@ -209,8 +215,15 @@ values it had to draw from and would ask for more than exist:
 ISet<OrderStatus?> anyStatuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
 ```
 
-A generator scaffolded by `any` writes `.AsNullable()` for every nullable value-type parameter, for
-exactly that reason.
+`.AsNullable()` is for value types, and only for them. A generator of a reference type already is an
+`IAny<T?>` — a nullable reference type is an annotation on the same type — so `IAny<string?> nameGenerator
+= Any.String().Alpha();` compiles as it is, while `.AsNullable()` on it does not (CS0453). `IAny<T>` is
+covariant too, so the same generator also serves where an `IAny` of a base type is expected.
+
+A generator scaffolded by `any` writes `.AsNullable()` where a nullable value-type parameter is refined,
+since a refinement describes a value. The parameter's default is `.OrNull()`, `null` one draw in ten,
+unless a guard refuses `null`
+([ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)).
 
 ## `Any.Fixed`: a value you chose, in a generator's shape
 
@@ -269,7 +282,7 @@ int anyCells    = Any.Int32().GreaterThanOrEqualTo(1).LessThan(anyCapacity).Gene
 That is idiomatic at a call site: the bound is a plain value, and both draws replay from the one seed. If the
 rule belongs to the type rather than to this test, write it once in the generator instead, as one generator
 that draws both together: [When a guard ties two parameters](../packages/justdummies-cli.en.md#when-a-guard-ties-two-parameters)
-shows the three forms, and [Design principles](./design-principles.en.md#what-this-means-for-you-day-to-day)
+shows the forms that cover most cases, and [Design principles](./design-principles.en.md#what-this-means-for-you-day-to-day)
 says why the library leaves it to you.
 
 ## `.Then(...)`: a draw that depends on another
@@ -297,6 +310,27 @@ Choosing among generators is the same move: the branch not taken is never drawn.
 ```csharp
 IAny<int> signedGenerator = Any.Boolean().Then(positive => positive ? Any.Int32().Positive() : Any.Int32().Negative());
 ```
+
+Two aggregates that must share a drawn value take the same move: draw the shared fact once, then pin
+it on both. Here, two orders placed by one customer:
+
+```csharp
+IAny<OrderReference> referenceGenerator = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create);
+
+IAny<(Order First, Order Second)> sameCustomerGenerator = Any.String().Alpha().WithLengthBetween(3, 20)
+    .Then(customerName => {
+        IAny<Order> orderGenerator = Any.Combine(referenceGenerator,
+                                                 Any.Decimal().Between(1m, 1_000m).WithScale(2),
+                                                 (reference, amount) => new Order(reference, customerName, amount));
+
+        return Any.Combine(orderGenerator, orderGenerator, (first, second) => (first, second));
+    });
+
+(Order anyFirstOrder, Order anySecondOrder) = sameCustomerGenerator.Generate();
+```
+
+At a call site, drawing the name with `Generate()` and passing it to both constructors says the same;
+`.Then(...)` is the form a recipe kept for reuse takes.
 
 ## Building a whole aggregate
 

@@ -21,6 +21,19 @@ The draw stays inside the declared members. It never invents an undeclared numer
 though the CLR would allow one — a dummy that did would be testing your `switch` against a state your
 domain does not have.
 
+A test whose subject is the refusal of an undeclared value draws it from the underlying integer, with
+every declared member excluded, so the value stays undeclared when a member is added later:
+
+```csharp
+OrderStatus anyUndeclared = Any.Int32()
+                               .Except(Enum.GetValues<OrderStatus>().Select(status => (int)status))
+                               .As(value => (OrderStatus)value)
+                               .Generate();
+```
+
+On a `[Flags]` enumeration, a combination of declared members is a defined value; exclude those too,
+or pick one bit no member uses.
+
 Exclusions that empty the universe are refused by name, and the analyzer
 [JD017](../analyzers/JD017.en.md) reports the constant cases at build time. An exclusion list — an array or
 any sequence — that is itself empty removes nothing and is accepted

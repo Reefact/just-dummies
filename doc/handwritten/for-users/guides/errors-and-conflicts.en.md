@@ -121,6 +121,11 @@ from that seed and that no scope pinned it, and asks you to wrap the body in `An
 Meeting one usually means the specification is tighter than intended rather than that the library
 gave up early. Widen the interval, drop an exclusion, or ask for fewer distinct elements.
 
+A factory handed to `As` or a composer handed to `Any.Combine` that throws is reported as an
+`AnyGenerationException` too. The wrap is deliberate: the message names the values that were drawn and
+the seed that replays them, and the factory's own exception is the `InnerException`. Test a
+constructor's refusal on the constructor itself rather than through a generator.
+
 ## `UnsupportedRegexException`: outside the regular subset
 
 `Any.StringMatching` builds a value from the pattern rather than testing candidates against it,

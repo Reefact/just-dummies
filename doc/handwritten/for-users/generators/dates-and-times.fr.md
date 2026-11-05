@@ -39,6 +39,14 @@ TimeSpan anyNonZero  = Any.TimeSpan().NonZero().Generate();
 TimeSpan anyShorter  = Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).Generate();
 ```
 
+« Un jour plus tard » n'exige pas d'inventer une borne haute. Quand la date antérieure est un littéral,
+elle borne la suivante : `Any.DateOnly().After(start)`. Quand les deux sont tirées, `Any.Pair` les tire
+avec leur ordre tenu par construction ([Composition](../guides/composition.fr.md#anypair--deux-valeurs-liées-par-un-ordre)) :
+
+```csharp
+(DateOnly anyCheckIn, DateOnly anyCheckOut) = Any.Pair(Any.DateOnly(), Any.DateOnly()).Having.Item1BeforeItem2().Generate();
+```
+
 ## Granularité
 
 `WithGranularity` aligne la valeur tirée sur une grille. C'est ce qui transforme un instant brut en

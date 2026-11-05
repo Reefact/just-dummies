@@ -283,6 +283,11 @@ Cela compile, cela passe — et pourtant `anyText` apparaît dans l'assertion, m
 
 Nommez donc le test d'après ce qu'une seule exécution peut montrer, sans y employer les mots « toujours » ou « jamais ».
 
+Une valeur épinglée seulement parce que le scénario en a besoin — une commande qui doit être en attente
+pour qu'une remise s'applique, dans un test sur le montant remisé — est un prérequis, pas la valeur testée.
+[Arbitraire ne veut pas dire dummy](./core-concepts.fr.md#arbitraire-ne-veut-pas-dire-dummy) dit comment
+distinguer les deux.
+
 ## Rendre un échec reproductible
 
 Un test dont les valeurs tirées changent à chaque exécution ne ment pas sur leur caractère arbitraire — et il n'est acceptable que si un échec peut être rejoué à l'identique. C'est le rôle de `Any.Reproducibly` :

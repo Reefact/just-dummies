@@ -342,6 +342,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The dummy rule is applied at three more edges.** Getting started and the FAQ link a value the scenario
+  needs but the assertion does not verify to the prerequisite guidance in core concepts. The FAQ says a
+  seed the code under test takes is drawn when the assertion holds whatever it is, and written as a
+  literal when the assertion depends on what it produces, and it says how to split a suite with a
+  property-based library: an assertion over a space of inputs is a property (issue #450).
 - **The pages say how to make draws differ.** Two draws may be equal; core concepts and the FAQ say a
   difference the code needs is declared, not counted on. Composition says `DifferentFrom` excludes one
   value, chains for a third, and leaves "all different" to a distinct collection, `DistinctBy` for a key;

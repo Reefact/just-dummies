@@ -283,6 +283,10 @@ It compiles, it passes — and yet `anyText` appears in the assertion, despite i
 
 So name the test for what a single run can show — keep *never* and *always* out of it.
 
+A value pinned only because the scenario needs it — an order that must be pending for a discount to
+apply, in a test about the discounted amount — is a prerequisite, not the value under test. [Arbitrary
+does not mean dummy](./core-concepts.en.md#arbitrary-does-not-mean-dummy) says how to tell the two apart.
+
 ## Making a failure reproducible
 
 A test whose drawn values change every run does not lie about their arbitrary nature — and it is only acceptable if a failure can be replayed exactly. That is what `Any.Reproducibly` is for:

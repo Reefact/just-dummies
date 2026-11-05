@@ -25,6 +25,10 @@ int anySecond = anyQuantity.Generate();
 // first and second are both in 1..100, and are usually different numbers.
 ```
 
+Usually, not always: two draws may be equal, and that is a valid outcome of what was declared. When the
+code needs them to differ, that is a constraint to declare — `anyQuantity.DifferentFrom(anyFirst)` — not
+a likelihood to count on.
+
 This is the distinction the whole API rests on, and the reason the package ships analyzers: a recipe
 and a value satisfy many of the same signatures, so the compiler cannot tell you when you have
 confused them. Writing `$"{Any.Int32()}"` compiles perfectly and yields the string

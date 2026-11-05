@@ -273,6 +273,18 @@ The two are different guarantees under one name, and the receiver's static type 
 builder's refuses a contradiction at once, naming both constraints, and the analyzers see it at build
 time; this one sees nothing before `Generate()` ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.md)).
 
+It excludes one value. A third value that must differ from two others chains it,
+`pitchGenerator.DifferentFrom(anyFirst).DifferentFrom(anySecond)`, and values that must all differ are a
+distinct collection, which says so in one declaration: `Any.ListOf(pitchGenerator).WithCount(3).Distinct()`,
+or `Any.SetOf(...)`, and `DistinctBy(key)` when only a key must differ
+([Collections](../generators/collections.en.md#distinctness)). A list passed to `DifferentFrom` does not
+compile: the compiler reports CS0411, a type argument it cannot infer, rather than the list it was given.
+
+Values are compared with the type's own equality, so the exclusion needs value equality to mean anything.
+Over a class that does not override `Equals`, every drawn instance already differs from the one given, and
+the exclusion holds trivially while the two may read as the same value — the caveat
+[distinctness](../generators/collections.en.md#distinctness) carries too.
+
 ## A bound taken from another draw
 
 When one value must sit under another — a count of cells under a sample's capacity, a deadline after a
@@ -350,7 +362,8 @@ IAny<Customer> customerGenerator = Any.Combine(
 
 Customer anyCustomer = customerGenerator.Generate();
 
-// A generator is a recipe, so the same one produces a whole list of distinct customers.
+// A generator is a recipe, so the same one produces a whole list of customers, each drawn on its own;
+// Distinct() declares it when they must differ.
 List<Customer> anyCustomers = Any.ListOf(customerGenerator).WithCountBetween(2, 5).Generate();
 ```
 

@@ -879,7 +879,8 @@ rule `DifferentFrom` states in one call. On a typed builder it is the builder's 
 declared — `new AnyAllele().WithCode(c => c.DifferentFrom(first.Code))` inside `Generate()` refines one
 component. On any other generator, a scaffolded one included, `DifferentFrom` redraws while the value
 equals the one given, a bounded number of times, and fails with its seed if the generator yields nothing
-else ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.md)):
+else. It compares with the type's own equality, so over a class that does not override `Equals` it holds
+trivially ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.md)):
 
 <!-- jd:declarations -->
 ```csharp

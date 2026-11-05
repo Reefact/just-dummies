@@ -56,6 +56,7 @@ int sameValue    = anyDrawnOnce;        // le même nombre
 int anyAnother   = anyQuantity.Generate(); // généralement un autre nombre
 ```
 
+Quand le code a besoin que les deux diffèrent, déclarez-le : `anyQuantity.DifferentFrom(anyDrawnOnce)`.
 Voir [Concepts fondamentaux](./core-concepts.fr.md).
 
 ### Une contrainte doit-elle correspondre à ce que mon test affirme ?

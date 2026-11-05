@@ -43,9 +43,14 @@ dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
 ```
 
 A category key names one category, and there are four: `JustDummies.Reproducibility`,
-`JustDummies.Usage`, `JustDummies.Constraints` and `JustDummies.Composition`. Raising every rule takes
-one line per category. `category-JustDummies.severity` names no category, so it raises nothing, and no
-warning says so.
+`JustDummies.Usage`, `JustDummies.Constraints` and `JustDummies.Composition`.
+`category-JustDummies.severity` names no category, so it changes nothing, and no warning says so. A
+category entry sets the severity of every enabled rule in that category, whatever its default, so it can
+lower a rule as well as raise one: `JustDummies.Reproducibility` or `JustDummies.Usage` set to `warning`
+also turns JD001 to JD005, errors by default, into warnings, and a build they failed no longer fails. It
+does not turn on an opt-in rule either: JD011 and JD019 still need their own
+`dotnet_diagnostic.JDxxx.severity` line. To see the Info rules, raise them by id, or set a category to
+`warning` only where none of its rules is an error.
 
 **To confirm the rules are loaded**, whether or not any fires, build with a SARIF 2.1 error log:
 

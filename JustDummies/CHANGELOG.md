@@ -345,7 +345,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **The analyzer pages answer three questions the third UX trial raised.** The package page and the
   rule index list the four category keys, `JustDummies.Reproducibility`, `JustDummies.Usage`,
   `JustDummies.Constraints` and `JustDummies.Composition`, and say that `category-JustDummies.severity`
-  names none of them, so it raises nothing. The JD038 page says what to do inside a generator's factory,
+  names none of them. They also say a category entry lowers rules as well as raising them, JD001 to
+  JD005 being errors by default, and leaves the opt-in JD011 and JD019 off. The JD038 page says what to do inside a generator's factory,
   where neither the literal nor `Any.Fixed` compiles: a pin overload, an `IAny<int>` type, or a justified
   suppression. The JD036 page says why a fresh scaffold raises it on one-sided floating-point rows
   (issue #447).

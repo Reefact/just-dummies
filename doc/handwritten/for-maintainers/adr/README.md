@@ -274,3 +274,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0130](0130-ship-code-fixes-beside-the-analyzers.md) | Ship code fixes beside the analyzers, for the one rewrite that keeps the intent | Accepted | recorded here |
 | [ADR-0131](0131-draw-a-pair-from-two-bases-and-an-optional-order.md) | Draw a pair from two bases and an optional order | Accepted | recorded here |
 | [ADR-0132](0132-let-a-declarations-sample-import-what-it-uses.md) | Let a declarations sample import what it uses | Accepted | recorded here |
+| [ADR-0133](0133-exclude-a-set-of-values-from-any-generator-by-redrawing.md) | Exclude a set of values from any generator by redrawing | Accepted | recorded here |

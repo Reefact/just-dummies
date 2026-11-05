@@ -273,12 +273,23 @@ The two are different guarantees under one name, and the receiver's static type 
 builder's refuses a contradiction at once, naming both constraints, and the analyzers see it at build
 time; this one sees nothing before `Generate()` ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.md)).
 
-It excludes one value. A third value that must differ from two others chains it,
-`pitchGenerator.DifferentFrom(anyFirst).DifferentFrom(anySecond)`, and values that must all differ are a
-distinct collection, which says so in one declaration: `Any.ListOf(pitchGenerator).WithCount(3).Distinct()`,
-or `Any.SetOf(...)`, and `DistinctBy(key)` when only a key must differ
-([Collections](../generators/collections.en.md#distinctness)). A list passed to `DifferentFrom` does not
-compile: the compiler reports CS0411, a type argument it cannot infer, rather than the list it was given.
+It excludes one value. Values the test has already used are excluded together with `Except`, which takes them
+as a list or a sequence and redraws while the value is one of them — one bounded redraw for the whole set, and a
+failure that names them all ([ADR-0133](../../for-maintainers/adr/0133-exclude-a-set-of-values-from-any-generator-by-redrawing.md)):
+
+```csharp
+IAny<string> pitchGenerator = Any.Combine(Any.OneOf("A", "B", "C"), Any.OneOf("3", "4"), (note, octave) => note + octave);
+List<string> alreadyUsed    = new List<string> { "A3", "B4" };
+
+string anyUnused = pitchGenerator.Except(alreadyUsed).Generate();
+```
+
+Where the exclusion bears on a component of the value, declare it on that component instead, where it is
+checked when declared: a typed builder's own `Except`, `Any.Int32().Between(1, 50).Except(3, 7)`, or a
+scaffolded generator's refinement, `WithParcels(p => p.Except(0, 13))`. Values that must all differ from one
+another are a distinct collection, which says so in one declaration:
+`Any.ListOf(pitchGenerator).WithCount(3).Distinct()`, or `Any.SetOf(...)`, and `DistinctBy(key)` when only a
+key must differ ([Collections](../generators/collections.en.md#distinctness)).
 
 Values are compared with the type's default equality, `EqualityComparer<T>.Default`: an implementation of
 `IEquatable<T>` or an overridden `Equals`. A reference type with neither compares references, so the same instance is

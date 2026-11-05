@@ -125,6 +125,45 @@ public static class AnyExtensions {
     public static IAny<T> DifferentFrom<T>(this IAny<T> generator, T value) {
         if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
 
-        return new DifferentFromAny<T>(generator, value);
+        return new ExclusionAny<T>(generator, new[] { value });
+    }
+
+    /// <summary>
+    ///     Derives a generator that never yields any of <paramref name="values" />: it redraws while
+    ///     <paramref name="generator" /> produces one of them — values already used by the test, on any generator, a
+    ///     scaffolded or hand-written one included.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         This is <see cref="DifferentFrom{T}" /> over a set: the same <b>rejective</b> exclusion, one bounded
+    ///         redraw for the whole set, and a failure that names every excluded value (ADR-0133, amending ADR-0121). A
+    ///         generator already known to yield one value, and that value excluded, is refused at once without a seed;
+    ///         any other generator that yields nothing but excluded values fails with its seed, when it draws from one.
+    ///     </para>
+    ///     <para>
+    ///         Where the exclusion bears on a component, declare it there instead — a typed builder's own <c>Except</c>,
+    ///         or a scaffolded generator's refinement — so it is checked when declared. C# picks the typed builder's own
+    ///         <c>Except</c> from the receiver's <b>static</b> type, as it does for <c>DifferentFrom</c>. Values are
+    ///         compared with <see cref="EqualityComparer{T}.Default" />, <c>null</c> included. An empty set excludes
+    ///         nothing and returns <paramref name="generator" /> itself (ADR-0122).
+    ///     </para>
+    /// </remarks>
+    /// <param name="generator">The generator whose draws must avoid <paramref name="values" />.</param>
+    /// <param name="values">The values never yielded.</param>
+    /// <typeparam name="T">The type of the generated values.</typeparam>
+    /// <returns>A generator of values outside <paramref name="values" />.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator" /> or <paramref name="values" /> is <c>null</c>.</exception>
+    public static IAny<T> Except<T>(this IAny<T> generator, IEnumerable<T> values) {
+        if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        T[] excluded = values.ToArray();
+
+        return excluded.Length == 0 ? generator : new ExclusionAny<T>(generator, excluded);
+    }
+
+    /// <inheritdoc cref="Except{T}(IAny{T}, IEnumerable{T})" />
+    public static IAny<T> Except<T>(this IAny<T> generator, params T[] values) {
+        return Except(generator, (IEnumerable<T>)values);
     }
 }

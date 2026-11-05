@@ -110,6 +110,37 @@ existe pour cela, [JD019](../analyzers/JD019.fr.md), qui signale une graine de r
 le code versionné ; activez-le dans `.editorconfig` si les épingles ont tendance à survivre à la
 revue dans votre équipe.
 
+### Quand l'échec est rare
+
+Un échec qui survient une fois en des centaines d'exécutions doit être rencontré avant que sa graine
+puisse être lue. Chaque exécution tire une graine neuve : la première façon est donc de relancer le test
+jusqu'à ce qu'il échoue, depuis une boucle du shell :
+
+```bash
+until ! dotnet test --project Tests -- --filter-method "*A_20_percent_discount*"; do :; done
+```
+
+La seconde est un balayage : une boucle jetable sur les graines, chacune épinglée par `Any.UseSeed`, qui
+s'arrête à la première graine en échec et la nomme.
+
+```csharp
+for (int seed = 0; seed < 10_000; seed++) {
+    using (IDisposable scope = Any.UseSeed(seed)) {
+        OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+        string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+
+        Order order = new Order(anyReference, anyCustomerName, amount: 100m);
+
+        order.ApplyDiscount(20);
+
+        Assert.True(order.Total == 80m, $"Fails with seed {seed}.");
+    }
+}
+```
+
+Supprimez le balayage une fois la graine nommée, et rejouez cette graine comme ci-dessus. Conservé, c'est
+un test de propriété à échantillon fixe, ce que cette bibliothèque n'exécute ni ne défend.
+
 ## Corps asynchrones
 
 Un corps `async` demande `ReproduciblyAsync`, et la tâche renvoyée **doit** être attendue :

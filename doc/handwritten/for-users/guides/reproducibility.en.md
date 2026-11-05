@@ -107,6 +107,36 @@ one-case test — the very thing dummies were adopted to escape. There is an opt
 exactly this, [JD019](../analyzers/JD019.en.md), which flags a constant replay seed in committed
 code; enable it in `.editorconfig` if pins tend to survive review in your team.
 
+### When the failure is rare
+
+A failure that comes up once in hundreds of runs has to be met before its seed can be read. Every run
+draws a fresh seed, so the first way is to run the test again until it fails, from a shell loop:
+
+```bash
+until ! dotnet test --project Tests -- --filter-method "*A_20_percent_discount*"; do :; done
+```
+
+The second is a sweep: a throwaway loop over seeds, each one pinned with `Any.UseSeed`, that stops at the
+first seed that fails and names it.
+
+```csharp
+for (int seed = 0; seed < 10_000; seed++) {
+    using (IDisposable scope = Any.UseSeed(seed)) {
+        OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+        string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+
+        Order order = new Order(anyReference, anyCustomerName, amount: 100m);
+
+        order.ApplyDiscount(20);
+
+        Assert.True(order.Total == 80m, $"Fails with seed {seed}.");
+    }
+}
+```
+
+Delete the sweep once it has named the seed, and replay that seed as above. Kept, it is a property test
+with a fixed sample, which is not what this library runs or defends.
+
 ## Asynchronous bodies
 
 An `async` body needs `ReproduciblyAsync`, and the returned task **must** be awaited:

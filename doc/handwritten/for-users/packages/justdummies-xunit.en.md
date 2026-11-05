@@ -178,6 +178,54 @@ Copy the seed from the failing test's output onto the attribute, run it, and the
 back. Fix the defect, then **remove the pin** — a committed seed turns a varying test back into a
 one-case test.
 
+The seed replays at whichever level you set it. On the failing method is the narrowest:
+`[Fact, Reproducible(Seed = 1743029518)]`. On its class, every test of the class takes that seed. At
+the assembly level, change the attribute already there, `[assembly: Reproducible(Seed = 1743029518)]`:
+a second `[assembly: Reproducible]` is a compile error, CS0579, since the attribute allows one per
+target.
+
+A seed that reveals a defect not fixed yet can stay runnable on demand without running in every build:
+mark the test explicit, and xUnit skips it unless asked.
+
+<!-- jd:declarations -->
+```csharp
+using JustDummies;
+using JustDummies.Xunit;
+
+using Xunit;
+
+public sealed class DiscountDefectTests {
+
+    [Fact(Explicit = true), Reproducible(Seed = 1743029518)]
+    public void A_20_percent_discount_takes_a_fifth_off_the_order() {
+        // Arrange
+        OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+        string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+
+        Order order = new Order(anyReference, anyCustomerName, amount: 100m);
+
+        // Act
+        order.ApplyDiscount(20);
+
+        // Assert
+        Assert.Equal(80m, order.Total);
+    }
+
+}
+```
+
+Run it with `dotnet test --explicit only` in the Microsoft.Testing.Platform mode, or
+`dotnet run --project Tests -- --explicit only`. It is still a pinned seed: [JD019](../analyzers/JD019.en.md),
+when enabled, reports it, and the pin goes once the defect is fixed.
+
+## Attribute arguments and C#
+
+Two limits met around `[InlineData]` belong to C#, not to xUnit or this library. A `decimal` is not a
+constant C# can put in an attribute (CS0182), so pass it as a string, `[InlineData("12.50")]`, which
+xUnit v3 converts for a `decimal` parameter. And a lone surrogate in an attribute's string argument
+reaches the test as U+FFFD, the replacement character: attribute arguments are stored as UTF-8, which
+cannot hold half of a pair.
+
 ## Things the analyzers will tell you
 
 | Rule | Situation |

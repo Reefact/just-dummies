@@ -3,8 +3,9 @@
 🌍 **Langues :**  
 🇬🇧 [English](./numbers.en.md) | 🇫🇷 Français (ce fichier)
 
-Chaque type numérique du BCL possède un générateur, et tous partagent un même vocabulaire de
+Quatorze types numériques du BCL possèdent un générateur, et tous partagent un même vocabulaire de
 contraintes. Apprenez les cinq familles ci-dessous et vous connaissez les quatorze générateurs.
+`BigInteger` n'en a pas, mais une recette ([Un type sans générateur](#un-type-sans-générateur--biginteger)).
 
 ## Quel générateur pour quel type
 
@@ -241,11 +242,10 @@ double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 
 ## Un type sans générateur : `BigInteger`
 
-`System.Numerics.BigInteger` n'a pas de fabrique. Le type n'a pas de limite, donc ni bord que le
-dixième tirage atteindrait, ni magnitude ordinaire où rester : une valeur par défaut serait une borne
-inventée par la bibliothèque, que chaque lecteur devrait aller chercher
-([ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.fr.md),
-[ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)). Les
+`System.Numerics.BigInteger` n'a pas de fabrique. Un entier sans contrainte couvre tout son type, et
+ce type n'a pas de tout à couvrir : n'importe quel domaine par défaut serait une borne inventée par la
+bibliothèque, que chaque lecteur devrait aller chercher
+([ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.fr.md)). Les
 générateurs ci-dessus en composent déjà un, la borne écrite là où elle est choisie :
 
 <!-- jd:declarations -->
@@ -256,9 +256,9 @@ using JustDummies;
 
 public static class AnyBigInteger {
 
-    // Any non-negative value below 2^256: thirty-two bytes, read as an unsigned number.
-    public static IAny<BigInteger> Unbounded() {
-        return Any.ArrayOf(Any.Byte()).WithCount(32).As(bytes => new BigInteger(bytes, isUnsigned: true));
+    // A non-negative value below 2^(8 × byteCount): the width is the bound, so the caller writes it.
+    public static IAny<BigInteger> NonNegative(int byteCount) {
+        return Any.ArrayOf(Any.Byte()).WithCount(byteCount).As(bytes => new BigInteger(bytes, isUnsigned: true));
     }
 
     // A closed range whose bounds fit in a long: exact, and every constraint of Any.Int64() still applies.
@@ -266,12 +266,13 @@ public static class AnyBigInteger {
         return Any.Int64().Between(min, max).As(value => new BigInteger(value));
     }
 
-    // A wider closed range: thirty-two bytes cover any span up to 2^256.
+    // A wider closed range: as many bytes as the span needs, so every value in it can come up.
     public static IAny<BigInteger> Between(BigInteger min, BigInteger max) {
         if (max < min) { throw new ArgumentException("max must not be lower than min.", nameof(max)); }
-        BigInteger span = max - min + 1;
+        BigInteger span      = max - min + 1;
+        int        byteCount = span.GetByteCount(isUnsigned: true);
 
-        return Any.ArrayOf(Any.Byte()).WithCount(32).As(bytes => min + new BigInteger(bytes, isUnsigned: true) % span);
+        return Any.ArrayOf(Any.Byte()).WithCount(byteCount).As(bytes => min + new BigInteger(bytes, isUnsigned: true) % span);
     }
 
 }
@@ -279,11 +280,15 @@ public static class AnyBigInteger {
 
 Préférez la forme `long` dès que les bornes le permettent : elle est exacte, et `Except`, `MultipleOf`
 et les contraintes de signe continuent de s'appliquer avant la conversion. La forme large replie les
-octets sur l'intervalle par un modulo, si bien que certaines valeurs sortent un peu plus souvent que
-d'autres — chaque valeur tirée reste dans les bornes déclarées, et c'est tout ce qu'un dummy demande. Le
-constructeur `isUnsigned` existe depuis .NET Core 2.1 ; sur .NET Framework, ajoutez plutôt un octet nul —
-`new BigInteger(bytes.Concat(new byte[] { 0 }).ToArray())` lit les mêmes trente-deux octets comme un
-nombre positif ou nul.
+octets sur l'intervalle par un modulo, si bien que son tirage n'est pas uniforme : quand l'intervalle ne
+divise pas 2^(8 × byteCount), certaines valeurs ont un antécédent de plus que d'autres et peuvent sortir
+deux fois plus souvent. Chaque valeur de l'intervalle peut tout de même sortir, et chaque valeur tirée
+reste dans les bornes déclarées — c'est tout ce qu'un dummy demande.
+
+Le constructeur `isUnsigned` et `GetByteCount` existent depuis .NET Core 2.1. Sur .NET Framework, prenez
+la largeur dans `span.ToByteArray().Length`, et ajoutez un octet nul pour que les octets se lisent comme
+un nombre positif ou nul : `new BigInteger(bytes.Concat(new byte[] { 0 }).ToArray())`, avec
+`using System.Linq;`.
 
 ## Matrice de disponibilité
 

@@ -342,6 +342,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The pages say how to make draws differ.** Two draws may be equal; core concepts and the FAQ say a
+  difference the code needs is declared, not counted on. Composition says `DifferentFrom` excludes one
+  value, chains for a third, and leaves "all different" to a distinct collection, `DistinctBy` for a key;
+  it and the CLI page warn that over a class without `Equals` the exclusion holds trivially. A list
+  comment no longer calls an undeclared list "distinct" (issue #448).
 - **The reproducibility guide says how to meet a rare failure.** Rerun the test until it fails, or sweep
   seeds in a throwaway loop through the seeded `Any.Reproducibly`, which reports the seed whatever
   throws, deleted once it has named the seed (issue #449).

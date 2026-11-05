@@ -285,6 +285,19 @@ Ce sont deux garanties différentes sous un même nom, et le type statique du re
 du builder refuse une contradiction tout de suite, en nommant les deux contraintes, et les analyzers la voient
 à la compilation ; celle-ci ne voit rien avant `Generate()` ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.fr.md)).
 
+Il exclut une valeur. Une troisième valeur qui doit différer de deux autres l'enchaîne,
+`pitchGenerator.DifferentFrom(anyFirst).DifferentFrom(anySecond)`, et des valeurs qui doivent toutes
+différer forment une collection distincte, qui le dit en une déclaration :
+`Any.ListOf(pitchGenerator).WithCount(3).Distinct()`, ou `Any.SetOf(...)`, et `DistinctBy(key)` quand seule
+une clé doit différer ([Collections](../generators/collections.fr.md#distinction)). Une liste passée à
+`DifferentFrom` ne compile pas : le compilateur signale CS0411, un argument de type qu'il ne sait pas
+inférer, plutôt que la liste qu'il a reçue.
+
+Les valeurs sont comparées avec l'égalité propre au type, si bien que l'exclusion n'a de sens qu'avec une
+égalité de valeur. Sur une classe qui ne redéfinit pas `Equals`, chaque instance tirée diffère déjà de celle
+donnée, et l'exclusion tient trivialement alors que les deux peuvent se lire comme la même valeur — la mise
+en garde que porte aussi la [distinction](../generators/collections.fr.md#distinction).
+
 ## Une borne prise sur un autre tirage
 
 Quand une valeur doit se tenir sous une autre — un nombre de cellules sous la capacité d'un échantillon, une
@@ -363,7 +376,8 @@ IAny<Customer> customerGenerator = Any.Combine(
 
 Customer anyCustomer = customerGenerator.Generate();
 
-// Un générateur est une recette : le même produit donc toute une liste de clients distincts.
+// Un générateur est une recette : le même produit donc toute une liste de clients, chacun tiré à part ;
+// Distinct() le déclare quand ils doivent différer.
 List<Customer> anyCustomers = Any.ListOf(customerGenerator).WithCountBetween(2, 5).Generate();
 ```
 

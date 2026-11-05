@@ -895,7 +895,8 @@ porte une règle que `DifferentFrom` énonce en un appel. Sur un builder typé, 
 à la déclaration — `new AnyAllele().WithCode(c => c.DifferentFrom(first.Code))` dans `Generate()` raffine
 un composant. Sur tout autre générateur, un générateur scaffoldé compris, `DifferentFrom` retire tant que la
 valeur égale celle donnée, un nombre borné de fois, et échoue avec sa graine si le générateur ne produit rien
-d'autre ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.fr.md)) :
+d'autre. Il compare avec l'égalité propre au type : sur une classe qui ne redéfinit pas `Equals`, il tient donc
+trivialement ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.fr.md)) :
 
 <!-- jd:declarations -->
 ```csharp

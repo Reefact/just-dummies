@@ -25,6 +25,10 @@ int anySecond = anyQuantity.Generate();
 // first et second sont tous deux dans 1..100, et sont généralement différents.
 ```
 
+Généralement, pas toujours : deux tirages peuvent être égaux, et c'est une issue valide de ce qui a été
+déclaré. Quand le code a besoin qu'ils diffèrent, c'est une contrainte à déclarer —
+`anyQuantity.DifferentFrom(anyFirst)` — et non une probabilité sur laquelle compter.
+
 C'est la distinction sur laquelle repose toute l'API, et la raison pour laquelle le paquet embarque
 des analyzers : une recette et une valeur satisfont beaucoup des mêmes signatures, le compilateur ne
 peut donc pas signaler qu'on les a confondues. Écrire `$"{Any.Int32()}"` compile parfaitement et

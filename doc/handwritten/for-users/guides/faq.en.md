@@ -54,7 +54,8 @@ int sameValue    = anyDrawnOnce;        // the same number
 int anyAnother   = anyQuantity.Generate(); // usually a different number
 ```
 
-See [Core concepts](./core-concepts.en.md).
+When the code needs the two to differ, declare it: `anyQuantity.DifferentFrom(anyDrawnOnce)`. See
+[Core concepts](./core-concepts.en.md).
 
 ### Should a constraint match what my test asserts?
 

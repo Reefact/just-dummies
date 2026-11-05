@@ -23,16 +23,18 @@ déclarée, bien que le CLR l'autoriserait — un dummy qui le ferait testerait 
 état que votre domaine ne possède pas.
 
 Un test dont le sujet est le refus d'une valeur non déclarée ne tire pas cette valeur : c'est sur elle que
-porte l'assertion, elle est donc choisie, pas un dummy. Calculez-la à partir des membres déclarés, pour
-qu'elle reste non déclarée quand un membre est ajouté plus tard :
+porte l'assertion, elle est donc choisie, pas un dummy. Cherchez-la plutôt que de l'écrire en dur, pour
+qu'elle reste non déclarée quand un membre est ajouté plus tard : la première valeur positive ou nulle
+qu'aucun membre ne déclare, qui ne déborde jamais, quelles que soient les valeurs des membres.
 
 ```csharp
-OrderStatus undeclared = (OrderStatus)(Enum.GetValues<OrderStatus>().Max(status => (int)status) + 1);
+OrderStatus undeclared = Enumerable.Range(0, int.MaxValue)
+                                   .Select(value => (OrderStatus)value)
+                                   .First(status => !Enum.IsDefined(status));
 ```
 
-Sur une énumération `[Flags]`, une combinaison de membres déclarés est une valeur définie : la valeur
-au-dessus du plus grand membre peut donc en être une ; prenez plutôt le premier bit qu'aucun membre
-n'utilise.
+Sur une énumération `[Flags]`, une combinaison de membres déclarés est une valeur définie, que
+`Enum.IsDefined` ne voit pas ; prenez plutôt le premier bit qu'aucun membre n'utilise.
 
 Les exclusions qui vident l'univers sont refusées nommément, et l'analyzer
 [JD017](../analyzers/JD017.fr.md) signale les cas constants dès la compilation. Une liste d'exclusion — un tableau

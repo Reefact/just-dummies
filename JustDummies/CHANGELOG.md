@@ -343,7 +343,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 ### Documentation
 
 - **The reproducibility guide says how to meet a rare failure.** Rerun the test until it fails, or sweep
-  seeds in a throwaway loop through `Any.UseSeed`, deleted once it has named the seed (issue #449).
+  seeds in a throwaway loop through the seeded `Any.Reproducibly`, which reports the seed whatever
+  throws, deleted once it has named the seed (issue #449).
 - **The analyzer pages answer three questions the third UX trial raised.** The package page and the
   rule index list the four category keys, `JustDummies.Reproducibility`, `JustDummies.Usage`,
   `JustDummies.Constraints` and `JustDummies.Composition`, and say that `category-JustDummies.severity`

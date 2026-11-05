@@ -173,6 +173,19 @@ below `1e-6` comes up about once in fifty million. If the code needs a smallest 
 quantity, a measurable rate — that is a lower bound, and you declare it: `Between(0.001, 50)`. This is
 the form to reach for whenever your domain has a range.
 
+A range spanning many decades is drawn the same way, so its top decade takes nearly every draw:
+`Between(1e-3, 1e22)` lands above `1e21` about nine times in ten. When the code behaves differently
+across those decades and the test means to reach them all, draw the exponent instead, uniformly, and
+raise ten to it, so each decade comes up as often as the next:
+
+```csharp
+double anyResistance = Any.Double().Between(-3, 22).As(exponent => Math.Pow(10, exponent)).Generate();
+```
+
+There is no log-scale constraint: choosing a distribution is beyond what the library attempts
+([ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.md)), and
+the recipe says what it draws where it is written.
+
 **A side left open stays ordinary nine draws in ten, and reaches the type's limit the tenth.** An
 unconstrained `double`, `float` or `decimal`, or one bounded on a single side — `Positive()`,
 `LessThan(1e9)` — is drawn within a magnitude of one million nine times in ten, rather than roaming the

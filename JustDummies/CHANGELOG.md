@@ -342,6 +342,10 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The numbers page shows how to spread a draw across many decades.** A range of many decades is drawn
+  uniformly in value, so its top decade takes nearly every draw; the page shows the exponent recipe,
+  `Between(-3, 22).As(e => Math.Pow(10, e))`, and says why no log-scale constraint is offered. The
+  decision keeps every drawn sequence as it is (issue #441).
 - **The dummy rule is applied at three more edges.** Getting started and the FAQ link a value the scenario
   needs but the assertion does not verify to the prerequisite guidance in core concepts. The FAQ says a
   seed the code under test takes is drawn when the assertion holds whatever it is, and written as a

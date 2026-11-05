@@ -184,6 +184,20 @@ Ainsi, `Any.Double().Positive().LessThanOrEqualTo(50)` ne distribue pas de valeu
 d'une plus petite valeur — une quantité minimale, un taux mesurable — c'est une borne basse, et vous la
 déclarez : `Between(0.001, 50)`. C'est la forme à choisir chaque fois que votre domaine a une plage.
 
+Une plage qui s'étend sur de nombreuses décades est tirée de la même façon : sa décade du haut prend donc
+presque tous les tirages, et `Between(1e-3, 1e22)` tombe au-dessus de `1e21` environ neuf fois sur dix.
+Quand le code se comporte différemment d'une décade à l'autre et que le test entend toutes les atteindre,
+tirez plutôt l'exposant, uniformément, et élevez dix à cette puissance : chaque décade sort alors aussi
+souvent que la suivante.
+
+```csharp
+double anyResistance = Any.Double().Between(-3, 22).As(exponent => Math.Pow(10, exponent)).Generate();
+```
+
+Il n'y a pas de contrainte d'échelle logarithmique : choisir une distribution dépasse ce que la
+bibliothèque entreprend ([ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.fr.md)),
+et la recette dit ce qu'elle tire là où elle est écrite.
+
 **Un côté laissé ouvert reste ordinaire neuf tirages sur dix, et atteint la limite du type le dixième.**
 Un `double`, `float` ou `decimal` non contraint, ou borné d'un seul côté — `Positive()`, `LessThan(1e9)` —
 est tiré dans un ordre de grandeur d'un million neuf fois sur dix, au lieu de parcourir toute la plage du

@@ -62,9 +62,15 @@ dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
 ```
 
 Une clé de catégorie nomme une seule catégorie, et il y en a quatre : `JustDummies.Reproducibility`,
-`JustDummies.Usage`, `JustDummies.Constraints` et `JustDummies.Composition`. Relever toutes les règles
-demande une ligne par catégorie. `category-JustDummies.severity` ne nomme aucune catégorie : il ne relève
-donc rien, et aucun avertissement ne le signale.
+`JustDummies.Usage`, `JustDummies.Constraints` et `JustDummies.Composition`.
+`category-JustDummies.severity` ne nomme aucune catégorie : il ne change donc rien, et aucun avertissement
+ne le signale. Une entrée de catégorie fixe la sévérité de chaque règle activée de cette catégorie, quel
+que soit son défaut ; elle peut donc abaisser une règle aussi bien que la relever : `JustDummies.Reproducibility`
+ou `JustDummies.Usage` réglé sur `warning` fait aussi de JD001 à JD005, des erreurs par défaut, des
+avertissements, et un build qu'elles faisaient échouer n'échoue plus. Elle n'active pas non plus une règle
+optionnelle : JD011 et JD019 demandent toujours leur propre ligne `dotnet_diagnostic.JDxxx.severity`. Pour
+voir les règles Info, relevez-les par identifiant, ou réglez une catégorie sur `warning` seulement là où
+aucune de ses règles n'est une erreur.
 
 ## Frameworks cibles
 

@@ -68,7 +68,7 @@ display="${file##*/}"
 # (documentation routinely shows `var` in sample code), an anonymous type (C#
 # gives no other spelling), and an occurrence inside a string literal (the
 # analyzer suites embed C# fixtures that deliberately use `var`).
-# shellcheck disable=SC2317  # reached through the `"rule_${rule}"` dispatch in the run section below
+# shellcheck disable=SC2317,SC2329  # reached through the `"rule_${rule}"` dispatch in the run section below
 rule_explicit_types() {
   awk -v name="$display" '
     {
@@ -101,7 +101,7 @@ rule_explicit_types() {
   ' "$file"
 }
 
-# shellcheck disable=SC2317  # reached through the `"${rule}_hint"` dispatch in the run section below
+# shellcheck disable=SC2317,SC2329  # reached through the `"${rule}_hint"` dispatch in the run section below
 explicit_types_hint() {
   printf '%s' "Coding rule — explicit types (CLAUDE.md, \"Always-on rules\"). This file now declares
 inferred types:
@@ -122,7 +122,7 @@ thing as IDE0008 and CI turns it into an error, so this does not merge as-is.
 # rather than left to review. What the rule is NAMED with is not checked: DCAT0006
 # and DCAT0014 already make a literal, or a missing justification, a build error.
 # The same three exclusions as above apply, for the same reasons.
-# shellcheck disable=SC2317  # reached through the `"rule_${rule}"` dispatch in the run section below
+# shellcheck disable=SC2317,SC2329  # reached through the `"rule_${rule}"` dispatch in the run section below
 rule_suppression_form() {
   awk -v name="$display" '
     {
@@ -155,7 +155,7 @@ rule_suppression_form() {
   ' "$file"
 }
 
-# shellcheck disable=SC2317  # reached through the `"${rule}_hint"` dispatch in the run section below
+# shellcheck disable=SC2317,SC2329  # reached through the `"${rule}_hint"` dispatch in the run section below
 suppression_form_hint() {
   printf '%s' "Coding rule — the shape of a [SuppressMessage] (.claude/rules/csharp.md).
 This file now declares:
@@ -178,7 +178,7 @@ the line unreadable, move the text to a \`SuppressionJustification.<RuleId>\` co
 #
 # Read from the solution rather than from the edited file: a new .csproj says
 # nothing about the solution, and the omission is only visible there.
-# shellcheck disable=SC2317  # reached through the `"rule_${rule}"` dispatch in the run section below
+# shellcheck disable=SC2317,SC2329  # reached through the `"rule_${rule}"` dispatch in the run section below
 rule_sln_nesting() {
   root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || true)}"
   [ -n "$root" ] || return 0
@@ -210,7 +210,7 @@ rule_sln_nesting() {
   ' "$sln"
 }
 
-# shellcheck disable=SC2317  # reached through the `"${rule}_hint"` dispatch in the run section below
+# shellcheck disable=SC2317,SC2329  # reached through the `"${rule}_hint"` dispatch in the run section below
 sln_nesting_hint() {
   printf '%s' "Repository rule — solution folders (.claude/rules/build-and-ci.md).
 These projects are in JustDummies.sln but not in GlobalSection(NestedProjects):

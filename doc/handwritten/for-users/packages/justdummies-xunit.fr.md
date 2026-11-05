@@ -182,6 +182,54 @@ Copiez la graine depuis la sortie du test en échec sur l'attribut, relancez, et
 reviennent. Corrigez le défaut, puis **retirez l'épingle** — une graine versionnée retransforme un
 test variable en test à un seul cas.
 
+La graine rejoue au niveau où vous la placez. Sur la méthode en échec, c'est le plus étroit :
+`[Fact, Reproducible(Seed = 1743029518)]`. Sur sa classe, chaque test de la classe prend cette graine. Au
+niveau de l'assembly, modifiez l'attribut déjà présent, `[assembly: Reproducible(Seed = 1743029518)]` :
+un second `[assembly: Reproducible]` est une erreur de compilation, CS0579, puisque l'attribut n'en
+admet qu'un par cible.
+
+Une graine qui révèle un défaut pas encore corrigé peut rester exécutable à la demande sans tourner à
+chaque build : marquez le test explicite, et xUnit le saute sauf si on le demande.
+
+<!-- jd:declarations -->
+```csharp
+using JustDummies;
+using JustDummies.Xunit;
+
+using Xunit;
+
+public sealed class DiscountDefectTests {
+
+    [Fact(Explicit = true), Reproducible(Seed = 1743029518)]
+    public void A_20_percent_discount_takes_a_fifth_off_the_order() {
+        // Arrange
+        OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+        string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+
+        Order order = new Order(anyReference, anyCustomerName, amount: 100m);
+
+        // Act
+        order.ApplyDiscount(20);
+
+        // Assert
+        Assert.Equal(80m, order.Total);
+    }
+
+}
+```
+
+Lancez-le avec `dotnet test --explicit only` en mode Microsoft.Testing.Platform, ou
+`dotnet run --project Tests -- --explicit only`. Cela reste une graine épinglée : [JD019](../analyzers/JD019.fr.md),
+s'il est activé, la signale, et l'épingle part une fois le défaut corrigé.
+
+## Les arguments d'attribut et C#
+
+Deux limites rencontrées autour de `[InlineData]` relèvent de C#, ni de xUnit ni de cette bibliothèque.
+Un `decimal` n'est pas une constante que C# peut placer dans un attribut (CS0182) : passez-le sous forme de
+chaîne, `[InlineData("12.50")]`, que xUnit v3 convertit pour un paramètre `decimal`. Et un substitut isolé
+dans un argument chaîne d'attribut parvient au test sous la forme U+FFFD, le caractère de remplacement :
+les arguments d'attribut sont stockés en UTF-8, qui ne peut pas contenir la moitié d'une paire.
+
 ## Ce que les analyzers vous diront
 
 | Règle | Situation |

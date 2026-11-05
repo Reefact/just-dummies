@@ -93,9 +93,9 @@ DateOnly anyBusinessDay = Any.DateOnly()
 ```
 
 `.As(...)` renvoie un `IAny<DateOnly>`, et non plus un `AnyDateOnly` : toute contrainte du builder se
-place donc avant. Les bornes gardent le déplacement à l'intérieur du type — un samedi sur
-`DateOnly.MaxValue` n'a pas de lundi — et une borne haute qui tombe un week-end laisse le déplacement
-emporter un jour au-delà d'elle, ce que `Between` seul ne ferait pas. Les jours fériés relèvent aussi de
+place donc avant. Les bornes contraignent le tirage, pas le déplacement :
+celui-ci peut emporter un jour au-delà de la borne haute quand elle tombe un week-end, ce que `Between`
+seul ne ferait pas. Les jours fériés relèvent aussi de
 votre calendrier, et trouvent leur place dans cette même fonction.
 
 ## Les tirages `DateTime` sont `Kind.Utc`, et une borne `Local` est refusée

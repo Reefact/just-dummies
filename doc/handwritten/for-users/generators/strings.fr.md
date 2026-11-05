@@ -303,7 +303,8 @@ Partout où un motif laisse un caractère libre — un raccourci comme `\d` ou `
 niée `[^…]` — le tirage reste dans l'ASCII imprimable, de U+0020 à U+007E, à une exception près : `\s`
 tire une espace ou une tabulation. `\d` ne produit donc que `0` à `9`, bien que le moteur .NET reconnaisse
 aussi d'autres chiffres Unicode. Un caractère que le motif nomme — un littéral, un échappement, un membre
-d'une classe positive — est tiré exactement tel qu'écrit, y compris hors de cette plage.
+d'une classe positive — n'est pas tenu à cette plage, et peut donc en sortir ; il est tiré tel qu'écrit, ou
+dans l'une ou l'autre casse quand le motif est insensible à la casse : `(?i)A` tire `A` ou `a`.
 
 ### Constructions refusées
 

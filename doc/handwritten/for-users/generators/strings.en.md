@@ -292,8 +292,9 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 Wherever a pattern leaves a character free — a shorthand such as `\d` or `\w`, the dot, a negated
 class `[^…]` — the draw stays in printable ASCII, U+0020 to U+007E, with one exception: `\s` draws a
 space or a tab. So `\d` yields `0` to `9` only, although the .NET engine matches other Unicode digits
-too. A character the pattern names — a literal, an escape, a member of a positive class — is drawn
-exactly as written, outside that range included.
+too. A character the pattern names — a literal, an escape, a member of a positive class — is not held
+to that range, so it may fall outside it; it is drawn as written, or in either case when the pattern is
+case-insensitive: `(?i)A` draws `A` or `a`.
 
 ### Refused constructs
 

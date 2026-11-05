@@ -128,9 +128,12 @@ bibliothèque a abandonné trop tôt. Élargissez l'intervalle, retirez une excl
 d'éléments distincts.
 
 Une fabrique passée à `As`, ou un composeur passé à `Any.Combine`, qui lève est rapporté lui aussi comme
-une `AnyGenerationException`. L'enveloppe est délibérée : le message nomme les valeurs tirées et la graine
-qui les rejoue, et l'exception propre de la fabrique est l'`InnerException`. Testez le refus d'un
-constructeur sur le constructeur lui-même plutôt qu'à travers un générateur.
+une `AnyGenerationException`, avec l'exception propre de la fabrique comme `InnerException`, et le message
+nomme les valeurs tirées. Les exceptions propres de la bibliothèque ne sont pas enveloppées : une
+`ConflictingAnyConstraintException` levée dans la fabrique vous parvient telle quelle. La graine est là
+quand le générateur tire d'une graine, et elle ne rejoue la valeur entière que si chaque opérande tire
+d'elle — le message dit quand le rejeu est partiel. Testez le refus d'un constructeur sur le constructeur
+lui-même plutôt qu'à travers un générateur.
 
 ## `UnsupportedRegexException` : hors du sous-ensemble régulier
 

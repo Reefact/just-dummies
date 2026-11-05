@@ -35,10 +35,15 @@ exception, et vous l'apprenez immédiatement au lieu de livrer un dummy qui n'au
 exister en production.
 
 L'échec vous parvient comme une `AnyGenerationException`, et non comme l'exception propre de la fabrique,
-et c'est délibéré : le message nomme les valeurs tirées et la graine qui les rejoue, et l'exception de la
-fabrique est conservée comme son `InnerException`. Un composeur passé à `Any.Combine` qui lève est
-rapporté de la même façon. Un test qui porte sur le refus de la fabrique appelle donc la fabrique
-elle-même — `OrderReference.Create("REF-1")` — plutôt que de l'atteindre par un générateur.
+et c'est délibéré : le message nomme les valeurs tirées, et l'exception de la fabrique est conservée comme
+son `InnerException`. Un composeur passé à `Any.Combine` qui lève est rapporté de la même façon. Les
+exceptions propres de la bibliothèque ne sont pas enveloppées : une `ConflictingAnyConstraintException`
+levée par un générateur que la fabrique appelle vous parvient telle quelle. Le message porte aussi la
+graine quand le générateur tire d'une graine — `Any.Fixed(...).As(...)` ne tire rien, il n'y en a donc
+pas — et cette graine ne rejoue la valeur entière que si chaque opérande tire d'elle ; sur un générateur
+que la bibliothèque ne sait pas rejouer, le message dit que le rejeu est partiel. Un test qui porte sur
+le refus de la fabrique appelle donc la fabrique elle-même — `OrderReference.Create("REF-1")` — plutôt
+que de l'atteindre par un générateur.
 
 ## `Any.Combine` : plusieurs générateurs en un seul
 

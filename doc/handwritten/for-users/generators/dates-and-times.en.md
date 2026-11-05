@@ -59,8 +59,8 @@ DateTime anyAppointment = Any.DateTime()
                              .WithGranularity(TimeSpan.FromMinutes(1))
                              .Generate();
 
-// Whole days.
-DateTime anyBusinessDay = Any.DateTime().WithGranularity(TimeSpan.FromDays(1)).Generate();
+// Whole days, at midnight.
+DateTime anyMidnight = Any.DateTime().WithGranularity(TimeSpan.FromDays(1)).Generate();
 
 // A duration in whole seconds.
 TimeSpan anyRetryAfter = Any.TimeSpan().Positive().WithGranularity(TimeSpan.FromSeconds(1)).Generate();
@@ -72,6 +72,30 @@ Declaring the granularity your storage actually has is the fix, and it is a genu
 rather than a workaround.
 
 `DateOnly` has no granularity constraint — it is already a whole day.
+
+## Business days
+
+There is no weekday or business-day constraint, and by decision: which days count is a calendar, and the
+calendar is your domain's. Draw a day, then move it onto one through `.As(...)`:
+
+```csharp
+static DateOnly NextBusinessDay(DateOnly day) => day.DayOfWeek switch {
+    DayOfWeek.Saturday => day.AddDays(2),
+    DayOfWeek.Sunday   => day.AddDays(1),
+    _                  => day
+};
+
+DateOnly anyBusinessDay = Any.DateOnly()
+                             .Between(new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31))
+                             .As(NextBusinessDay)
+                             .Generate();
+```
+
+`.As(...)` returns an `IAny<DateOnly>`, no longer an `AnyDateOnly`, so every builder constraint goes
+before it. The bounds keep the move inside the type — a Saturday on `DateOnly.MaxValue` has no Monday —
+and an upper bound that falls on a weekend lets the move carry a day past it, which `Between` alone
+would not.
+Public holidays are your calendar too, and belong in that same function.
 
 ## `DateTime` draws are `Kind.Utc`, and a `Local` bound is refused
 

@@ -31,7 +31,8 @@ With no count declared, a collection draws between 0 and 8 elements, so it can b
 `WithMinCount(3)` draws 3 to 11 elements, and so do three values a `Containing(...)` requires — and a
 declared maximum replaces the spread altogether: `WithCountBetween(2, 500)` draws anywhere from 2 to
 500 ([ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.md)). A set,
-or a distinct collection, over a small domain holds no more than the values that domain has.
+or a distinct collection, over a small domain holds no more than the values that domain has, together
+with any value a `Containing(...)` pins outside it.
 
 ## The shared count vocabulary
 

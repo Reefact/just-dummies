@@ -3,8 +3,9 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./numbers.fr.md)
 
-Every numeric type in the BCL has a generator, and they share one constraint vocabulary. Learn the
-five families below and you know all fourteen generators.
+Fourteen numeric types of the BCL have a generator, and they share one constraint vocabulary. Learn the
+five families below and you know all fourteen generators. `BigInteger` has none, and a recipe instead
+([A type with no generator](#a-type-with-no-generator-biginteger)).
 
 ## Which generator for which type
 
@@ -225,11 +226,10 @@ double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 
 ## A type with no generator: `BigInteger`
 
-`System.Numerics.BigInteger` has no factory. The type has no limit, so it has no edge for the tenth
-draw to reach and no ordinary magnitude to stay within: a default would be a bound the library invents
-and every reader must look up
-([ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.md),
-[ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)). The
+`System.Numerics.BigInteger` has no factory. An unconstrained integer spans its whole type, and this
+type has no whole to span: any default domain would be a bound the library invents and every reader
+must look up
+([ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.md)). The
 generators above already compose into one, with the bound written where it is chosen:
 
 <!-- jd:declarations -->
@@ -240,9 +240,9 @@ using JustDummies;
 
 public static class AnyBigInteger {
 
-    // Any non-negative value below 2^256: thirty-two bytes, read as an unsigned number.
-    public static IAny<BigInteger> Unbounded() {
-        return Any.ArrayOf(Any.Byte()).WithCount(32).As(bytes => new BigInteger(bytes, isUnsigned: true));
+    // A non-negative value below 2^(8 × byteCount): the width is the bound, so the caller writes it.
+    public static IAny<BigInteger> NonNegative(int byteCount) {
+        return Any.ArrayOf(Any.Byte()).WithCount(byteCount).As(bytes => new BigInteger(bytes, isUnsigned: true));
     }
 
     // A closed range whose bounds fit in a long: exact, and every constraint of Any.Int64() still applies.
@@ -250,12 +250,13 @@ public static class AnyBigInteger {
         return Any.Int64().Between(min, max).As(value => new BigInteger(value));
     }
 
-    // A wider closed range: thirty-two bytes cover any span up to 2^256.
+    // A wider closed range: as many bytes as the span needs, so every value in it can come up.
     public static IAny<BigInteger> Between(BigInteger min, BigInteger max) {
         if (max < min) { throw new ArgumentException("max must not be lower than min.", nameof(max)); }
-        BigInteger span = max - min + 1;
+        BigInteger span      = max - min + 1;
+        int        byteCount = span.GetByteCount(isUnsigned: true);
 
-        return Any.ArrayOf(Any.Byte()).WithCount(32).As(bytes => min + new BigInteger(bytes, isUnsigned: true) % span);
+        return Any.ArrayOf(Any.Byte()).WithCount(byteCount).As(bytes => min + new BigInteger(bytes, isUnsigned: true) % span);
     }
 
 }
@@ -263,10 +264,13 @@ public static class AnyBigInteger {
 
 Reach for the `long` form whenever the bounds allow it: it is exact, and `Except`, `MultipleOf` and the
 sign constraints keep working before the conversion. The wider form folds the bytes onto the span with a
-modulo, so some values come up slightly more often than others — every value it draws lies within the
-bounds you declared, which is all a dummy needs. The `isUnsigned` constructor exists from .NET Core 2.1;
-on .NET Framework, append a zero byte instead — `new BigInteger(bytes.Concat(new byte[] { 0 }).ToArray())`
-reads the same thirty-two bytes as a non-negative number.
+modulo, so its draw is not uniform: where the span does not divide 2^(8 × byteCount), some values have
+one more preimage than others and can come up twice as often. Every value of the range can still come
+up, and every value drawn lies within the bounds you declared — which is all a dummy needs.
+
+The `isUnsigned` constructor and `GetByteCount` exist from .NET Core 2.1. On .NET Framework, take the
+width from `span.ToByteArray().Length`, and append a zero byte so the bytes read as a non-negative
+number: `new BigInteger(bytes.Concat(new byte[] { 0 }).ToArray())`, with `using System.Linq;`.
 
 ## Support matrix
 

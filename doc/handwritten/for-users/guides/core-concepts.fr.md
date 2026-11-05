@@ -260,7 +260,7 @@ supprimer.
 
 ### Un objet qui n'atteint l'assertion que par son identité
 
-Un cas se tient sur la ligne, et il est courant :
+Voici un cas limite fréquent :
 
 <!-- jd:declarations -->
 ```csharp
@@ -303,14 +303,19 @@ public sealed class InvoiceTests {
 
 À strictement parler, `anyCustomer` n'est pas un dummy : l'assertion porte sur lui, et le test vérifie
 une propriété — quel que soit le client, la facture garde celui-là même — avec un échantillon de taille
-un. La bibliothèque le tolère pourtant, parce que la propriété est triviale : transmettre une référence
-ne calcule rien, si bien qu'aucun autre client ne pourrait la faire échouer, et l'autre voie, un client
-construit à partir de littéraux que personne n'a choisis pour une raison, est précisément ce que cette
-bibliothèque existe pour supprimer. Gardez le nom `any` : le contenu du client est arbitraire, et le
+un. La bibliothèque le tolère pourtant là où la propriété est triviale, et ce n'est pas la forme de
+l'assertion qui la rend triviale : c'est le code testé. Cette `Invoice` stocke la référence qu'on lui
+donne, sans condition : elle ne calcule rien à partir du client, et aucun autre client ne pourrait faire
+échouer le test ; et l'autre voie, un client construit à partir de littéraux que personne n'a choisis pour
+une raison, est précisément ce que cette bibliothèque existe pour supprimer. Une `Invoice` qui ne
+garderait la référence que pour certains clients, selon leur nom par exemple, passerait le même
+`Assert.Same` pour un tirage et l'échouerait pour un autre : le contenu déciderait de l'issue, et la
+tolérance ne s'appliquerait pas. Gardez le nom `any` : le contenu du client est arbitraire, et le
 test ne le lit jamais.
 
-La tolérance s'arrête à l'identité. Dès que l'assertion lit un champ de l'objet, compare son contenu,
-ou vérifie quelque chose qui en est calculé — `Assert.Equal(anyCustomer.Name, invoice.CustomerName)` — la
+La tolérance s'arrête à une transmission sans condition, vérifiée par l'identité. Dès que le code testé
+lit l'objet pour décider de ce qu'il garde, ou que l'assertion lit un champ de l'objet, compare son
+contenu, ou vérifie quelque chose qui en est calculé — `Assert.Equal(anyCustomer.Name, invoice.CustomerName)` — la
 valeur est le sujet d'une vraie propriété : écrivez-la en littéral, ou portez la question à une
 bibliothèque à base de propriétés.
 

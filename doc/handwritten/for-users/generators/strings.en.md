@@ -140,6 +140,12 @@ guarantee this library checks byte for byte. `WithChars` is the escape hatch —
 and the draw uses nothing else. It is how you express an alphabet the named families do not cover: a
 DNA sequence, a base-32 alphabet, accented text, a set of allowed separators.
 
+A pool is made of UTF-16 code units, all within the Basic Multilingual Plane: `WithChars` refuses a
+surrogate, since it would draw the two halves of an astral character — an emoji, a CJK ideograph past
+U+FFFF — one at a time and split it. Text holding such characters is drawn whole, from a value set:
+`Any.String().OneOf("👍", "🎉")`
+([ADR-0075](../../for-maintainers/adr/0075-draw-characters-from-the-whole-of-ascii.md)).
+
 ## Shape: prefixes, suffixes, fragments
 
 ```csharp
@@ -238,7 +244,9 @@ default is the same too: **an unconstrained `Any.Char()` draws anywhere in ASCII
 hand you a carriage return or a NUL. `Printable()` is what you declare when that is not acceptable;
 `Punctuation()` when the character must not read as alphanumeric; `NonPrintable()` when a control
 character is precisely the counter-example your test needs. Where the set is a specific one — three
-allowed separators, not all thirty-two — `OneOf` says so and says it exactly.
+allowed separators, not all thirty-two — `OneOf` says so and says it exactly. `Any.Char()` has no
+`Between`: a range the families do not name, such as `a` to `f`, is a value set too, and a `string`
+lists its characters, so `Any.Char().OneOf("abcdef")` draws one of those six.
 
 `Except` takes a sequence as well as a list, and on `Any.Char()` a `string` is one: `Except("aeiou")`
 excludes each of its characters, the way `Except('a', 'e', 'i', 'o', 'u')` does. The analyzers read
@@ -280,6 +288,12 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 | alternation | `a|b` |
 | anchors at the edges | `^…$`, and .NET's whole-string spellings `\A…\z` and `\A…\Z` |
 | whole-pattern case-insensitivity | a leading `(?i)`, or `RegexOptions.IgnoreCase` on the `Regex` overload |
+
+Wherever a pattern leaves a character free — a shorthand such as `\d` or `\w`, the dot, a negated
+class `[^…]` — the draw stays in printable ASCII, U+0020 to U+007E, with one exception: `\s` draws a
+space or a tab. So `\d` yields `0` to `9` only, although the .NET engine matches other Unicode digits
+too. A character the pattern names — a literal, an escape, a member of a positive class — is drawn
+exactly as written, outside that range included.
 
 ### Refused constructs
 

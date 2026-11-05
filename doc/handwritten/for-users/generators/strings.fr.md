@@ -145,6 +145,12 @@ la porte de sortie — fournissez le vivier exact et le tirage n'utilise rien d'
 exprime un alphabet que les familles nommées ne couvrent pas : une séquence d'ADN, un alphabet base
 32, du texte accentué, un ensemble de séparateurs autorisés.
 
+Un vivier est fait d'unités de code UTF-16, toutes dans le plan multilingue de base : `WithChars` refuse
+un substitut, puisqu'il tirerait les deux moitiés d'un caractère astral — un emoji, un idéogramme CJK
+au-delà de U+FFFF — séparément, et le couperait. Un texte qui contient de tels caractères se tire entier,
+depuis un ensemble de valeurs : `Any.String().OneOf("👍", "🎉")`
+([ADR-0075](../../for-maintainers/adr/0075-draw-characters-from-the-whole-of-ascii.fr.md)).
+
 ## Forme : préfixes, suffixes, fragments
 
 ```csharp
@@ -247,6 +253,9 @@ un retour chariot ou un NUL. `Printable()` est ce que vous déclarez quand ce n'
 `Punctuation()` quand le caractère ne doit pas se lire comme alphanumérique ; `NonPrintable()` quand un
 caractère de contrôle est précisément le contre-exemple dont votre test a besoin. Là où l'ensemble est
 précis — trois séparateurs autorisés, pas les trente-deux — `OneOf` le dit, et le dit exactement.
+`Any.Char()` n'a pas de `Between` : une plage que les familles ne nomment pas, comme `a` à `f`, est elle
+aussi un ensemble de valeurs, et une `string` en liste les caractères, si bien que
+`Any.Char().OneOf("abcdef")` tire l'un des six.
 
 `Except` prend une séquence aussi bien qu'une liste, et sur `Any.Char()` une `string` en est une :
 `Except("aeiou")` exclut chacun de ses caractères, comme `Except('a', 'e', 'i', 'o', 'u')`. Les
@@ -289,6 +298,12 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 | alternation | `a|b` |
 | ancres aux extrémités | `^…$`, et les écritures « chaîne entière » de .NET `\A…\z` et `\A…\Z` |
 | insensibilité à la casse sur tout le motif | un `(?i)` en tête, ou `RegexOptions.IgnoreCase` sur la surcharge `Regex` |
+
+Partout où un motif laisse un caractère libre — un raccourci comme `\d` ou `\w`, le point, une classe
+niée `[^…]` — le tirage reste dans l'ASCII imprimable, de U+0020 à U+007E, à une exception près : `\s`
+tire une espace ou une tabulation. `\d` ne produit donc que `0` à `9`, bien que le moteur .NET reconnaisse
+aussi d'autres chiffres Unicode. Un caractère que le motif nomme — un littéral, un échappement, un membre
+d'une classe positive — est tiré exactement tel qu'écrit, y compris hors de cette plage.
 
 ### Constructions refusées
 

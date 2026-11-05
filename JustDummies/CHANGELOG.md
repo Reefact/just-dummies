@@ -342,6 +342,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The strings page says what a pool and a free pattern position can hold.** A `WithChars` pool is
+  UTF-16 code units within the Basic Multilingual Plane, so astral text is drawn whole through
+  `OneOf(...)`; `Any.Char()` has no `Between`, and a range the families do not name is a value set such
+  as `OneOf("abcdef")`; a free position in a pattern — `\d`, `\w`, the dot, a negated class — draws only
+  printable ASCII, `\s` a space or a tab (issue #445).
 - **The numbers page says how a floating-point draw spreads.** A draw is uniform in value over the
   interval it is taken from, never over the values the type represents, so
   `Any.Double().Positive().LessThanOrEqualTo(50)` does not crowd near `1e-300`: a draw below `1e-6`

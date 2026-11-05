@@ -59,6 +59,11 @@ dotnet_diagnostic.JD030.severity = warning
 dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
 ```
 
+A category key names one category, and there are four: `JustDummies.Reproducibility`,
+`JustDummies.Usage`, `JustDummies.Constraints` and `JustDummies.Composition`. Raising every rule takes
+one line per category. `category-JustDummies.severity` names no category, so it raises nothing, and no
+warning says so.
+
 ## Target frameworks
 
 | Asset | Carries |

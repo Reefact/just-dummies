@@ -258,6 +258,62 @@ Et si rien dans le test ne dépend du statut, laissez-le tiré : une valeur fix�
 un littéral qui a l'air délibéré, c'est-à-dire précisément ce que cette bibliothèque existe pour
 supprimer.
 
+### Un objet qui n'atteint l'assertion que par son identité
+
+Un cas se tient sur la ligne, et il est courant :
+
+<!-- jd:declarations -->
+```csharp
+using JustDummies;
+
+using Xunit;
+
+public sealed class Invoice {
+
+    public Invoice(Customer customer) {
+        Customer = customer;
+    }
+
+    public Customer Customer { get; }
+
+}
+
+public sealed class InvoiceTests {
+
+    private static readonly IAny<Customer> CustomerGenerator = Any.Combine(
+        Any.Guid().NonEmpty(),
+        Any.String().Alpha().WithLengthBetween(3, 20),
+        Any.String().Alpha().InLowerCase().WithLengthBetween(3, 12),
+        (id, name, localPart) => new Customer(id, name, $"{localPart}@example.test"));
+
+    [Fact]
+    public void An_invoice_keeps_the_customer_it_was_issued_to() {
+        // Arrange
+        Customer anyCustomer = CustomerGenerator.Generate();
+
+        // Act
+        Invoice invoice = new Invoice(anyCustomer);
+
+        // Assert
+        Assert.Same(anyCustomer, invoice.Customer);
+    }
+
+}
+```
+
+À strictement parler, `anyCustomer` n'est pas un dummy : l'assertion porte sur lui, et le test vérifie
+une propriété — quel que soit le client, la facture garde celui-là même — avec un échantillon de taille
+un. La bibliothèque le tolère pourtant, parce que la propriété est triviale : transmettre une référence
+ne calcule rien, si bien qu'aucun autre client ne pourrait la faire échouer, et l'autre voie, un client
+construit à partir de littéraux que personne n'a choisis pour une raison, est précisément ce que cette
+bibliothèque existe pour supprimer. Gardez le nom `any` : le contenu du client est arbitraire, et le
+test ne le lit jamais.
+
+La tolérance s'arrête à l'identité. Dès que l'assertion lit un champ de l'objet, compare son contenu,
+ou vérifie quelque chose qui en est calculé — `Assert.Equal(anyCustomer.Name, invoice.CustomerName)` — la
+valeur est le sujet d'une vraie propriété : écrivez-la en littéral, ou portez la question à une
+bibliothèque à base de propriétés.
+
 ## Rapport avec *xUnit Test Patterns*
 
 Les lecteurs familiers de [*xUnit Test Patterns*](http://xunitpatterns.com/), de Gerard Meszaros,

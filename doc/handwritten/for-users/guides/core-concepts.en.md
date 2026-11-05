@@ -246,6 +246,61 @@ the outcome depends on it, never the call to `With…`.
 And if nothing in the test depends on the status, leave it drawn: a pinned value that does not matter
 is a literal that looks deliberate, which is the very thing this library exists to remove.
 
+### An object that reaches the assertion only by identity
+
+One case sits on the line, and it is common:
+
+<!-- jd:declarations -->
+```csharp
+using JustDummies;
+
+using Xunit;
+
+public sealed class Invoice {
+
+    public Invoice(Customer customer) {
+        Customer = customer;
+    }
+
+    public Customer Customer { get; }
+
+}
+
+public sealed class InvoiceTests {
+
+    private static readonly IAny<Customer> CustomerGenerator = Any.Combine(
+        Any.Guid().NonEmpty(),
+        Any.String().Alpha().WithLengthBetween(3, 20),
+        Any.String().Alpha().InLowerCase().WithLengthBetween(3, 12),
+        (id, name, localPart) => new Customer(id, name, $"{localPart}@example.test"));
+
+    [Fact]
+    public void An_invoice_keeps_the_customer_it_was_issued_to() {
+        // Arrange
+        Customer anyCustomer = CustomerGenerator.Generate();
+
+        // Act
+        Invoice invoice = new Invoice(anyCustomer);
+
+        // Assert
+        Assert.Same(anyCustomer, invoice.Customer);
+    }
+
+}
+```
+
+Strictly, `anyCustomer` is not a dummy: the assertion is about it, and the test checks a property —
+whatever the customer, the invoice holds that very one — with a sample size of one. The library
+tolerates it all the same, because the property is trivial: passing a reference through computes
+nothing, so no other customer could make it fail, and the alternative, a customer built from literals
+nobody chose for a reason, is the very thing this library exists to remove. Keep the `any` name: the
+customer's content is arbitrary, and the test never reads it.
+
+The tolerance stops at identity. Once the assertion reads a field of the object, compares its
+content, or checks something computed from it — `Assert.Equal(anyCustomer.Name, invoice.CustomerName)`
+— the value is the subject of a real property: write it as a literal, or take the question to a
+property-based library.
+
 ## Relation to *xUnit Test Patterns*
 
 Readers of Gerard Meszaros' [*xUnit Test Patterns*](http://xunitpatterns.com/) bring its vocabulary

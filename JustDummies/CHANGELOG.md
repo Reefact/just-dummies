@@ -342,6 +342,10 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **Core concepts names the identity case.** A drawn object the assertion only checks by identity,
+  `Assert.Same(anyCustomer, invoice.Customer)`, is strictly a property with a sample of one, not a dummy;
+  the library tolerates it because passing a reference through computes nothing, and the tolerance
+  stops once the assertion reads the object's content. The FAQ links to it (issue #452).
 - **The numbers page shows how to spread a draw across many decades.** A range of many decades is drawn
   uniformly in value, so its top decade takes nearly every draw; the page shows the exponent recipe,
   `Between(-3, 22).As(e => Math.Pow(10, e))`, and says why no log-scale constraint is offered. The

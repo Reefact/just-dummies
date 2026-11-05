@@ -212,6 +212,28 @@ if [ "$scope" = "xunit" ]; then
     fi
     if git rev-parse --verify --quiet "refs/tags/lib-v${dependency_version}" >/dev/null; then
       echo "ok: $package depends on JustDummies $dependency_version, published as lib-v${dependency_version}"
+
+      # Existing is not enough: the published library must also carry the surface the adapter was built against.
+      # The adapter compiles against the library's sources at HEAD, so a public member added since the tag (#440:
+      # SeedScope, and UseSeed's new return type) would ship as a dependency NuGet resolves and the runtime then
+      # cannot bind -- MissingMethodException or TypeLoadException when the adapter loads. Every public change
+      # moves the committed baseline (RS0016/RS0017), so a baseline commit reachable from HEAD and not from the
+      # tag is a surface the published library lacks. Conservative by design: it does not ask whether the adapter
+      # uses that surface, and refuses until the library that carries it is released.
+      unreleased_surface="$(git log --format='  %h %s' "lib-v${dependency_version}..HEAD" -- JustDummies/PublicAPI)"
+      if [ -z "$unreleased_surface" ]; then
+        echo "ok: lib-v${dependency_version} carries every public change to JustDummies the adapter was built against"
+      elif [ "$dry_run" = "yes" ]; then
+        echo "notice: dry run -- the library's public surface changed after lib-v${dependency_version}:"
+        printf '%s\n' "$unreleased_surface"
+        echo "        A real xunit release refuses to pack until a library release carries these changes."
+      else
+        echo "error: the library's public surface changed after lib-v${dependency_version}, the version $package depends on:" >&2
+        printf '%s\n' "$unreleased_surface" >&2
+        echo "       The adapter is built against that surface; the published library lacks it, so the adapter would" >&2
+        echo "       fail to load against its own declared dependency. Release the library first." >&2
+        exit 1
+      fi
     elif [ "$dry_run" = "yes" ]; then
       echo "notice: dry run -- $package depends on JustDummies $dependency_version, which no lib-v tag matches."
       echo "        A real xunit release checks this and refuses to pack when it does not hold."

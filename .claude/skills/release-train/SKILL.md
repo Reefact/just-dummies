@@ -57,7 +57,10 @@ verifies the SBOM, and carries guards that must not be weakened:
   closure as files, so the nuspec check alone passes on an empty dependency list;
 * `JustDummies.Xunit`'s declared dependency on `JustDummies` must match a published `lib-v*`
   tag; publishing one that matches none is `NU1102` for the consumer, on an immutable artifact
-  (ADR-0047).
+  (ADR-0047). That tag must also carry every change to `JustDummies/PublicAPI/` reachable from the
+  commit being released: the adapter is built against the library's sources, so a public member
+  added since the tag would ship as a dependency NuGet resolves and the runtime cannot bind. When
+  the library's surface moved, **release the library first** — `pack.sh` refuses otherwise.
 
 ## Publishing
 

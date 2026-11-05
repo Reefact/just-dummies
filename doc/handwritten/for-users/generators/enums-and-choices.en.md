@@ -22,15 +22,18 @@ though the CLR would allow one — a dummy that did would be testing your `switc
 domain does not have.
 
 A test whose subject is the refusal of an undeclared value does not draw that value: it is what the
-assertion is about, so it is chosen, not a dummy. Compute it from the declared members, so it stays
-undeclared when a member is added later:
+assertion is about, so it is chosen, not a dummy. Look it up rather than hard-coding it, so it stays
+undeclared when a member is added later: the first non-negative value no member declares, which never
+overflows, whatever values the members carry.
 
 ```csharp
-OrderStatus undeclared = (OrderStatus)(Enum.GetValues<OrderStatus>().Max(status => (int)status) + 1);
+OrderStatus undeclared = Enumerable.Range(0, int.MaxValue)
+                                   .Select(value => (OrderStatus)value)
+                                   .First(status => !Enum.IsDefined(status));
 ```
 
-On a `[Flags]` enumeration a combination of declared members is a defined value, so the value above the
-largest member may be one; take the first bit no member uses instead.
+On a `[Flags]` enumeration a combination of declared members is a defined value, which `Enum.IsDefined`
+does not see; take the first bit no member uses instead.
 
 Exclusions that empty the universe are refused by name, and the analyzer
 [JD017](../analyzers/JD017.en.md) reports the constant cases at build time. An exclusion list — an array or

@@ -23,7 +23,9 @@ namespace JustDummies.Xunit;
 ///         own seed rather than sharing one with its siblings. When several levels apply, the most specific one wins
 ///         for the duration of the test and the outer ones are restored after it — so an assembly-wide
 ///         <c>[Reproducible]</c> can pin the suite while one test replays a particular seed. Only the winning level's
-///         seed is reported on failure: the outer ones pinned nothing the test drew.
+///         seed is reported on failure: the outer ones pinned nothing the test drew. A test that failed without
+///         drawing from that seed — on a literal, or inside an <c>Any.Reproducibly(...)</c> of its own — reports
+///         nothing either: replaying a seed no value came from would reproduce nothing.
 ///     </para>
 ///     <para>
 ///         Pin <see cref="Seed" /> to replay a reported run. Left unset, a fresh seed is drawn for every test case.
@@ -88,7 +90,7 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
         int seed = _seed ?? NewSeed();
 
         Scope?      outer  = Open.Value;
-        IDisposable handle = Any.UseSeed(seed, ReplaySnippet(seed));
+        SeedScope   handle = Any.UseSeed(seed, ReplaySnippet(seed));
         Scope       scope;
         try {
             scope = new Scope(handle, seed, outer);
@@ -198,13 +200,13 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
         private int                           _reported;
         private int                           _active;
 
-        internal Scope(IDisposable handle, int seed, Scope? outer) {
+        internal Scope(SeedScope handle, int seed, Scope? outer) {
             Handle = handle;
             Seed   = seed;
             Outer  = outer;
         }
 
-        internal IDisposable Handle     { get; }
+        internal SeedScope   Handle     { get; }
         internal int         Seed       { get; }
         internal Scope?      Outer      { get; }
         internal bool        Superseded { get; private set; }
@@ -219,7 +221,7 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
 
         /// <summary>What to tell the reader about this scope's seed once the outcome is known.</summary>
         internal string? ReportOnOutcome(bool failed) {
-            return Superseded ? null : ReproducibleAttribute.ReportFor(failed, Seed);
+            return Superseded || !Handle.HasDrawn ? null : ReproducibleAttribute.ReportFor(failed, Seed);
         }
 
         /// <summary>Writes the failure report to <paramref name="output" /> if <paramref name="cancellation" /> fires.</summary>
@@ -251,8 +253,9 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
 
         private void ReportCancelled(ITestOutputHelper output) {
             // Registering can run this at once, on a token cancelled just after it was checked: the level is not in
-            // place yet, so its seed served no draw — and the report stays unclaimed for the after-hook to decide.
-            if (Volatile.Read(ref _active) == 0 || !TryClaimReport()) { return; }
+            // place yet, so its seed served no draw — and the report stays unclaimed for the after-hook to decide. A
+            // test cancelled before it drew from its seed has nothing to replay either, and leaves it unclaimed too.
+            if (Volatile.Read(ref _active) == 0 || !Handle.HasDrawn || !TryClaimReport()) { return; }
 
             try {
                 output.WriteLine(ReportFor(failed: true, Seed)!);

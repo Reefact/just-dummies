@@ -10,6 +10,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **Any `IAny<T>` takes an `Except` over a set of values.** `pitch.Except(alreadyUsed)`, or
+  `Except(a, b)`, redraws while the drawn value is one of them, in one bounded redraw for the whole set, and a
+  failure names every excluded value with the seed that replays it. It is `DifferentFrom` over a set: the
+  same rejective guarantee, the same definite refusal for a generator known to yield one excluded value, and
+  a typed builder keeps its own constructive `Except`, which the receiver's static type picks. An empty set
+  excludes nothing (issue #433, ADR-0133).
 - **Ten more rules come with a code fix**, thirteen in all. JD032 removes the looser of two bounds, JD035
   the declaration that repeats an earlier one, JD025 the value a pool lists twice or the character a
   `WithChars` pool repeats; JD013 draws from a held collection with `ElementOf`; JD005 and JD011 call

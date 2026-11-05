@@ -285,13 +285,23 @@ Ce sont deux garanties différentes sous un même nom, et le type statique du re
 du builder refuse une contradiction tout de suite, en nommant les deux contraintes, et les analyzers la voient
 à la compilation ; celle-ci ne voit rien avant `Generate()` ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.fr.md)).
 
-Il exclut une valeur. Une troisième valeur qui doit différer de deux autres l'enchaîne,
-`pitchGenerator.DifferentFrom(anyFirst).DifferentFrom(anySecond)`, et des valeurs qui doivent toutes
-différer forment une collection distincte, qui le dit en une déclaration :
-`Any.ListOf(pitchGenerator).WithCount(3).Distinct()`, ou `Any.SetOf(...)`, et `DistinctBy(key)` quand seule
-une clé doit différer ([Collections](../generators/collections.fr.md#distinction)). Une liste passée à
-`DifferentFrom` ne compile pas : le compilateur signale CS0411, un argument de type qu'il ne sait pas
-inférer, plutôt que la liste qu'il a reçue.
+Il exclut une valeur. Les valeurs que le test a déjà utilisées s'excluent ensemble avec `Except`, qui les prend
+sous forme de liste ou de séquence et retire tant que la valeur en fait partie — un seul retirage borné pour
+tout l'ensemble, et un échec qui les nomme toutes ([ADR-0133](../../for-maintainers/adr/0133-exclude-a-set-of-values-from-any-generator-by-redrawing.fr.md)) :
+
+```csharp
+IAny<string> pitchGenerator = Any.Combine(Any.OneOf("A", "B", "C"), Any.OneOf("3", "4"), (note, octave) => note + octave);
+List<string> alreadyUsed    = new List<string> { "A3", "B4" };
+
+string anyUnused = pitchGenerator.Except(alreadyUsed).Generate();
+```
+
+Là où l'exclusion porte sur un composant de la valeur, déclarez-la plutôt sur ce composant, où elle est vérifiée à
+la déclaration : l'`Except` propre d'un builder typé, `Any.Int32().Between(1, 50).Except(3, 7)`, ou le raffinement
+d'un générateur scaffoldé, `WithParcels(p => p.Except(0, 13))`. Des valeurs qui doivent toutes différer les unes
+des autres forment une collection distincte, qui le dit en une déclaration :
+`Any.ListOf(pitchGenerator).WithCount(3).Distinct()`, ou `Any.SetOf(...)`, et `DistinctBy(key)` quand seule une
+clé doit différer ([Collections](../generators/collections.fr.md#distinction)).
 
 Les valeurs sont comparées avec l'égalité par défaut du type, `EqualityComparer<T>.Default` : une
 implémentation d'`IEquatable<T>` ou un `Equals` redéfini. Un type référence qui n'a ni l'un ni l'autre compare des

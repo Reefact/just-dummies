@@ -348,6 +348,10 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **`BigInteger` has a recipe on the numbers page, and no factory.** Thirty-two bytes read as an unsigned
+  number draw any value below 2^256, `Any.Int64().Between(min, max).As(...)` draws a closed range exactly,
+  and a wider range folds the bytes onto its span. A first-class `Any.BigInteger()` is refused and recorded
+  under "Considered, not adopted": the type has no limit for a default to stop at (issue #434).
 - **Core concepts names the identity case.** A drawn object the assertion only checks by identity,
   `Assert.Same(anyCustomer, invoice.Customer)`, is strictly a property with a sample of one, not a dummy;
   the library tolerates it where the code under test passes the reference through unconditionally, and

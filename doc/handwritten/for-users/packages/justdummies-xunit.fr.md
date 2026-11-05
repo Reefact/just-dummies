@@ -163,11 +163,15 @@ lecteur chercher du code qui n'existe pas. L'adaptateur fournit son propre fragm
 seconde surcharge d'`Any.UseSeed` — la raison d'être de cette surcharge
 ([ADR-0017](../../for-maintainers/adr/0017-open-the-ambient-seed-scope-to-adapters.fr.md)).
 
-Quatre conséquences méritent d'être connues :
+Cinq conséquences méritent d'être connues :
 
 * **Une graine par cas de test**, si bien que chaque cas d'une `[Theory]` a la sienne au lieu d'en
   partager une.
 * **Un test vert reste silencieux.** La graine est une aide au diagnostic, pas une sortie.
+* **Un test qui n'a rien tiré reste silencieux lui aussi.** Un test qui échoue sur un littéral, ou dont
+  le corps s'exécute dans un `Any.Reproducibly(...)` qui lui est propre, n'a pas tiré de la graine de
+  l'attribut, et la rejouer ne reproduirait rien ; `Any.Reproducibly` rapporte sa propre graine.
+  L'adaptateur le lit sur la poignée que renvoie `Any.UseSeed` (`SeedScope.HasDrawn`).
 * **Un test qui expire reçoit lui aussi sa graine.** `[Fact(Timeout = ...)]` fait échouer le test et
   ferme sa sortie avant que le hook *after* ne s'exécute : la graine est donc écrite au moment où
   xUnit annule le test — une valeur tirée qui fait boucler le code est précisément le cas où vous en

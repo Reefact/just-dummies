@@ -37,6 +37,23 @@ public sealed class ReproducibleAttributeHookTests {
         return (Any.Int32().Generate(), Any.String().NonEmpty().Generate());
     }
 
+    /// <summary>A scope whose seed served a draw, already closed so it pins nothing for the rest of the run.</summary>
+    private static SeedScope DrawnScope() {
+        SeedScope scope = Any.UseSeed(0);
+        Any.Int32().Generate();
+        scope.Dispose();
+
+        return scope;
+    }
+
+    /// <summary>A scope whose seed served no draw, already closed so it pins nothing for the rest of the run.</summary>
+    private static SeedScope UndrawnScope() {
+        SeedScope scope = Any.UseSeed(0);
+        scope.Dispose();
+
+        return scope;
+    }
+
     #endregion
 
     [Fact(DisplayName = "A declared seed is the seed the attribute reports.")]
@@ -114,7 +131,7 @@ public sealed class ReproducibleAttributeHookTests {
         // failure too, must not write it a second time.
         RecordingOutput output = new();
         using CancellationTokenSource cancellation = new();
-        ReproducibleAttribute.Scope scope = new(NoHandle.Instance, 1234, null);
+        ReproducibleAttribute.Scope scope = new(DrawnScope(), 1234, null);
 
         scope.ReportOnCancellation(cancellation.Token, output);
         scope.Activate();
@@ -131,7 +148,7 @@ public sealed class ReproducibleAttributeHookTests {
         // must not reach a test that already finished, and the after-hook keeps the report for itself.
         RecordingOutput output = new();
         using CancellationTokenSource cancellation = new();
-        ReproducibleAttribute.Scope scope = new(NoHandle.Instance, 1234, null);
+        ReproducibleAttribute.Scope scope = new(DrawnScope(), 1234, null);
 
         scope.ReportOnCancellation(cancellation.Token, output);
         scope.Activate();
@@ -147,7 +164,7 @@ public sealed class ReproducibleAttributeHookTests {
         // That token belongs to a run being torn down before the test drew anything: there is no run to replay.
         RecordingOutput output = new();
         using CancellationTokenSource cancellation = new();
-        ReproducibleAttribute.Scope scope = new(NoHandle.Instance, 1234, null);
+        ReproducibleAttribute.Scope scope = new(DrawnScope(), 1234, null);
 
         cancellation.Cancel();
         scope.ReportOnCancellation(cancellation.Token, output);
@@ -158,7 +175,7 @@ public sealed class ReproducibleAttributeHookTests {
     [Fact(DisplayName = "A report the output no longer takes is dropped, not thrown into the cancellation.")]
     public void AClosedOutputDoesNotThrowIntoTheCancellation() {
         // An exception from a cancellation callback surfaces in whoever called Cancel -- here, xUnit's own timeout.
-        ReproducibleAttribute.Scope scope = new(NoHandle.Instance, 1234, null);
+        ReproducibleAttribute.Scope scope = new(DrawnScope(), 1234, null);
         using CancellationTokenSource cancellation = new();
 
         scope.ReportOnCancellation(cancellation.Token, new ClosedOutput());
@@ -173,7 +190,7 @@ public sealed class ReproducibleAttributeHookTests {
         // level is not in place, so its seed served no draw: nothing is written, and the after-hook still decides.
         RecordingOutput output = new();
         using CancellationTokenSource cancellation = new();
-        ReproducibleAttribute.Scope scope = new(NoHandle.Instance, 1234, null);
+        ReproducibleAttribute.Scope scope = new(DrawnScope(), 1234, null);
 
         scope.ReportOnCancellation(cancellation.Token, output);
         cancellation.Cancel();
@@ -195,6 +212,7 @@ public sealed class ReproducibleAttributeHookTests {
         try {
             inner.Before(null!, null!);
             ReproducibleAttribute.Scope innerScope = ReproducibleAttribute.Innermost!;
+            Any.Int32().Generate();
             inner.After(null!, null!);
 
             Check.That(innerScope.ReportOnOutcome(failed: true)).Contains("[JustDummies.Xunit.Reproducible(Seed = 222)]");
@@ -212,11 +230,59 @@ public sealed class ReproducibleAttributeHookTests {
         attribute.Before(null!, null!);
         ReproducibleAttribute.Scope scope = ReproducibleAttribute.Innermost!;
         try {
+            Any.Int32().Generate();
+
             Check.That(scope.ReportOnOutcome(failed: true)).Contains("[JustDummies.Xunit.Reproducible(Seed = 111)]");
             Check.That(scope.ReportOnOutcome(failed: false)).IsNull();
         } finally {
             attribute.After(null!, null!);
         }
+    }
+
+    [Fact(DisplayName = "A level whose test drew nothing reports nothing.")]
+    public void ALevelNothingDrewFromReportsNothing() {
+        // Issue #440: a test that failed on a literal was told a seed no value came from, and sent looking for a
+        // drawn value that did not exist.
+        ReproducibleAttribute attribute = new() { Seed = 111 };
+
+        attribute.Before(null!, null!);
+        ReproducibleAttribute.Scope scope = ReproducibleAttribute.Innermost!;
+        try {
+            Check.That(scope.ReportOnOutcome(failed: true)).IsNull();
+        } finally {
+            attribute.After(null!, null!);
+        }
+    }
+
+    [Fact(DisplayName = "A level whose test drew only inside its own Reproducibly reports nothing.")]
+    public void ALevelWhoseTestDrewUnderItsOwnSeedReportsNothing() {
+        // The double line of issue #440: under [assembly: Reproducible], a body wrapped in Any.Reproducibly draws from
+        // the inner seed, which Any.Reproducibly reports itself; the attribute's seed served nothing.
+        ReproducibleAttribute attribute = new() { Seed = 111 };
+
+        attribute.Before(null!, null!);
+        ReproducibleAttribute.Scope scope = ReproducibleAttribute.Innermost!;
+        try {
+            Any.Reproducibly(222, () => { Any.Int32().Generate(); });
+
+            Check.That(scope.ReportOnOutcome(failed: true)).IsNull();
+        } finally {
+            attribute.After(null!, null!);
+        }
+    }
+
+    [Fact(DisplayName = "A cancelled test that drew nothing is not told a seed, and leaves the report open.")]
+    public void ACancelledTestThatDrewNothingIsToldNothing() {
+        RecordingOutput output = new();
+        using CancellationTokenSource cancellation = new();
+        ReproducibleAttribute.Scope scope = new(UndrawnScope(), 1234, null);
+
+        scope.ReportOnCancellation(cancellation.Token, output);
+        scope.Activate();
+        cancellation.Cancel();
+
+        Check.That(output.Lines).IsEmpty();
+        Check.That(scope.TryClaimReport()).IsTrue();
     }
 
     [Fact(DisplayName = "A superseded level stays silent on a cancellation too.")]
@@ -225,8 +291,8 @@ public sealed class ReproducibleAttributeHookTests {
         // timeout must not print it either -- only the innermost level, which listens on the same token, does.
         RecordingOutput output = new();
         using CancellationTokenSource cancellation = new();
-        ReproducibleAttribute.Scope outer = new(NoHandle.Instance, 111, null);
-        ReproducibleAttribute.Scope inner = new(NoHandle.Instance, 222, outer);
+        ReproducibleAttribute.Scope outer = new(DrawnScope(), 111, null);
+        ReproducibleAttribute.Scope inner = new(DrawnScope(), 222, outer);
 
         outer.ReportOnCancellation(cancellation.Token, output);
         outer.Activate();
@@ -240,14 +306,6 @@ public sealed class ReproducibleAttributeHookTests {
     }
 
     #region Nested types
-
-    private sealed class NoHandle : IDisposable {
-
-        internal static readonly NoHandle Instance = new();
-
-        public void Dispose() { }
-
-    }
 
     private sealed class RecordingOutput : ITestOutputHelper {
 

@@ -28,6 +28,12 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
 
 ### Fixed
 
+- **`[Reproducible]` no longer reports a seed for a failing test that drew nothing.** A test failing on a
+  literal was told "These arbitrary values were seeded with …" and sent looking for a drawn value that did
+  not exist; under `[assembly: Reproducible]`, a body wrapped in `Any.Reproducibly(...)` printed two seed
+  lines, one naming a seed nothing used. The adapter now reads `SeedScope.HasDrawn` and stays silent, on a
+  failure and on a timeout alike, when the test did not draw from its seed. Needs the JustDummies release
+  that carries `SeedScope` (issue #440, ADR-0134).
 - **The replay line a failing test prints compiles where it is pasted.** The report said
   `[Reproducible(Seed = N)]`, which fails with `CS0246` in a test file without `using JustDummies.Xunit;` —
   the package adds no global using, and the IDE quick fix, not the message, was what resolved it. The line

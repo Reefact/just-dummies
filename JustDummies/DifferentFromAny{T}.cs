@@ -59,12 +59,30 @@ internal sealed class DifferentFromAny<T> : IAny<T>, IHasRandomSource, IReproduc
 
     /// <inheritdoc />
     public T Generate() {
+        if (YieldsOnlyTheExcludedValue()) { throw OnlyTheExcludedValue(); }
+
         for (int attempt = 0; attempt < RedrawBudget; attempt++) {
             T drawn = _underlying.Generate();
             if (!EqualityComparer<T>.Default.Equals(drawn, _excluded)) { return drawn; }
         }
 
         throw Exhausted();
+    }
+
+    /// <summary>
+    ///     Whether the operand is known to yield the excluded value and nothing else: a domain of one value that holds
+    ///     it. Both answers are given under the default equality, the one this exclusion compares with, so no redraw
+    ///     could ever succeed — a certainty rather than a budget spent (issue #432).
+    /// </summary>
+    private bool YieldsOnlyTheExcludedValue() {
+        return _underlying is ICardinalityHint<T> hint && hint.DistinctCardinality == 1 && hint.Contains(_excluded);
+    }
+
+    /// <summary>
+    ///     The definite refusal. It carries no seed: nothing was drawn to decide it, and any seed would refuse the same.
+    /// </summary>
+    private AnyGenerationException OnlyTheExcludedValue() {
+        return new AnyGenerationException($"Could not draw a value different from {AnyDerivation.Display(_excluded)}: the generator yields only that value.");
     }
 
     private AnyGenerationException Exhausted() {

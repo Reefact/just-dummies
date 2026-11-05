@@ -237,7 +237,9 @@ from the generator ([ADR-0118](../../for-maintainers/adr/0118-return-a-literal-t
 Every typed builder carries a `DifferentFrom` of its own, checked when it is declared. A generator seen
 only as an `IAny<T>` — one built by `As` or `Combine`, a scaffolded one — gets one too: it redraws while
 the value equals the one given, a bounded number of times, and fails with its seed when the generator
-yields nothing else.
+yields nothing else. A generator already known to yield that value alone — `Any.Fixed(value)`, a value
+set of one, a builder pinned to one value — is refused at its first `Generate()` without a redraw, with
+a message saying so rather than reporting a spent budget.
 
 ```csharp
 IAny<string> pitchGenerator = Any.Combine(Any.OneOf("A", "B", "C"), Any.OneOf("3", "4"), (note, octave) => note + octave);

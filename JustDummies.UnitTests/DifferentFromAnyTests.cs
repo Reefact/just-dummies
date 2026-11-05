@@ -37,13 +37,45 @@ public sealed class DifferentFromAnyTests {
 
     [Fact(DisplayName = "A generator that yields nothing else fails loudly after the bounded redraw, with its seed.")]
     public void AGeneratorThatYieldsNothingElseFailsLoudly() {
-        IAny<int> pinned = Any.WithSeed(9).Int32().Between(5, 5);
+        // Derived through As, the generator advertises no domain, so only the bounded redraw can find it out.
+        IAny<int> pinned = Any.WithSeed(9).Int32().Between(5, 5).As(value => value);
 
         Check.ThatCode(() => pinned.DifferentFrom(5).Generate())
              .Throws<AnyGenerationException>()
              .WithProperty(caught => caught.Seed, 9)
              .And.WhichMember(caught => caught.Message)
              .Contains("different from 5", "Any.WithSeed(9)");
+    }
+
+    [Theory(DisplayName = "A generator known to yield only the excluded value is refused at once, with a definite message (issue #432).")]
+    [InlineData("fixed")]
+    [InlineData("one-value set")]
+    public void AGeneratorKnownToYieldOnlyTheExcludedValueIsRefusedDefinitely(string shape) {
+        IAny<string> single = shape switch {
+            "fixed" => Any.Fixed("ORD-1"),
+            _       => Any.OneOf("ORD-1")
+        };
+
+        Check.ThatCode(() => single.DifferentFrom("ORD-1").Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(caught => caught.Message)
+             .Contains("different from \"ORD-1\"", "the generator yields only that value")
+             .And.Not.Contains("draws in a row", "rather than a proof");
+    }
+
+    [Fact(DisplayName = "A typed builder pinned to one value, seen as IAny, is refused at once with the definite message too.")]
+    public void APinnedBuilderSeenAsIAnyIsRefusedDefinitely() {
+        IAny<int> pinned = Any.Int32().Between(5, 5);
+
+        Check.ThatCode(() => pinned.DifferentFrom(5).Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(caught => caught.Message)
+             .IsEqualTo("Could not draw a value different from 5: the generator yields only that value.");
+    }
+
+    [Fact(DisplayName = "A single-valued generator excluding another value still yields its own.")]
+    public void ASingleValuedGeneratorExcludingAnotherValueYieldsItsOwn() {
+        Check.That(Any.Fixed("ORD-1").DifferentFrom("ORD-2").Generate()).IsEqualTo("ORD-1");
     }
 
     [Fact(DisplayName = "The static type picks the guarantee: a typed builder refuses at declaration, IAny refuses at generation.")]

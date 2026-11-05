@@ -74,7 +74,10 @@ après un changement de règle.
 
 Une valeur dont le scénario a besoin mais que l'assertion ne vérifie pas — le statut en attente dont une
 commande a besoin pour qu'une remise s'applique — est un prérequis : épinglez-la, et laissez le reste tiré.
-Voir [Arbitraire ne veut pas dire dummy](./core-concepts.fr.md#arbitraire-ne-veut-pas-dire-dummy).
+Voir [Arbitraire ne veut pas dire dummy](./core-concepts.fr.md#arbitraire-ne-veut-pas-dire-dummy). Un
+objet que l'assertion ne vérifie que par son identité — `Assert.Same(anyCustomer, invoice.Customer)` — est
+une propriété triviale que la bibliothèque tolère, tant que rien ne lit son contenu ; voir
+[Un objet qui n'atteint l'assertion que par son identité](./core-concepts.fr.md#un-objet-qui-natteint-lassertion-que-par-son-identité).
 
 ### Le code testé prend sa propre graine. Dois-je la tirer ?
 

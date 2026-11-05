@@ -246,7 +246,9 @@ par tout ce que le générateur construit ([ADR-0118](../../for-maintainers/adr/
 Chaque builder typé porte un `DifferentFrom` qui lui est propre, vérifié à la déclaration. Un générateur vu
 seulement comme un `IAny<T>` — construit par `As` ou `Combine`, ou scaffoldé — en reçoit un aussi : il
 retire tant que la valeur égale celle donnée, un nombre borné de fois, et échoue avec sa graine quand le
-générateur ne produit rien d'autre.
+générateur ne produit rien d'autre. Un générateur dont on sait déjà qu'il ne produit que cette valeur —
+`Any.Fixed(value)`, un ensemble d'une seule valeur, un builder épinglé sur une valeur — est refusé dès son
+premier `Generate()`, sans retirage, avec un message qui le dit au lieu de rapporter un budget épuisé.
 
 ```csharp
 IAny<string> pitchGenerator = Any.Combine(Any.OneOf("A", "B", "C"), Any.OneOf("3", "4"), (note, octave) => note + octave);

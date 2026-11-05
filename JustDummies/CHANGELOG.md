@@ -387,6 +387,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`DifferentFrom` on an `IAny<T>` refuses a single-valued generator with a definite message.**
+  `Any.Fixed(s).DifferentFrom(s)` spent its 1,000 redraws and reported an exhausted budget, "rather than
+  a proof", although the generator already knew its domain held that one value. When the operand is known
+  to yield only the excluded value — `Any.Fixed`, a value set of one, a builder pinned to one value — the
+  first `Generate()` now refuses at once: "the generator yields only that value". The refusal still
+  happens at generation, as ADR-0121 has it, and the bounded redraw keeps its message for every other
+  generator (issue #432).
 - **An astral class range in `Any.StringMatching` is refused legibly.** `[\U00020000-\U00020010]` is
   read, as the .NET engine reads it, in UTF-16 code units, which makes it a reversed range between two
   surrogates; the refusal printed them raw, and a UTF-8 console showed two U+FFFD. It now prints each as

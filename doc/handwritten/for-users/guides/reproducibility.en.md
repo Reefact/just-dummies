@@ -170,7 +170,7 @@ discarding the task returned by `ReproduciblyAsync` is [JD002](../analyzers/JD00
 When the code to pin cannot be wrapped in a delegate, open a scope instead and dispose it when done:
 
 ```csharp
-using (IDisposable scope = Any.UseSeed(1743029518)) {
+using (SeedScope scope = Any.UseSeed(1743029518)) {
     OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
     string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
@@ -193,7 +193,7 @@ adapter wants embedded in failure guidance, so the message names the code a read
 change:
 
 ```csharp
-using (IDisposable scope = Any.UseSeed(1743029518, "[Reproducible(Seed = 1743029518)]")) {
+using (SeedScope scope = Any.UseSeed(1743029518, "[Reproducible(Seed = 1743029518)]")) {
     Assert.True(Any.Int32().Positive().Generate() > 0);
 }
 ```

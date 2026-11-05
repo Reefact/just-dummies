@@ -176,7 +176,7 @@ Quand le code à épingler ne peut pas être enveloppé dans un délégué, ouvr
 à la fin :
 
 ```csharp
-using (IDisposable scope = Any.UseSeed(1743029518)) {
+using (SeedScope scope = Any.UseSeed(1743029518)) {
     OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
     string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
@@ -200,7 +200,7 @@ adaptateur veut voir figurer dans les conseils d'échec, pour que le message nom
 lecteur doit réellement modifier :
 
 ```csharp
-using (IDisposable scope = Any.UseSeed(1743029518, "[Reproducible(Seed = 1743029518)]")) {
+using (SeedScope scope = Any.UseSeed(1743029518, "[Reproducible(Seed = 1743029518)]")) {
     Assert.True(Any.Int32().Positive().Generate() > 0);
 }
 ```

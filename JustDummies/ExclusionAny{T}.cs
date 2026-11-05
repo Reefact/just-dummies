@@ -7,7 +7,7 @@ namespace JustDummies;
 ///     producing excluded values exhausts one bounded redraw and fails with its seed (ADR-0121, ADR-0133).
 /// </summary>
 /// <typeparam name="T">The type of the generated values.</typeparam>
-internal sealed class ExclusionAny<T> : IAny<T>, IHasRandomSource, IReproducibilityHint, ICardinalityHint<T> {
+internal sealed class ExclusionAny<T> : IAny<T>, IHasRandomSource, IReproducibilityHint, IComparerSensitiveCardinality<T> {
 
     #region Statics members declarations
 
@@ -52,18 +52,34 @@ internal sealed class ExclusionAny<T> : IAny<T>, IHasRandomSource, IReproducibil
     bool IReproducibilityHint.DrawsOnlyFromSource => _drawsOnlyFromSource;
 
     /// <summary>The operand's bound, less every excluded value the operand could draw.</summary>
-    long? ICardinalityHint<T>.DistinctCardinality {
-        get {
-            long? bound = AnyDerivation.CardinalityOf(_underlying);
-            if (bound is not long count || _underlying is not ICardinalityHint<T> hint) { return bound; }
+    long? ICardinalityHint<T>.DistinctCardinality => Remaining(AnyDerivation.CardinalityOf(_underlying));
 
-            return Math.Max(0, count - _excluded.Count(hint.Contains));
+    /// <summary>
+    ///     The operand's bound under a comparer of the collection's own, less every excluded value the operand could
+    ///     draw — or <c>null</c> where the operand cannot count that far.
+    /// </summary>
+    /// <remarks>
+    ///     An excluded value is removed under the default equality, so under a finer comparer it removes every spelling
+    ///     of it: at least one value each, which keeps the difference an upper bound. A comparer-sensitive operand is
+    ///     asked for its own answer, and anything else gives the bound it gives by default (ADR-0069).
+    /// </remarks>
+    long? IComparerSensitiveCardinality<T>.CardinalityUnderACustomComparer {
+        get {
+            return Remaining(_underlying is IComparerSensitiveCardinality<T> sensitive
+                                 ? sensitive.CardinalityUnderACustomComparer
+                                 : AnyDerivation.CardinalityOf(_underlying));
         }
     }
 
     /// <summary>Whether <paramref name="value" /> is one the operand could draw and not an excluded one.</summary>
     bool ICardinalityHint<T>.Contains(T value) {
         return !_excludedSet.Contains(value) && _underlying is ICardinalityHint<T> hint && hint.Contains(value);
+    }
+
+    private long? Remaining(long? bound) {
+        if (bound is not long count || _underlying is not ICardinalityHint<T> hint) { return bound; }
+
+        return Math.Max(0, count - _excluded.Count(hint.Contains));
     }
 
     /// <inheritdoc />

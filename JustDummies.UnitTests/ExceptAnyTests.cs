@@ -97,6 +97,21 @@ public sealed class ExceptAnyTests {
         Check.ThatCode(() => Any.SetOf(four.Except(2, 3)).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
     }
 
+    [Fact(DisplayName = "A comparer finer than the default still sees the spellings left after an exclusion (ADR-0069).")]
+    public void AComparerFinerThanTheDefaultSeesTheSpellingsLeft() {
+        // Two instants, each across a one-minute offset range. Excluding the first by its instant leaves one instant,
+        // one value by default and two under EqualsExact: two distinct spellings are satisfiable, and were refused
+        // when the exclusion forwarded the default bound to a collection carrying its own comparer.
+        DateTimeOffset       start       = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        IAny<DateTimeOffset> twoInstants = Any.DateTimeOffset().Between(start, start.AddTicks(1)).WithOffsetBetween(TimeSpan.Zero, TimeSpan.FromMinutes(1));
+
+        List<DateTimeOffset> viaExcept        = Any.ListOf(twoInstants.Except(start)).WithCount(2).Distinct(new BySpellingComparer()).Generate();
+        List<DateTimeOffset> viaDifferentFrom = Any.ListOf(twoInstants.DifferentFrom(start)).WithCount(2).Distinct(new BySpellingComparer()).Generate();
+
+        Check.That(viaExcept.Select(value => value.UtcTicks).Distinct()).ContainsExactly(start.AddTicks(1).UtcTicks);
+        Check.That(viaDifferentFrom.Select(value => value.UtcTicks).Distinct()).ContainsExactly(start.AddTicks(1).UtcTicks);
+    }
+
     [Fact(DisplayName = "The redraw replays: the same seed yields the same values.")]
     public void TheRedrawReplays() {
         Check.That(Draws(13)).ContainsExactly(Draws(13));
@@ -106,6 +121,18 @@ public sealed class ExceptAnyTests {
 
             return Enumerable.Range(0, 50).Select(_ => generator.Except(1, 3).Generate()).ToList();
         }
+    }
+
+    private sealed class BySpellingComparer : IEqualityComparer<DateTimeOffset> {
+
+        public bool Equals(DateTimeOffset x, DateTimeOffset y) {
+            return x.EqualsExact(y);
+        }
+
+        public int GetHashCode(DateTimeOffset obj) {
+            return obj.Offset.GetHashCode() ^ obj.DateTime.GetHashCode();
+        }
+
     }
 
 }

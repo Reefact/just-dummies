@@ -49,6 +49,14 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
   reproduced nothing, and with unset seeds nothing told the real line from the others. A level that
   another opens on top of is now superseded and reports nothing; the innermost one reports as before.
 
+### Documentation
+
+- **The adapter page covers keeping a seed and two C# limits.** A replay seed works at any level, the
+  assembly attribute being changed rather than added (CS0579), and a defect-revealing seed stays
+  runnable on demand with `[Fact(Explicit = true)]` and `--explicit only`. The page also names two C#
+  limits on `[InlineData]`: a `decimal` passed as a string, and a lone surrogate arriving as U+FFFD
+  (issues #449, #451).
+
 ## [1.0.0-preview.2] - 2026-09-02
 
 ### Changed

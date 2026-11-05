@@ -313,9 +313,14 @@ public sealed class SeedDeterminismProperties {
                         // An empty sentinel doubles as the never-reported case: it can contain no seed either way.
                         string                    reported = string.Empty;
                         InvalidOperationException boom     = new("boom");
-                        // Explicitly typed: a throw-expression lambda converts to both Action and Func<Task>, so an
-                        // inline one would make the overload ambiguous.
-                        Action     failing = () => throw boom;
+                        // Explicitly typed: a lambda that only throws converts to both Action and Func<Task>, so an
+                        // inline one would make the overload ambiguous. It draws first: a body that drew nothing is
+                        // told no seed, since replaying one would reproduce nothing (issue #440).
+                        Action     failing = () => {
+                            Any.Int32().Generate();
+
+                            throw boom;
+                        };
                         Exception? caught  = null;
 
                         try {

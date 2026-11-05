@@ -20,12 +20,14 @@ internal sealed class AmbientRandomSource : RandomSource {
         return Guid.NewGuid().GetHashCode();
     }
 
-    internal static IDisposable UseSeed(int seed) {
+    internal static SeedScope UseSeed(int seed) {
         return UseSeed(seed, null);
     }
 
-    internal static IDisposable UseSeed(int seed, string? replaySnippet) {
-        return Use(new SeededRandom(seed), replaySnippet);
+    internal static SeedScope UseSeed(int seed, string? replaySnippet) {
+        SeededRandom random = new(seed);
+
+        return new SeedScope(random, Use(random, replaySnippet));
     }
 
     /// <summary>
@@ -45,7 +47,7 @@ internal sealed class AmbientRandomSource : RandomSource {
         AmbientState frame = new(random, replaySnippet, State.Value);
         State.Value = frame;
 
-        return new SeedScope(frame);
+        return new FrameRelease(frame);
     }
 
     #endregion
@@ -104,7 +106,7 @@ internal sealed class AmbientRandomSource : RandomSource {
     ///     One frame of the ambient seed stack a scope installs: the seeded generator, how to replay the run that uses
     ///     it, and the frame it was pushed on top of. The frames form a linked stack (each points at its
     ///     <see cref="Parent" />) so a scope disposed out of order can be removed without stranding the ones still open
-    ///     — see <see cref="SeedScope" />. <see cref="Disposed" /> tombstones a frame whose scope has closed but which is
+    ///     — see <see cref="FrameRelease" />. <see cref="Disposed" /> tombstones a frame whose scope has closed but which is
     ///     not yet the top of the stack, so the top's later disposal can skip past it.
     /// </summary>
     private sealed class AmbientState {
@@ -135,19 +137,19 @@ internal sealed class AmbientRandomSource : RandomSource {
     }
 
     /// <summary>
-    ///     The handle returned by <see cref="UseSeed(int, string?)" />. Disposal is <b>order-independent</b>: it
+    ///     What disposing a scope opened by <see cref="Use" /> runs. Disposal is <b>order-independent</b>: it
     ///     tombstones its own frame, and only the frame that is currently the top of the stack rewrites the ambient
     ///     slot — walking past any tombstoned ancestors to the nearest frame whose scope is still open (or to
     ///     <c>null</c> when none is). So the documented "scopes nest, disposing restores whatever was pinned before"
     ///     holds even when scopes are disposed out of order: an outer scope closed early strands nothing, and no order
     ///     leaves a dead seed pinned for whatever runs next. Disposing twice is a no-op.
     /// </summary>
-    private sealed class SeedScope : IDisposable {
+    private sealed class FrameRelease : IDisposable {
 
         private readonly AmbientState _frame;
         private          bool         _disposed;
 
-        internal SeedScope(AmbientState frame) {
+        internal FrameRelease(AmbientState frame) {
             if (frame is null) { throw new ArgumentNullException(nameof(frame)); }
 
             _frame = frame;

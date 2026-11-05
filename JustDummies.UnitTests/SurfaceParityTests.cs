@@ -77,6 +77,7 @@ public sealed class SurfaceParityTests {
         return returnType != typeof(AnyContext)
             && returnType != typeof(void)
             && returnType != typeof(IDisposable)
+            && returnType != typeof(SeedScope)
             && !typeof(Task).IsAssignableFrom(returnType);
     }
 

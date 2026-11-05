@@ -26,8 +26,10 @@ int anySecond = anyQuantity.Generate();
 ```
 
 Généralement, pas toujours : deux tirages peuvent être égaux, et c'est une issue valide de ce qui a été
-déclaré. Quand le code a besoin qu'ils diffèrent, c'est une contrainte à déclarer —
-`anyQuantity.DifferentFrom(anyFirst)` — et non une probabilité sur laquelle compter.
+déclaré. Quand le code a besoin qu'ils diffèrent, c'est une contrainte à déclarer sur le second tirage —
+`int anySecond = anyQuantity.DifferentFrom(anyFirst).Generate();` — et non une probabilité sur laquelle
+compter. `DifferentFrom` renvoie un nouveau générateur et laisse `anyQuantity` tel quel : on tire donc
+directement de lui.
 
 C'est la distinction sur laquelle repose toute l'API, et la raison pour laquelle le paquet embarque
 des analyzers : une recette et une valeur satisfont beaucoup des mêmes signatures, le compilateur ne

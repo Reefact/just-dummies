@@ -104,9 +104,11 @@ public static class AnyExtensions {
     ///         This is the <b>rejective</b> exclusion, and it differs from the <c>DifferentFrom</c> the typed builders
     ///         carry. Theirs is constructive: an exclusion in the builder's own specification, checked when it is
     ///         declared, so <c>Any.Int32().OneOf(5).DifferentFrom(5)</c> is refused at once, naming both constraints,
-    ///         and the analyzers see it at build time. This one sees nothing before <see cref="IAny{T}.Generate" />,
-    ///         then redraws a bounded number of times and fails with its seed when every draw produced the excluded
-    ///         value — at once for a generator pinned to it (ADR-0121).
+    ///         and the analyzers see it at build time. This one sees nothing before <see cref="IAny{T}.Generate" />
+    ///         (ADR-0121). There, a generator already known to yield the excluded value alone — <c>Any.Fixed</c>, a
+    ///         value set of one, a builder pinned to one value — is refused at once, without a redraw and without a
+    ///         seed, since no draw decides it. Any other generator redraws a bounded number of times and fails with
+    ///         its seed, when it draws from one, if every draw produced the excluded value.
     ///     </para>
     ///     <para>
     ///         C# picks between the two from the receiver's <b>static</b> type: on a typed builder the builder's own wins,

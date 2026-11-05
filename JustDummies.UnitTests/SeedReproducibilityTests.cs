@@ -57,7 +57,6 @@ public sealed class SeedReproducibilityTests {
     }
 
     /// <summary>Fails the way a body does after it drew: the seed served a draw, so it has something to replay.</summary>
-    [DoesNotReturn]
     private static void DrawThenThrow(Exception failure) {
         Any.Int32().Generate();
 

@@ -281,7 +281,7 @@ or `Any.SetOf(...)`, and `DistinctBy(key)` when only a key must differ
 compile: the compiler reports CS0411, a type argument it cannot infer, rather than the list it was given.
 
 Values are compared with the type's default equality, `EqualityComparer<T>.Default`: an implementation of
-`IEquatable<T>` or an overridden `Equals`. A type with neither compares references, so the same instance is
+`IEquatable<T>` or an overridden `Equals`. A reference type with neither compares references, so the same instance is
 still excluded, but a separately created one with the same fields counts as different and gets through,
 though a reader would call it the same value — the caveat
 [distinctness](../generators/collections.en.md#distinctness) carries too.

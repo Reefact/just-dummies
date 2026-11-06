@@ -98,6 +98,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **A string guarded by a regex is drawn through `IAny<string>`, so `Any.StringMatching` is a one-line
+  swap.** The guard is still not read: the library builds from its regular subset only, and `any` may not
+  ask it which patterns those are. Its recipe was typed `AnyString`, and trading the base for the
+  `AnyPattern` that `Any.StringMatching` returns meant retyping four places, the friction three trials
+  measured. The recipe field, the factory and the `With…` lambda are now typed `IAny<string>`, and the TODO
+  names the one line: `return Any.StringMatching("…")` in `AnyValid…()`, when the library generates from
+  the pattern. A refinement on that parameter keeps `DifferentFrom` and `Except`, all an `AnyPattern`
+  offers (issue #477).
 - **A rule the tool cannot read between two paired parameters says where it belongs.** An order plus a
   maximum gap — `if (start >= end)` and `if (end.DayNumber - start.DayNumber > 31)` — drew the order
   through `Any.Pair` and marked the gap `ties end to start` in both recipes, where narrowing either side

@@ -1531,8 +1531,8 @@ difference: a generator **was** inferred here, and it stays as the factory's wor
 than being thrown away.
 
 ```csharp
-    private static AnyString AnyValidName() {
-        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithName — then delete these two lines.
+    private static IAny<string> AnyValidName() {
+        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": if the library generates from it, return Any.StringMatching("^[A-Z][a-z]+$") below; the recipe is typed IAny<string> for that, so nothing else changes — then delete these two lines.
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String();
@@ -1573,9 +1573,11 @@ pair's method is the one place both are drawn together, and the recipes the sent
 one side of it (#459). **A regex guard quotes its pattern and names the retype** (#374): where the guard
 calls `Regex.IsMatch(p, "…")`, the `IsMatch` of a `[GeneratedRegex]` method, or that of a `Regex`
 field built from a constant, the line quotes the pattern — the one thing the developer copies into
-`Any.StringMatching` if it lies in the library's regular subset — and says that the call returns an
-`AnyPattern`, with the four places the old builder type has to be retyped, which users met as a
-compile error first, five times per domain in one context. The statement named is the one
+`Any.StringMatching` if it lies in the library's regular subset — and names that call. The recipe of a
+`string` parameter so guarded is typed `IAny<string>` rather than `AnyString`, so the call, which returns an
+`AnyPattern`, replaces the base in `AnyValid…()` alone (#477): typed as the builder, it had to be retyped in
+four places, which users met as a compile error first, five times per domain in one context. Nothing is lost,
+since an `AnyPattern` offers what `IAny<string>` offers — `DifferentFrom` and `Except`. The statement named is the one
 that throws — the `if` whose branch throws, never the loop, the `try` or the `using` around it, which
 tests nothing and where the first trial's readers were sent to search again (#371). A mark the place
 does not explain says why it marks: the fallback of ADR-0110 marks every parameter where what decides
@@ -2590,7 +2592,10 @@ sees no change. This is also the answer to the shadowing warning of §7.
 subset of the pattern language only, and an unsupported pattern throws at construction — which
 would make the whole emitted type unusable. Reaching for it needs the subset question answered
 first: either the engine validates a pattern without referencing the library (which D9 forbids
-today), or the library offers a way to ask.
+today), or the library offers a way to ask. The retype the third trial measured is gone without it
+(#477): the recipe is already typed for `Any.StringMatching`, so a library question added later would
+only spare the developer that one line, and only for the patterns inside the subset — about one in five
+realistic ones (§14).
 
 **Other deferred items.** `--all`; `init` / `required` members and property-only construction;
 `AnyContext` support (D7); an `--ctor` selector when several constructors compete; extending §5.3

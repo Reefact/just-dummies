@@ -372,9 +372,9 @@ public static class GeneratorEmitter {
 
         if (unread.Pattern is { } pattern) {
             line.Append(" — a regex, ").Append(SymbolDisplay.FormatLiteral(pattern, quote: true))
-                .Append(": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype ")
-                .Append(parameter.GeneratorType).Append(" to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of With")
-                .Append(parameter.PascalCasedName);
+                .Append(": if the library generates from it, return Any.StringMatching(")
+                .Append(SymbolDisplay.FormatLiteral(pattern, quote: true))
+                .Append(") below; the recipe is typed ").Append(parameter.GeneratorType).Append(" for that, so nothing else changes");
         }
 
         line.Append(" — then delete these two lines.");

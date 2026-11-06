@@ -1067,9 +1067,54 @@ public sealed class GuardReadingTests {
         Check.That(unread.Excerpt).StartsWith("if (!Regex.IsMatch(value, \"^[A-Z]+$\"))");
         Check.That(outcome.File!.SourceText).Contains("// TODO(any): verify against line 11: if (!Regex.IsMatch(value");
         Check.That(unread.Pattern).IsEqualTo("^[A-Z]+$");
-        Check.That(outcome.File.SourceText).Contains("a regex, \"^[A-Z]+$\": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithValue — then delete these two lines.");
+        Check.That(outcome.File.SourceText).Contains("a regex, \"^[A-Z]+$\": if the library generates from it, return Any.StringMatching(\"^[A-Z]+$\") below; the recipe is typed IAny<string> for that, so nothing else changes — then delete these two lines.");
         Check.That(outcome.File.SourceText).Contains("// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read;");
         Check.That(outcome.File.SourceText).Not.Contains("§9");
+    }
+
+    /// <summary>
+    ///     A string guarded by a regex is drawn through <c>IAny&lt;string&gt;</c>, so trading its base for
+    ///     <c>Any.StringMatching</c> is the one line the verification comment names.
+    /// </summary>
+    /// <remarks>
+    ///     The guard is not read: the library builds from its regular subset only, and the engine may not ask it which
+    ///     patterns those are (ADR-0063). Typed as the builder, the recipe made the developer retype it in four places
+    ///     once they swapped the base for the <c>AnyPattern</c> that call returns — the friction three trials measured
+    ///     (#477). The swapped file must compile as it stands, nullable parameter included.
+    /// </remarks>
+    [Theory(DisplayName = "A regex-guarded string is typed so that Any.StringMatching is a one-line change.")]
+    [InlineData("string",  "value")]
+    [InlineData("string?", "value!")]
+    public void ARegexGuardedStringIsTypedForTheOneLineSwap(string parameterType, string argument) {
+        string domain = $$"""
+                          using System;
+                          using System.Text.RegularExpressions;
+
+                          namespace Shop.Domain;
+
+                          public sealed class Subject {
+
+                              public Subject({{parameterType}} value) {
+                                  if (!Regex.IsMatch({{argument}}, "^[A-Z]+$")) { throw new ArgumentException(nameof(value)); }
+                              }
+
+                          }
+                          """;
+
+        ScaffoldOutcome outcome = Subject.Scaffold(domain);
+        string          emitted = outcome.File!.SourceText;
+
+        Check.That(outcome.Plan!.Parameters.Single().UnreadGuard!.Pattern).IsEqualTo("^[A-Z]+$");
+        Check.That(emitted).Contains("private static IAny<string> AnyValidValue()", "Func<IAny<string>, IAny<string>> configure");
+
+        string[] lines   = emitted.Split('\n');
+        int      factory = Array.FindIndex(lines, line => line.Contains("IAny<string> AnyValidValue()"));
+        int      body    = Array.FindIndex(lines, factory, line => line.TrimStart().StartsWith("return ", StringComparison.Ordinal));
+        lines[body] = "        return Any.StringMatching(\"^[A-Z]+$\");";
+        string swapped = string.Join("\n", lines.Where(line => !line.Contains("TODO(any): verify") && !line.Contains("_ = TODO_verify_")));
+
+        Check.That(swapped).Contains("return Any.StringMatching(\"^[A-Z]+$\");");
+        Check.That(EmittedCodeCompiler.ErrorsIn(EmittedCodeCompiler.CompileWith(swapped, domain))).IsEmpty();
     }
 
     /// <summary>

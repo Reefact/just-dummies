@@ -75,8 +75,9 @@ public sealed class GeneratorPassedForItsValueAnalyzer : DiagnosticAnalyzer {
                                                       .ToList();
 
         // Some candidate takes the generator as it is: the call failed for another reason, which is not this rule's.
-        if (parameters.Exists(parameter => Accepts(context.Compilation, parameter, type))) { return; }
-        if (!parameters.Exists(parameter => Accepts(context.Compilation, parameter, drawn))) { return; }
+        bool expandable = argument.NameColon is null;
+        if (parameters.Exists(parameter => Accepts(context.Compilation, parameter, type, expandable))) { return; }
+        if (!parameters.Exists(parameter => Accepts(context.Compilation, parameter, drawn, expandable))) { return; }
 
         bool refines = parameters.Exists(parameter => IsRefinement(context.Compilation, parameter.Type, type));
         string remedy = refines
@@ -118,11 +119,11 @@ public sealed class GeneratorPassedForItsValueAnalyzer : DiagnosticAnalyzer {
     }
 
     // Whether the parameter takes a value of the given type: as itself, or, for a params array, as one of its elements
-    // in the expanded form.
-    private static bool Accepts(Compilation compilation, IParameterSymbol parameter, ITypeSymbol type) {
+    // in the expanded form — which only a positional argument can use; a named one binds to the array itself.
+    private static bool Accepts(Compilation compilation, IParameterSymbol parameter, ITypeSymbol type, bool expandable) {
         if (Converts(compilation, type, parameter.Type)) { return true; }
 
-        return parameter is { IsParams: true, Type: IArrayTypeSymbol array } && Converts(compilation, type, array.ElementType);
+        return expandable && parameter is { IsParams: true, Type: IArrayTypeSymbol array } && Converts(compilation, type, array.ElementType);
     }
 
     private static bool Converts(Compilation compilation, ITypeSymbol source, ITypeSymbol destination) {

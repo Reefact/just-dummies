@@ -39,6 +39,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD035
 JustDummies.Diagnostics.JustDummiesRule.JD036
 JustDummies.Diagnostics.JustDummiesRule.JD037
 JustDummies.Diagnostics.JustDummiesRule.JD038
+JustDummies.Diagnostics.JustDummiesRule.JD039
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -195,3 +196,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD038.Category = "JustDummies.Cons
 const JustDummies.Diagnostics.JustDummiesRule.JD038.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD038.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD038.Id = "JD038" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD038.Title = "A chain whose constraints admit exactly one value" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD039.Category = "JustDummies.Usage" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD039.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD039.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD039.Id = "JD039" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD039.Title = "A generator passed to a parameter of the type it draws" -> string!

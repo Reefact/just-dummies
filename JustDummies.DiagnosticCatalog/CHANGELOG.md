@@ -22,8 +22,12 @@ retired, a category changed — which is not when the library or the adapter mov
   `JustDummies.Constraints`.
 - `JustDummiesRule.JD037` — *A draw made inside the lambda of As or Combine*, category
   `JustDummies.Reproducibility`.
+- `JustDummiesRule.JD038` — *A chain whose constraints admit exactly one value*, category
+  `JustDummies.Constraints`.
+- `JustDummiesRule.JD039` — *A generator passed to a parameter of the type it draws*, category
+  `JustDummies.Usage` (issue #486).
 
-  The rule set moves from 33 identifiers, `1.0.0-preview.5`'s count, to 37.
+  The rule set moves from 33 identifiers, `1.0.0-preview.5`'s count, to 39.
 
 ## [1.0.0-preview.5] - 2026-09-02
 

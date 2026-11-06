@@ -81,6 +81,8 @@ public class Jd039GeneratorPassedForItsValueTests {
     [Theory]
     // A generator of another type: CS1503 for a reason this rule does not explain.
     [InlineData("Sink.Name(Any.Int32(), 1);")]
+    // A named argument binds to the params array itself, never to an element: Generate() would not compile either.
+    [InlineData("Sink.Routes(routes: new AnyRoute());")]
     // The call fails on its arity, and no argument is a generator.
     [InlineData("Sink.Take(1, 2);")]
     public async Task Stays_silent_when_the_call_fails_for_another_reason(string statements) {

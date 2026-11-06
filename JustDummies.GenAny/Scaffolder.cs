@@ -228,6 +228,14 @@ public static class Scaffolder {
 
         string generatorType = written.Returned is { } returned ? names.Of(returned) : drawn.GeneratorType!;
 
+        // A regex guard is not read (§5.3): the library builds from its regular subset only, and the engine may not ask
+        // it which patterns those are (ADR-0063). The recipe is typed IAny<string> rather than the builder, so trading
+        // the base for Any.StringMatching(pattern), which returns an AnyPattern, is one line in AnyValid…() rather
+        // than a retype in four places (#477). Nothing is lost: an AnyPattern offers what IAny<string> offers.
+        if (guards.UnreadAt(parameter.Name)?.Pattern is not null && parameter.Type.SpecialType == SpecialType.System_String) {
+            generatorType = "IAny<string>";
+        }
+
         ScaffoldedParameter drawnFrom = ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance,
                                                                       written.Conversion, guards.UnreadAt(parameter.Name));
 

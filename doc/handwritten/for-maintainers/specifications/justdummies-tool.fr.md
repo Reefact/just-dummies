@@ -1619,8 +1619,8 @@ différence près : un generator **a bien été** inféré ici, et il reste comm
 fabrique plutôt que d'être jeté.
 
 ```csharp
-    private static AnyString AnyValidName() {
-        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithName — then delete these two lines.
+    private static IAny<string> AnyValidName() {
+        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": if the library generates from it, return Any.StringMatching("^[A-Z][a-z]+$") below; the recipe is typed IAny<string> for that, so nothing else changes — then delete these two lines.
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String();
@@ -1663,10 +1663,12 @@ puisque la méthode de la paire est le seul endroit où les deux sont tirés ens
 où se trouvent les sentinelles n'en sont chacune qu'un côté (#459). **Une garde regex cite son motif et nomme le retypage** (#374) : quand la garde appelle
 `Regex.IsMatch(p, "…")`, le `IsMatch` d'une méthode `[GeneratedRegex]`, ou celui d'un champ `Regex`
 construit sur une constante, la ligne cite le motif — la seule chose que le développeur copie dans
-`Any.StringMatching` s'il tient dans le sous-ensemble régulier de la bibliothèque — et dit que l'appel
-retourne un `AnyPattern`, avec les quatre endroits où l'ancien type de builder doit être retapé, ce
-que les utilisateurs ont rencontré d'abord comme une erreur de compilation, cinq fois par domaine dans
-un contexte. L'instruction nommée est celle qui lève — le `if` dont la branche lève, jamais la
+`Any.StringMatching` s'il tient dans le sous-ensemble régulier de la bibliothèque — et nomme cet appel.
+La recette d'un paramètre `string` ainsi gardé est typée `IAny<string>` plutôt qu'`AnyString`, si bien que
+l'appel, qui retourne un `AnyPattern`, remplace la base dans `AnyValid…()` seulement (#477) : typée comme le
+builder, elle devait être retapée en quatre endroits, ce que les utilisateurs ont rencontré d'abord comme une
+erreur de compilation, cinq fois par domaine dans un contexte. Rien n'est perdu, puisqu'un `AnyPattern` offre
+ce qu'offre `IAny<string>` — `DifferentFrom` et `Except`. L'instruction nommée est celle qui lève — le `if` dont la branche lève, jamais la
 boucle, le `try` ou le `using` qui l'entoure, qui ne teste rien et où les lecteurs du premier essai ont
 été envoyés chercher encore (#371). Une marque que l'endroit n'explique pas dit pourquoi elle marque :
 le repli de l'ADR-0110 marque chaque paramètre là où ce qui décide un `throw` ne remonte à aucun, si
@@ -2722,7 +2724,11 @@ voit aucun changement. C'est aussi la réponse à l'avertissement de masquage du
 qu'à partir du sous-ensemble régulier du langage des motifs, et qu'un motif non pris en charge lève à la
 construction — ce qui rendrait le type émis entièrement inutilisable. Y revenir suppose la question
 du sous-ensemble tranchée d'abord : soit le moteur valide un motif sans référencer la bibliothèque
-(ce que D9 interdit aujourd'hui), soit la bibliothèque offre un moyen de le lui demander.
+(ce que D9 interdit aujourd'hui), soit la bibliothèque offre un moyen de le lui demander. Le retypage
+que le troisième essai a mesuré a disparu sans elle (#477) : la recette est déjà typée pour
+`Any.StringMatching`, si bien qu'une question posée plus tard à la bibliothèque n'épargnerait au
+développeur que cette ligne, et seulement pour les motifs du sous-ensemble — environ un réaliste sur
+cinq (§14).
 
 **Autres éléments reportés.** `--all` ; les membres `init` / `required` et la construction par
 propriétés ; le support d'`AnyContext` (D7) ; un sélecteur `--ctor` quand plusieurs constructeurs se

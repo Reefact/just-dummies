@@ -382,6 +382,32 @@ Two lambdas would have drawn routes independently, without guaranteeing that the
 value skips the base too, but it is yours, and it is fixed: if it breaks a rule, the test fails on its
 first run, and on every run after.
 
+### When every parameter is pinned
+
+Pin one parameter and the others are still drawn. Pin all of them and nothing is drawn any more: the
+value is a literal dressed as a draw, and an `any` name would claim the opposite. What the test means is
+that one value, so it says so with the constructor:
+
+```csharp
+// Arrange
+Route lyonParis = new Route("Lyon", "Paris", 465, domestic: true);
+
+// Rather than Any.Shipment().WithRoute(lyonParis).WithParcels(3).WithLabels(fragile).WithDeclaredValue(200m).Generate():
+Shipment fragileShipment = new Shipment(lyonParis, parcels: 3, labels: new[] { "fragile" }, declaredValue: 200m);
+
+// Act
+bool needsRestStop = fragileShipment.NeedsRestStop;
+
+// Assert
+Assert.True(needsRestStop);
+```
+
+It is the composite form of a chain such as `Between(5, 5)`, which [JD038](../analyzers/JD038.en.md)
+reports. Leave one parameter drawn, or refine it with a lambda, and the value is arbitrary again:
+`WithRoute(lyonParis).WithParcels(3)` still draws the labels and the declared value. No rule reports a
+generator pinned whole: the analyzers cannot tell which classes of your project `any` scaffolded, nor
+which `With…` pins and which refines, since the file is yours to edit.
+
 ### Where the valid base lives
 
 Each parameter has a factory in the generated file, named `AnyValid…()`. The generator's constructor

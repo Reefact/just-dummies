@@ -27,6 +27,12 @@ merges**; no agent merges, and no agent enables auto-merge on its own pull reque
   reply label, `<label>: <subject>` (`done`, `ack`, `disagree`, `thanks`, `note`, `question`),
   every finding gets one, `praise` included, and a **blocking** thread is resolved by its
   reviewer, never by you.
+* **The label line is the subject alone, at most 72 characters**, and it is the reply's whole
+  first line: `done: fixed in a1b2c3d, null now returns an error`. What the reviewer needs
+  beyond it goes in the paragraphs below, never after the subject on the same line. Check the
+  length before posting.
+* **After pushing, ask the reviewer for a new pass**: a push reopens their review, so wait for
+  their `reviewed:` again rather than assuming the earlier one still holds.
 * **Never mention both `@codex` and `@reefact` on the same thread**: a bot round-trip or a
   human decision, never both.
 * **At most two fix / re-review cycles per finding.** If it is still open after that, stop and

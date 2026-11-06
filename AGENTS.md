@@ -296,7 +296,9 @@ For each review finding, take exactly one route:
 Rules:
 
 - Every reply opens with a Conventional Comments reply label, `<label>: <subject>`,
-  the subject at most 72 characters, in English. Every finding and question gets
+  the subject at most 72 characters, in English. That line is the whole first line
+  of the reply: the explanation goes in the paragraphs below it, never after the
+  subject on the same line. Every finding and question gets
   one, `praise` and non-blocking findings included; a reviewer's `reviewed:`
   closure needs none. The labels mean:
   - `done:` the code changed because of the comment. Only once the change is

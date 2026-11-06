@@ -1619,8 +1619,8 @@ différence près : un generator **a bien été** inféré ici, et il reste comm
 fabrique plutôt que d'être jeté.
 
 ```csharp
-    private static IAny<string> AnyValidName() {
-        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": if the library generates from it, return Any.StringMatching("^[A-Z][a-z]+$") below; the recipe is typed IAny<string> for that, so nothing else changes — then delete these two lines.
+    private static AnyCustomerNameRecipe AnyValidName() {
+        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": if the library generates from it, return Any.StringMatching("^[A-Z][a-z]+$") below and point AnyCustomerNameRecipe at global::JustDummies.AnyPattern in the usings; nothing else changes — then delete these two lines.
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String();
@@ -1664,11 +1664,14 @@ où se trouvent les sentinelles n'en sont chacune qu'un côté (#459). **Une gar
 `Regex.IsMatch(p, "…")`, le `IsMatch` d'une méthode `[GeneratedRegex]`, ou celui d'un champ `Regex`
 construit sur une constante, la ligne cite le motif — la seule chose que le développeur copie dans
 `Any.StringMatching` s'il tient dans le sous-ensemble régulier de la bibliothèque — et nomme cet appel.
-La recette d'un paramètre `string` ainsi gardé est typée `IAny<string>` plutôt qu'`AnyString`, si bien que
-l'appel, qui retourne un `AnyPattern`, remplace la base dans `AnyValid…()` seulement (#477) : typée comme le
-builder, elle devait être retapée en quatre endroits, ce que les utilisateurs ont rencontré d'abord comme une
-erreur de compilation, cinq fois par domaine dans un contexte. Rien n'est perdu, puisqu'un `AnyPattern` offre
-ce qu'offre `IAny<string>` — `DifferentFrom` et `Except`. L'instruction nommée est celle qui lève — le `if` dont la branche lève, jamais la
+La recette d'un paramètre `string` ainsi gardé, par l'une quelconque de ses marques non lues, est typée par
+un alias de fichier, `using Any{Type}{Parameter}Recipe = global::JustDummies.AnyString;` (#477). Elle garde
+chaque membre d'`AnyString` tant que le développeur ne la déplace pas, ce qui compte là où le motif sort du
+sous-ensemble et que la base reste ; et la déplacer, c'est la ligne de l'alias, pointée sur
+`global::JustDummies.AnyPattern`, et le `return` d'`AnyValid…()`. Typée comme le builder lui-même, la recette
+devait être retapée en quatre endroits, ce que les utilisateurs ont rencontré d'abord comme une erreur de
+compilation, cinq fois par domaine dans un contexte. Un nom d'alias que l'espace de noms de la cible déclare
+déjà n'est pas écrit, et la recette reste le builder. L'instruction nommée est celle qui lève — le `if` dont la branche lève, jamais la
 boucle, le `try` ou le `using` qui l'entoure, qui ne teste rien et où les lecteurs du premier essai ont
 été envoyés chercher encore (#371). Une marque que l'endroit n'explique pas dit pourquoi elle marque :
 le repli de l'ADR-0110 marque chaque paramètre là où ce qui décide un `throw` ne remonte à aucun, si
@@ -2726,8 +2729,8 @@ construction — ce qui rendrait le type émis entièrement inutilisable. Y reve
 du sous-ensemble tranchée d'abord : soit le moteur valide un motif sans référencer la bibliothèque
 (ce que D9 interdit aujourd'hui), soit la bibliothèque offre un moyen de le lui demander. Le retypage
 que le troisième essai a mesuré a disparu sans elle (#477) : la recette est déjà typée pour
-`Any.StringMatching`, si bien qu'une question posée plus tard à la bibliothèque n'épargnerait au
-développeur que cette ligne, et seulement pour les motifs du sous-ensemble — environ un réaliste sur
+`Any.StringMatching` par son alias, si bien qu'une question posée plus tard à la bibliothèque n'épargnerait
+au développeur que ces deux lignes, et seulement pour les motifs du sous-ensemble — environ un réaliste sur
 cinq (§14).
 
 **Autres éléments reportés.** `--all` ; les membres `init` / `required` et la construction par

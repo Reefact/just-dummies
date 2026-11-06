@@ -101,6 +101,14 @@ public static class GeneratorEmitter {
 
         foreach (string @using in rest) { Line(file, $"using {@using};"); }
 
+        // The recipe of a string guarded by a regex the engine does not read is typed through an alias of its builder,
+        // so trading the base for Any.StringMatching moves this line and the factory's return, nothing else (#477).
+        ScaffoldedParameter[] aliased = [.. plan.Parameters.Where(parameter => parameter.AliasedBuilder is not null)];
+        if (aliased.Length > 0) {
+            Line(file, string.Empty);
+            foreach (ScaffoldedParameter parameter in aliased) { Line(file, $"using {parameter.GeneratorType} = {parameter.AliasedBuilder};"); }
+        }
+
         Line(file, string.Empty);
     }
 
@@ -370,11 +378,17 @@ public static class GeneratorEmitter {
         if (unread.Note is { } note) { line.Append(" — ").Append(note); }
         if (unread.Further > 0) { line.Append("; and ").Append(unread.Further.ToString(CultureInfo.InvariantCulture)).Append(" more"); }
 
-        if (unread.Pattern is { } pattern) {
+        if (parameter.RegexPattern is { } aliasedPattern) {
+            string literal = SymbolDisplay.FormatLiteral(aliasedPattern, quote: true);
+            line.Append(" — a regex, ").Append(literal)
+                .Append(": if the library generates from it, return Any.StringMatching(").Append(literal)
+                .Append(") below and point ").Append(parameter.GeneratorType)
+                .Append(" at global::JustDummies.AnyPattern in the usings; nothing else changes");
+        } else if (unread.Pattern is { } pattern) {
             line.Append(" — a regex, ").Append(SymbolDisplay.FormatLiteral(pattern, quote: true))
-                .Append(": if the library generates from it, return Any.StringMatching(")
-                .Append(SymbolDisplay.FormatLiteral(pattern, quote: true))
-                .Append(") below; the recipe is typed ").Append(parameter.GeneratorType).Append(" for that, so nothing else changes");
+                .Append(": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype ")
+                .Append(parameter.GeneratorType).Append(" to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of With")
+                .Append(parameter.PascalCasedName);
         }
 
         line.Append(" — then delete these two lines.");

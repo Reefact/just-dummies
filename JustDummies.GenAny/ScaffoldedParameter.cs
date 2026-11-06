@@ -30,7 +30,9 @@ public sealed class ScaffoldedParameter {
                                 Unscaffoldable? unscaffoldable = null,
                                 bool drawsNull = false,
                                 string? remark = null,
-                                bool largeSizeCeiling = false) {
+                                bool largeSizeCeiling = false,
+                                string? aliasedBuilder = null,
+                                string? regexPattern = null) {
         Name           = name;
         TypeDisplay    = typeDisplay;
         GeneratorType  = generatorType;
@@ -44,6 +46,35 @@ public sealed class ScaffoldedParameter {
         DrawsNull                 = drawsNull;
         Remark                    = remark;
         LargeSizeCeiling          = largeSizeCeiling;
+        AliasedBuilder            = aliasedBuilder;
+        RegexPattern              = regexPattern;
+    }
+
+    /// <summary>
+    ///     The library builder a file-level alias names, when <see cref="GeneratorType" /> is that alias rather than the
+    ///     builder itself; null otherwise. Spelled fully qualified, as the alias directive writes it.
+    /// </summary>
+    /// <remarks>
+    ///     A <c>string</c> guarded by a regex the engine does not read keeps its whole <c>AnyString</c> API through
+    ///     the alias, and trading its base for the <c>AnyPattern</c> that <c>Any.StringMatching</c> returns is the
+    ///     alias line and the factory's <c>return</c>, rather than a retype in four places (#477).
+    /// </remarks>
+    public string? AliasedBuilder { get; }
+
+    /// <summary>The pattern of the regex guard the alias was written for; null when there is no alias.</summary>
+    public string? RegexPattern { get; }
+
+    /// <summary>
+    ///     The same parameter, its recipe typed through the file-level alias <paramref name="alias" /> of its
+    ///     builder (<see cref="AliasedBuilder" />), for the regex guard of <paramref name="pattern" />.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Any argument is null.</exception>
+    public ScaffoldedParameter RecipeAliased(string alias, string aliasedBuilder, string pattern) {
+        if (alias is null) { throw new ArgumentNullException(nameof(alias)); }
+        if (aliasedBuilder is null) { throw new ArgumentNullException(nameof(aliasedBuilder)); }
+        if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
+
+        return new ScaffoldedParameter(Name, TypeDisplay, alias, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, DrawsNull, Remark, LargeSizeCeiling, aliasedBuilder, pattern);
     }
 
     /// <summary>
@@ -309,7 +340,7 @@ public sealed class ScaffoldedParameter {
     public ScaffoldedParameter Remarked(string remark, bool largeSizeCeiling) {
         if (remark is null) { throw new ArgumentNullException(nameof(remark)); }
 
-        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, DrawsNull, remark, largeSizeCeiling);
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, DrawsNull, remark, largeSizeCeiling, AliasedBuilder, RegexPattern);
     }
 
     /// <summary>A parameter the engine inferred no generator for (§5.5).</summary>
@@ -338,12 +369,12 @@ public sealed class ScaffoldedParameter {
     ///     (<see cref="NullableAnnotationDropped" />).
     /// </summary>
     public ScaffoldedParameter DroppingNullableAnnotation() {
-        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true, Unscaffoldable, DrawsNull, Remark, LargeSizeCeiling);
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true, Unscaffoldable, DrawsNull, Remark, LargeSizeCeiling, AliasedBuilder, RegexPattern);
     }
 
     /// <summary>The same parameter, its default recipe drawing <c>null</c> one draw in ten (<see cref="DrawsNull" />).</summary>
     public ScaffoldedParameter DrawingNull() {
-        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, drawsNull: true, Remark, LargeSizeCeiling);
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, drawsNull: true, Remark, LargeSizeCeiling, AliasedBuilder, RegexPattern);
     }
 
     private static string Checked(string value, string parameterName) {

@@ -98,14 +98,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
-- **A string guarded by a regex is drawn through `IAny<string>`, so `Any.StringMatching` is a one-line
+- **A string guarded by a regex keeps its builder through an alias, so `Any.StringMatching` is a two-line
   swap.** The guard is still not read: the library builds from its regular subset only, and `any` may not
   ask it which patterns those are. Its recipe was typed `AnyString`, and trading the base for the
   `AnyPattern` that `Any.StringMatching` returns meant retyping four places, the friction three trials
-  measured. The recipe field, the factory and the `With…` lambda are now typed `IAny<string>`, and the TODO
-  names the one line: `return Any.StringMatching("…")` in `AnyValid…()`, when the library generates from
-  the pattern. A refinement on that parameter keeps `DifferentFrom` and `Except`, all an `AnyPattern`
-  offers (issue #477).
+  measured. The recipe is now typed through `using Any{Type}{Parameter}Recipe = global::JustDummies.AnyString;`
+  at the top of the file: it keeps every `AnyString` member, and the TODO names the two lines to change —
+  the alias, pointed at `AnyPattern`, and the factory's `return`. A regex behind another unread guard
+  counts too (issue #477).
 - **A rule the tool cannot read between two paired parameters says where it belongs.** An order plus a
   maximum gap — `if (start >= end)` and `if (end.DayNumber - start.DayNumber > 31)` — drew the order
   through `Any.Pair` and marked the gap `ties end to start` in both recipes, where narrowing either side

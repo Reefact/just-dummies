@@ -385,28 +385,36 @@ first run, and on every run after.
 ### When every parameter is pinned
 
 Pin one parameter and the others are still drawn. Pin all of them and nothing is drawn any more: the
-value is a literal dressed as a draw, and an `any` name would claim the opposite. What the test means is
-that one value, so it says so with the constructor:
+value is a literal dressed as a draw, and an `any` name would claim the opposite. Ask which part of that
+value the test is about.
+
+Usually it is one part, and the other pins hold values the test does not care about — the very
+dummies this library exists to leave arbitrary. Keep the part the test is about, and let the rest be
+drawn:
 
 ```csharp
 // Arrange
-Route lyonParis = new Route("Lyon", "Paris", 465, domestic: true);
-
-// Rather than Any.Shipment().WithRoute(lyonParis).WithParcels(3).WithLabels(fragile).WithDeclaredValue(200m).Generate():
-Shipment fragileShipment = new Shipment(lyonParis, parcels: 3, labels: new[] { "fragile" }, declaredValue: 200m);
+// Rather than Any.Shipment().WithRoute(new Route("Lyon", "Paris", 465, domestic: true)).WithParcels(3)
+//                           .WithLabels(new[] { "fragile" }).WithDeclaredValue(200m).Generate():
+Shipment anyLongShipment = Any.Shipment().WithRoute(r => r.WithDistanceKm(465)).Generate();
 
 // Act
-bool needsRestStop = fragileShipment.NeedsRestStop;
+bool needsRestStop = anyLongShipment.NeedsRestStop;
 
 // Assert
 Assert.True(needsRestStop);
 ```
 
-It is the composite form of a chain such as `Between(5, 5)`, which [JD038](../analyzers/JD038.en.md)
-reports. Leave one parameter drawn, or refine it with a lambda, and the value is arbitrary again:
-`WithRoute(lyonParis).WithParcels(3)` still draws the labels and the declared value. No rule reports a
-generator pinned whole: the analyzers cannot tell which classes of your project `any` scaffolded, nor
-which `With…` pins and which refines, since the file is yours to edit.
+If the test really is about every part — the whole value is what it checks — then that value is not a
+dummy at all: write it with the constructor, under a name that does not start with `any`.
+
+What keeps a value arbitrary is a draw that can still vary: a parameter left alone, or refined into a
+recipe that still admits more than one value. A lambda is not enough by itself — one that pins every
+part of its own parameter, `r => r.WithOrigin("Lyon").WithDestination("Paris").WithDistanceKm(465).WithDomestic(true)`,
+draws nothing either. It is the composite form of a chain such as `Between(5, 5)`, which
+[JD038](../analyzers/JD038.en.md) reports. No rule reports a generator pinned whole: the analyzers
+cannot tell which classes of your project `any` scaffolded, nor which `With…` pins and which refines,
+since the file is yours to edit.
 
 ### Where the valid base lives
 

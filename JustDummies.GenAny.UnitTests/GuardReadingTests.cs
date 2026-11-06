@@ -1067,25 +1067,28 @@ public sealed class GuardReadingTests {
         Check.That(unread.Excerpt).StartsWith("if (!Regex.IsMatch(value, \"^[A-Z]+$\"))");
         Check.That(outcome.File!.SourceText).Contains("// TODO(any): verify against line 11: if (!Regex.IsMatch(value");
         Check.That(unread.Pattern).IsEqualTo("^[A-Z]+$");
-        Check.That(outcome.File.SourceText).Contains("a regex, \"^[A-Z]+$\": if the library generates from it, return Any.StringMatching(\"^[A-Z]+$\") below; the recipe is typed IAny<string> for that, so nothing else changes — then delete these two lines.");
+        Check.That(outcome.File.SourceText).Contains("a regex, \"^[A-Z]+$\": if the library generates from it, return Any.StringMatching(\"^[A-Z]+$\") below and point AnySubjectValueRecipe at global::JustDummies.AnyPattern in the usings; nothing else changes — then delete these two lines.");
         Check.That(outcome.File.SourceText).Contains("// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read;");
         Check.That(outcome.File.SourceText).Not.Contains("§9");
     }
 
     /// <summary>
-    ///     A string guarded by a regex is drawn through <c>IAny&lt;string&gt;</c>, so trading its base for
-    ///     <c>Any.StringMatching</c> is the one line the verification comment names.
+    ///     A string guarded by a regex keeps its whole builder through a file-level alias, and trading its base for
+    ///     <c>Any.StringMatching</c> is the alias line and the factory's return.
     /// </summary>
     /// <remarks>
     ///     The guard is not read: the library builds from its regular subset only, and the engine may not ask it which
-    ///     patterns those are (ADR-0063). Typed as the builder, the recipe made the developer retype it in four places
-    ///     once they swapped the base for the <c>AnyPattern</c> that call returns — the friction three trials measured
-    ///     (#477). The swapped file must compile as it stands, nullable parameter included.
+    ///     patterns those are (ADR-0063). Typed as the builder, the recipe had to be retyped in four places once the
+    ///     base was swapped for the <c>AnyPattern</c> that call returns — the friction three trials measured (#477).
+    ///     Typed <c>IAny&lt;string&gt;</c>, a refinement would lose the builder's members where the pattern lies outside
+    ///     the subset and the base stays. The file must compile in all three states: as scaffolded and verified, refined
+    ///     through the builder's members, and swapped. A regex behind another unread guard counts too.
     /// </remarks>
-    [Theory(DisplayName = "A regex-guarded string is typed so that Any.StringMatching is a one-line change.")]
-    [InlineData("string",  "value")]
-    [InlineData("string?", "value!")]
-    public void ARegexGuardedStringIsTypedForTheOneLineSwap(string parameterType, string argument) {
+    [Theory(DisplayName = "A regex-guarded string keeps its builder through an alias, and Any.StringMatching is a two-line swap.")]
+    [InlineData("string",  "value",  "")]
+    [InlineData("string?", "value!", "")]
+    [InlineData("string",  "value",  "if (!Check(value)) { throw new ArgumentException(nameof(value)); }")]
+    public void ARegexGuardedStringKeepsItsBuilderThroughAnAlias(string parameterType, string argument, string earlierGuard) {
         string domain = $$"""
                           using System;
                           using System.Text.RegularExpressions;
@@ -1095,8 +1098,11 @@ public sealed class GuardReadingTests {
                           public sealed class Subject {
 
                               public Subject({{parameterType}} value) {
+                                  {{earlierGuard}}
                                   if (!Regex.IsMatch({{argument}}, "^[A-Z]+$")) { throw new ArgumentException(nameof(value)); }
                               }
+
+                              private static bool Check(string? value) { return value is not null; }
 
                           }
                           """;
@@ -1104,14 +1110,29 @@ public sealed class GuardReadingTests {
         ScaffoldOutcome outcome = Subject.Scaffold(domain);
         string          emitted = outcome.File!.SourceText;
 
-        Check.That(outcome.Plan!.Parameters.Single().UnreadGuard!.Pattern).IsEqualTo("^[A-Z]+$");
-        Check.That(emitted).Contains("private static IAny<string> AnyValidValue()", "Func<IAny<string>, IAny<string>> configure");
+        Check.That(emitted).Contains("using AnySubjectValueRecipe = global::JustDummies.AnyString;",
+                                     "private static AnySubjectValueRecipe AnyValidValue()",
+                                     "Func<AnySubjectValueRecipe, AnySubjectValueRecipe> configure",
+                                     "return Any.StringMatching(\"^[A-Z]+$\") below and point AnySubjectValueRecipe at global::JustDummies.AnyPattern");
 
-        string[] lines   = emitted.Split('\n');
-        int      factory = Array.FindIndex(lines, line => line.Contains("IAny<string> AnyValidValue()"));
+        string verified = string.Join("\n", emitted.Split('\n').Where(line => !line.Contains("TODO(any): verify") && !line.Contains("_ = TODO_verify_")));
+        const string refining = """
+                                namespace Shop.Domain {
+                                    public static class Refining {
+                                        public static Subject Short() { return new AnySubject().WithValue(v => v.WithMaxLength(8)).Generate(); }
+                                    }
+                                }
+                                """;
+
+        Check.That(EmittedCodeCompiler.ErrorsIn(EmittedCodeCompiler.CompileAllWith([verified, refining], domain))).IsEmpty();
+
+        string[] lines   = verified.Split('\n');
+        int      factory = Array.FindIndex(lines, line => line.Contains("AnySubjectValueRecipe AnyValidValue()"));
         int      body    = Array.FindIndex(lines, factory, line => line.TrimStart().StartsWith("return ", StringComparison.Ordinal));
-        lines[body] = "        return Any.StringMatching(\"^[A-Z]+$\");";
-        string swapped = string.Join("\n", lines.Where(line => !line.Contains("TODO(any): verify") && !line.Contains("_ = TODO_verify_")));
+        int      alias   = Array.FindIndex(lines, line => line.StartsWith("using AnySubjectValueRecipe = ", StringComparison.Ordinal));
+        lines[body]  = "        return Any.StringMatching(\"^[A-Z]+$\");";
+        lines[alias] = "using AnySubjectValueRecipe = global::JustDummies.AnyPattern;";
+        string swapped = string.Join("\n", lines);
 
         Check.That(swapped).Contains("return Any.StringMatching(\"^[A-Z]+$\");");
         Check.That(EmittedCodeCompiler.ErrorsIn(EmittedCodeCompiler.CompileWith(swapped, domain))).IsEmpty();

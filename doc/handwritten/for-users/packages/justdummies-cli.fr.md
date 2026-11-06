@@ -131,8 +131,10 @@ travail et ajoute au-dessus une ligne qui ne compile pas :
 
 <!-- jd:skip -->
 ```csharp
-private static IAny<string> AnyValidValue() {
-    // TODO(any): verify against Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); } — a regex, "^[A-Z]{3}$": if the library generates from it, return Any.StringMatching("^[A-Z]{3}$") below; the recipe is typed IAny<string> for that, so nothing else changes — then delete these two lines.
+// using AnyCurrencyValueRecipe = global::JustDummies.AnyString;   (en tête du fichier)
+
+private static AnyCurrencyValueRecipe AnyValidValue() {
+    // TODO(any): verify against Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); } — a regex, "^[A-Z]{3}$": if the library generates from it, return Any.StringMatching("^[A-Z]{3}$") below and point AnyCurrencyValueRecipe at global::JustDummies.AnyPattern in the usings; nothing else changes — then delete these two lines.
     _ = TODO_verify_the_generator_for_value;
 
     return Any.String();
@@ -145,8 +147,9 @@ ses lignes. Quand le paramètre a d'autres gardes de ce genre, les deux le disen
 parce que corriger celle qui est nommée et supprimer la sentinelle laisserait un générateur que le
 constructeur refuse encore ; une garde qui lie deux paramètres est signalée comme telle. Quand la
 garde est une regex, le commentaire cite le motif et l'`Any.StringMatching(…)` qui peut remplacer la
-base : la recette est typée `IAny<string>` pour cela, si bien que l'échange tient en cette seule ligne,
-quand la bibliothèque sait générer à partir du motif.
+base. La recette est typée par un alias d'`AnyString`, écrit en tête du fichier, si bien qu'elle garde
+entre-temps chaque membre d'`AnyString` ; quand la bibliothèque sait générer à partir du motif, l'échange
+tient en ce `return` et la ligne de l'alias, pointée sur `AnyPattern`.
 L'en-tête du fichier explique le bloc une fois ; gardez la recette, ou remplacez-la, puis supprimez
 les deux lignes — et si le remplacement est un autre genre de générateur, retapez ce que cela change
 ([plus bas](#quand-le-remplacement-est-un-autre-genre-de-generateur)). L'alternative — un
@@ -464,8 +467,8 @@ Info n'est jamais affiché par `dotnet build` ;
 ### Quand le remplacement est un autre genre de générateur
 
 `AnyValid…()` retourne le constructeur que l'outil a choisi pour le type : `AnyString` pour une `string`.
-Quand le constructeur garde le paramètre par une regex, `any` type plutôt la recette `IAny<string>`, et
-l'échange tient en la seule ligne que nomme son TODO. Ailleurs, remplacez `Any.String()` par `Any.StringMatching("[A-Z]{3}")` et le fichier ne compile plus
+Quand le constructeur garde le paramètre par une regex, `any` type plutôt la recette par un alias, et
+l'échange tient en les deux lignes que nomme son TODO. Ailleurs, remplacez `Any.String()` par `Any.StringMatching("[A-Z]{3}")` et le fichier ne compile plus
 (`CS0029`), parce que cet appel retourne un `AnyPattern` ; la [référence des générateurs](../generators/README.fr.md)
 nomme le builder que retourne chaque fabrique. L'ancien type figure sur trois lignes de plus, et ce
 sont toutes les modifications à faire — le champ de recette, le paramètre du constructeur de recettes, et le

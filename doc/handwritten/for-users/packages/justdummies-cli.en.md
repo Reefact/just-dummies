@@ -131,8 +131,10 @@ line that does not compile above it:
 
 <!-- jd:skip -->
 ```csharp
-private static IAny<string> AnyValidValue() {
-    // TODO(any): verify against Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); } — a regex, "^[A-Z]{3}$": if the library generates from it, return Any.StringMatching("^[A-Z]{3}$") below; the recipe is typed IAny<string> for that, so nothing else changes — then delete these two lines.
+// using AnyCurrencyValueRecipe = global::JustDummies.AnyString;   (at the top of the file)
+
+private static AnyCurrencyValueRecipe AnyValidValue() {
+    // TODO(any): verify against Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); } — a regex, "^[A-Z]{3}$": if the library generates from it, return Any.StringMatching("^[A-Z]{3}$") below and point AnyCurrencyValueRecipe at global::JustDummies.AnyPattern in the usings; nothing else changes — then delete these two lines.
     _ = TODO_verify_the_generator_for_value;
 
     return Any.String();
@@ -144,8 +146,9 @@ search the constructor for it; the recap prints the same under its rows. Where t
 more such guards, both say so — `; and 2 more` — because fixing the one named and deleting the
 sentinel would leave a generator the constructor still refuses; a guard that ties two parameters is
 called out as such. Where the guard is a regex, the comment quotes the pattern and the
-`Any.StringMatching(…)` that can replace the base: the recipe is typed `IAny<string>` for it, so the
-swap is that one line, when the library generates from the pattern. The file's header explains the block once; keep the recipe, or replace it,
+`Any.StringMatching(…)` that can replace the base. The recipe is typed through an alias of `AnyString`,
+written at the top of the file, so it keeps every `AnyString` member in the meantime; when the library
+generates from the pattern, the swap is that `return` and the alias line, pointed at `AnyPattern`. The file's header explains the block once; keep the recipe, or replace it,
 then delete the two lines — and if the replacement is another kind of generator, retype what that
 changes ([below](#when-the-replacement-is-another-kind-of-generator)). The alternative — a file that
 compiles and draws a value your constructor rejects on some later run — is the failure that costs
@@ -453,8 +456,8 @@ Info never prints in `dotnet build`;
 ### When the replacement is another kind of generator
 
 `AnyValid…()` returns the builder the tool chose for the type: `AnyString` for a `string`. Where the
-constructor guards the parameter with a regex, `any` types the recipe `IAny<string>` instead, and the
-swap is the one line its TODO names. Elsewhere, replace
+constructor guards the parameter with a regex, `any` types the recipe through an alias instead, and the
+swap is the two lines its TODO names. Elsewhere, replace
 `Any.String()` with `Any.StringMatching("[A-Z]{3}")` and the file stops compiling
 (`CS0029`), because that call returns an `AnyPattern`; the [generator reference](../generators/README.md)
 names the builder each factory returns. The old type is on three more lines, and they

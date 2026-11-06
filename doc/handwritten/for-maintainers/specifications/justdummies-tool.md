@@ -1531,8 +1531,8 @@ difference: a generator **was** inferred here, and it stays as the factory's wor
 than being thrown away.
 
 ```csharp
-    private static IAny<string> AnyValidName() {
-        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": if the library generates from it, return Any.StringMatching("^[A-Z][a-z]+$") below; the recipe is typed IAny<string> for that, so nothing else changes — then delete these two lines.
+    private static AnyCustomerNameRecipe AnyValidName() {
+        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": if the library generates from it, return Any.StringMatching("^[A-Z][a-z]+$") below and point AnyCustomerNameRecipe at global::JustDummies.AnyPattern in the usings; nothing else changes — then delete these two lines.
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String();
@@ -1574,10 +1574,13 @@ one side of it (#459). **A regex guard quotes its pattern and names the retype**
 calls `Regex.IsMatch(p, "…")`, the `IsMatch` of a `[GeneratedRegex]` method, or that of a `Regex`
 field built from a constant, the line quotes the pattern — the one thing the developer copies into
 `Any.StringMatching` if it lies in the library's regular subset — and names that call. The recipe of a
-`string` parameter so guarded is typed `IAny<string>` rather than `AnyString`, so the call, which returns an
-`AnyPattern`, replaces the base in `AnyValid…()` alone (#477): typed as the builder, it had to be retyped in
-four places, which users met as a compile error first, five times per domain in one context. Nothing is lost,
-since an `AnyPattern` offers what `IAny<string>` offers — `DifferentFrom` and `Except`. The statement named is the one
+`string` parameter so guarded, by any of its unread marks, is typed through a file-level alias,
+`using Any{Type}{Parameter}Recipe = global::JustDummies.AnyString;` (#477). It keeps every `AnyString` member
+until the developer moves it, which matters where the pattern lies outside the subset and the base stays; and
+moving it is the alias line, pointed at `global::JustDummies.AnyPattern`, and the `return` of `AnyValid…()`.
+Typed as the builder itself, the recipe had to be retyped in four places, which users met as a compile error
+first, five times per domain in one context. An alias name the target's namespace already declares is not
+written, and the recipe stays the builder. The statement named is the one
 that throws — the `if` whose branch throws, never the loop, the `try` or the `using` around it, which
 tests nothing and where the first trial's readers were sent to search again (#371). A mark the place
 does not explain says why it marks: the fallback of ADR-0110 marks every parameter where what decides
@@ -2593,8 +2596,8 @@ subset of the pattern language only, and an unsupported pattern throws at constr
 would make the whole emitted type unusable. Reaching for it needs the subset question answered
 first: either the engine validates a pattern without referencing the library (which D9 forbids
 today), or the library offers a way to ask. The retype the third trial measured is gone without it
-(#477): the recipe is already typed for `Any.StringMatching`, so a library question added later would
-only spare the developer that one line, and only for the patterns inside the subset — about one in five
+(#477): the recipe is already aliased for `Any.StringMatching`, so a library question added later would
+only spare the developer those two lines, and only for the patterns inside the subset — about one in five
 realistic ones (§14).
 
 **Other deferred items.** `--all`; `init` / `required` members and property-only construction;

@@ -144,8 +144,12 @@ public static class Scaffolder {
 
         bool annotates = AnnotatesNullability(compilation);
 
+        string generatorName = TypeNaming.GeneratorNameFor(target, options.Naming);
+
         foreach (IParameterSymbol parameter in chosen.Parameters) {
-            parameters.Add(Noted(Resolve(parameter, target, names, generators, guards, annotates, library), parameter, annotates));
+            ScaffoldedParameter resolved = Noted(Resolve(parameter, target, names, generators, guards, annotates, library), parameter, annotates);
+
+            parameters.Add(AliasedForARegex(resolved, parameter, guards, compilation, fileNamespace, generatorName));
         }
 
         ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace), target.ToDisplayString(),
@@ -176,6 +180,44 @@ public static class Scaffolder {
         if (EntryPointNameCheck.RootAgainstNamespace(entryPoint) is { } hidden) { warnings.Add(hidden); }
 
         return ScaffoldOutcome.Scaffolded(plan, GeneratorEmitter.Emit(plan), warnings, entryPoint);
+    }
+
+    /// <summary>
+    ///     <paramref name="resolved" />, its recipe typed through a file-level alias of <c>AnyString</c> when a regex
+    ///     guard the engine does not read stands on it (#477).
+    /// </summary>
+    /// <remarks>
+    ///     The guard is not read: the library builds from its regular subset only, and the engine may not ask it which
+    ///     patterns those are (ADR-0063). Typed as the builder, the recipe had to be retyped in four places once the
+    ///     developer traded its base for the <c>AnyPattern</c> that <c>Any.StringMatching</c> returns; typed as
+    ///     <c>IAny&lt;string&gt;</c>, it would lose the builder's refinements in the many cases where the pattern lies
+    ///     outside the subset and the base stays. The alias keeps the whole builder until the developer moves it, and
+    ///     the move is the alias line and the factory's <c>return</c>. Any unread mark counts, not only the first one
+    ///     the verification comment names. An alias name the target's namespace already declares is not written: the recipe stays
+    ///     the builder.
+    /// </remarks>
+    private static ScaffoldedParameter AliasedForARegex(ScaffoldedParameter resolved,
+                                                        IParameterSymbol parameter,
+                                                        GuardReading guards,
+                                                        Compilation compilation,
+                                                        string? fileNamespace,
+                                                        string generatorName) {
+        if (parameter.Type.SpecialType != SpecialType.System_String) { return resolved; }
+        if (resolved.GeneratorType is not ("AnyString" or "JustDummies.AnyString" or "global::JustDummies.AnyString")) { return resolved; }
+
+        string? pattern = guards.UnreadMarks(parameter.Name)
+                                .Where(mark => mark.Pattern is not null)
+                                .OrderBy(mark => mark.File, StringComparer.Ordinal)
+                                .ThenBy(mark => mark.Line)
+                                .Select(mark => mark.Pattern)
+                                .FirstOrDefault();
+        if (pattern is null) { return resolved; }
+
+        string alias     = generatorName + resolved.PascalCasedName + "Recipe";
+        string qualified = string.IsNullOrEmpty(fileNamespace) ? alias : fileNamespace + "." + alias;
+        if (compilation.GetTypeByMetadataName(qualified) is not null) { return resolved; }
+
+        return resolved.RecipeAliased(alias, "global::JustDummies.AnyString", pattern);
     }
 
     /// <summary>
@@ -227,14 +269,6 @@ public static class Scaffolder {
         if (written.ConstraintUnavailable) { provenance |= Provenance.ConstraintUnavailable; }
 
         string generatorType = written.Returned is { } returned ? names.Of(returned) : drawn.GeneratorType!;
-
-        // A regex guard is not read (§5.3): the library builds from its regular subset only, and the engine may not ask
-        // it which patterns those are (ADR-0063). The recipe is typed IAny<string> rather than the builder, so trading
-        // the base for Any.StringMatching(pattern), which returns an AnyPattern, is one line in AnyValid…() rather
-        // than a retype in four places (#477). Nothing is lost: an AnyPattern offers what IAny<string> offers.
-        if (guards.UnreadAt(parameter.Name)?.Pattern is not null && parameter.Type.SpecialType == SpecialType.System_String) {
-            generatorType = "IAny<string>";
-        }
 
         ScaffoldedParameter drawnFrom = ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance,
                                                                       written.Conversion, guards.UnreadAt(parameter.Name));

@@ -10,7 +10,7 @@
 
 JustDummies generates **explicit, constrained, domain-respecting dummies** for .NET: a
 fluent DSL where constraints express the invariants a value must satisfy, never what the
-test asserts. It ships 38 Roslyn analyzers (`JD001`–`JD038`) inside its own package.
+test asserts. It ships 39 Roslyn analyzers (`JD001`–`JD039`) inside its own package.
 
 ## The two fundamentals — what every other rule answers to
 

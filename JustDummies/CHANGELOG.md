@@ -32,6 +32,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `JustDummies.Analyzers.CodeFixes.dll` beside the rules under `analyzers/dotnet/cs`, at the same Roslyn
   floor; an IDE or `dotnet format` offers them, the compiler never loads them. A rule gets a fix only
   where exactly one rewrite keeps what you meant (issue #355, ADR-0130).
+- **JD039 explains a generator passed to a parameter of the type it draws.** `WithRoute(longRoute)` with
+  `longRoute` an `AnyRoute`, or `new Order(Any.String(), 3)`, does not compile, and the compiler said only
+  `CS1503`. The rule puts the reason beside it: refine through the lambda overload when the method has one,
+  as a scaffolded `With…` does and takes no generator on purpose (ADR-0109), and pass a drawn value with
+  `Generate()` otherwise. It reads the overloads the call failed against, so it needs no marker on the
+  method, and stays silent when the call fails for another reason. Warning severity, no code fix
+  (issue #486).
 - **JD038 reports a chain whose constant constraints admit exactly one value.** `Any.Int32().Between(5, 5)`,
   a floor and a ceiling that meet, a lattice with one point left in its range, a value set reduced to one
   value: a constant dressed as a draw, where what is significant should stay a literal. The rule reuses

@@ -728,7 +728,7 @@ class is `partial`, so add one line to your own file beside it —
 survives a re-scaffold.
 
 **A prepared generator is reused as a lambda.** `With…` takes a value or a lambda, never a generator:
-`WithRoute(preparedRoute)` is `CS1503`. Write the refinement once, as the lambda it is —
+`WithRoute(preparedRoute)` is `CS1503`, and [JD039](../analyzers/JD039.en.md) says why beside it. Write the refinement once, as the lambda it is —
 `Func<AnyRoute, AnyRoute> domestic = r => r.WithDomestic(true);` — and pass `domestic` wherever a test
 needs it. Do not write `_ => preparedRoute`: it compiles, and it replaces the base with every rule it
 kept, which is exactly what the missing overload protects you from. The generated `With…(Func)` says

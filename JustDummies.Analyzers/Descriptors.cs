@@ -109,6 +109,16 @@ internal static class Descriptors {
         description: "The adapter's hooks are collected from a test method, its declaring class and the assembly. On a helper — or on a method whose [Fact] was removed during a refactor — the attribute is never read: it pins no seed and reports none. Because a working [Reproducible] is silent on a passing test by design, nothing else distinguishes the inert form from the working one.",
         helpLinkUri: JustDummiesRule.JD010.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor GeneratorPassedForItsValue = new(
+        id: JustDummiesRule.JD039.Id,
+        title: JustDummiesRule.JD039.Title,
+        messageFormat: "{0} is a generator of {1}, and this parameter takes a {1}: {2}",
+        category: JustDummiesRule.JD039.Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "The call does not compile (CS1503): a generator was passed where the value it draws was expected. Where the method offers a lambda overload — a scaffolded With… does, and takes no generator on purpose, since a prepared generator would replace the parameter's valid base with every rule it kept — refine through it: x => x.WithDomestic(true), or a Func variable written once and reused. Otherwise, pass a drawn value with Generate().",
+        helpLinkUri: JustDummiesRule.JD039.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor GeneratorWhereValueExpected = new(
         id: JustDummiesRule.JD011.Id,
         title: JustDummiesRule.JD011.Title,

@@ -746,7 +746,7 @@ méthode publique : `--force` l'annulerait. La classe est `partial` : ajoutez un
 survit à un nouveau scaffolding.
 
 **Un générateur préparé se réutilise sous forme de lambda.** `With…` prend une valeur ou une lambda, jamais
-un générateur : `WithRoute(preparedRoute)` donne `CS1503`. Écrivez l'affinage une fois, comme la lambda qu'il
+un générateur : `WithRoute(preparedRoute)` donne `CS1503`, et [JD039](../analyzers/JD039.fr.md) en dit la raison à côté. Écrivez l'affinage une fois, comme la lambda qu'il
 est — `Func<AnyRoute, AnyRoute> domestic = r => r.WithDomestic(true);` — et passez `domestic` partout où un
 test en a besoin. N'écrivez pas `_ => preparedRoute` : cela compile, et remplace la base avec toutes les
 règles qu'elle gardait, exactement ce dont la surcharge absente vous protège. Le `With…(Func)` généré le dit

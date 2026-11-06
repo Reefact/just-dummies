@@ -294,3 +294,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0132](0132-let-a-declarations-sample-import-what-it-uses.fr.md) | Laisser un exemple de déclarations importer ce qu'il utilise | Accepted | consigné ici |
 | [ADR-0133](0133-exclude-a-set-of-values-from-any-generator-by-redrawing.fr.md) | Exclure un ensemble de valeurs de tout générateur par retirage | Accepted | consigné ici |
 | [ADR-0134](0134-tell-the-opener-of-a-seed-scope-whether-it-was-drawn-from.fr.md) | Dire à qui ouvre une portée de graine si l'on en a tiré | Accepted | consigné ici |
+| [ADR-0135](0135-explain-a-generator-passed-for-its-value-with-a-rule.fr.md) | Expliquer par une règle un générateur passé pour sa valeur | Accepted | consigné ici |

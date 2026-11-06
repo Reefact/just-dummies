@@ -75,8 +75,8 @@ public sealed class GeneratorPassedForItsValueAnalyzer : DiagnosticAnalyzer {
                                                       .ToList();
 
         // Some candidate takes the generator as it is: the call failed for another reason, which is not this rule's.
-        if (parameters.Exists(parameter => Converts(context.Compilation, type, parameter.Type))) { return; }
-        if (!parameters.Exists(parameter => Converts(context.Compilation, drawn, parameter.Type))) { return; }
+        if (parameters.Exists(parameter => Accepts(context.Compilation, parameter, type))) { return; }
+        if (!parameters.Exists(parameter => Accepts(context.Compilation, parameter, drawn))) { return; }
 
         bool refines = parameters.Exists(parameter => IsRefinement(context.Compilation, parameter.Type, type));
         string remedy = refines
@@ -109,21 +109,34 @@ public sealed class GeneratorPassedForItsValueAnalyzer : DiagnosticAnalyzer {
             return candidate.Parameters.FirstOrDefault(parameter => parameter.Name == name);
         }
 
-        if (index < candidate.Parameters.Length) { return candidate.Parameters[index]; }
+        if (candidate.Parameters.IsEmpty) { return null; }
 
-        return null;
+        IParameterSymbol last = candidate.Parameters[candidate.Parameters.Length - 1];
+        if (last.IsParams && index >= candidate.Parameters.Length - 1) { return last; }
+
+        return index < candidate.Parameters.Length ? candidate.Parameters[index] : null;
+    }
+
+    // Whether the parameter takes a value of the given type: as itself, or, for a params array, as one of its elements
+    // in the expanded form.
+    private static bool Accepts(Compilation compilation, IParameterSymbol parameter, ITypeSymbol type) {
+        if (Converts(compilation, type, parameter.Type)) { return true; }
+
+        return parameter is { IsParams: true, Type: IArrayTypeSymbol array } && Converts(compilation, type, array.ElementType);
     }
 
     private static bool Converts(Compilation compilation, ITypeSymbol source, ITypeSymbol destination) {
         return compilation.ClassifyConversion(source, destination).IsImplicit;
     }
 
-    // A Func<G, G> the generator's own type fits: the overload a scaffolded With… offers to refine a parameter's base.
+    // A Func<G, G> the generator's own type fits, in and out: the overload a scaffolded With… offers to refine a
+    // parameter's base. A delegate that takes the generator and yields something else — a Func<G, bool> — refines nothing.
     private static bool IsRefinement(Compilation compilation, ITypeSymbol parameterType, ITypeSymbol generator) {
         if (parameterType is not INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 2 } function) { return false; }
         if (function.OriginalDefinition.ToDisplayString() != "System.Func<T, TResult>") { return false; }
 
-        return Converts(compilation, generator, function.TypeArguments[0]);
+        return Converts(compilation, generator, function.TypeArguments[0])
+            && Converts(compilation, generator, function.TypeArguments[1]);
     }
 
 }

@@ -31,6 +31,9 @@ public class Jd039GeneratorPassedForItsValueTests {
         public static class Sink {
             public static void Take(int count) { }
             public static void Name(string name, int count) { }
+            public static void Routes(params Route[] routes) { }
+            public static void Keep(Route value) { }
+            public static void Keep(Func<AnyRoute, bool> predicate) { }
         }
         """;
 
@@ -54,6 +57,25 @@ public class Jd039GeneratorPassedForItsValueTests {
         Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD039");
         Check.That(diagnostics[0].GetMessage()).IsEqualTo($"{argument.Split(": ")[^1]} is a generator of {drawn}, and this parameter takes a {drawn}: pass a drawn value with Generate()");
         Check.That(diagnostics[0].Location.SourceTree!.ToString().Substring(diagnostics[0].Location.SourceSpan.Start, diagnostics[0].Location.SourceSpan.Length)).IsEqualTo(argument);
+    }
+
+    [Theory]
+    [InlineData("Sink.Routes(new AnyRoute());",                          "new AnyRoute()")]
+    [InlineData("Sink.Routes(new Route(\"Lyon\", true), new AnyRoute());", "new AnyRoute()")]
+    public async Task Reads_an_expanded_params_argument_against_its_element_type(string statements, string argument) {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeRefusedAsync(statements);
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD039");
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo($"{argument} is a generator of Route, and this parameter takes a Route: pass a drawn value with Generate()");
+    }
+
+    [Fact]
+    public async Task Names_Generate_only_when_the_lambda_overload_returns_something_else() {
+        // A Func<AnyRoute, bool> takes the generator but yields no refined one: x => x.WithDomestic(true) cannot satisfy it.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeRefusedAsync("Sink.Keep(new AnyRoute());");
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD039");
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("new AnyRoute() is a generator of Route, and this parameter takes a Route: pass a drawn value with Generate()");
     }
 
     [Theory]

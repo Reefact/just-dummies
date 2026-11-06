@@ -721,4 +721,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>A generator passed to a parameter of the type it draws: a call that does not compile, explained</summary>
+    [DiagnosticRule]
+    public static class JD039 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD039);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Usage;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "A generator passed to a parameter of the type it draws";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD039) + HelpLinkSuffix;
+
+    }
+
 }

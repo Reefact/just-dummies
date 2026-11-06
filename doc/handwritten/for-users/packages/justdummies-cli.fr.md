@@ -388,6 +388,33 @@ Deux lambdas auraient effectué deux tirages indépendants, sans garantir des ro
 valeur fixée ignore elle aussi la base, mais c'est vous qui la choisissez, et elle ne varie pas : si
 elle enfreint une règle, le test échoue dès sa première exécution, puis à chacune des suivantes.
 
+### Quand chaque paramètre est fixé
+
+Fixez un paramètre, et les autres sont toujours tirés. Fixez-les tous, et plus rien n'est tiré : la
+valeur est un littéral déguisé en tirage, et un nom en `any` affirmerait le contraire. Ce que le test
+veut dire, c'est cette valeur-là ; il le dit donc avec le constructeur :
+
+```csharp
+// Arrange
+Route lyonParis = new Route("Lyon", "Paris", 465, domestic: true);
+
+// Rather than Any.Shipment().WithRoute(lyonParis).WithParcels(3).WithLabels(fragile).WithDeclaredValue(200m).Generate():
+Shipment fragileShipment = new Shipment(lyonParis, parcels: 3, labels: new[] { "fragile" }, declaredValue: 200m);
+
+// Act
+bool needsRestStop = fragileShipment.NeedsRestStop;
+
+// Assert
+Assert.True(needsRestStop);
+```
+
+C'est la forme composée d'une chaîne comme `Between(5, 5)`, que [JD038](../analyzers/JD038.fr.md)
+signale. Laissez un paramètre tiré, ou affinez-le par une lambda, et la valeur redevient arbitraire :
+`WithRoute(lyonParis).WithParcels(3)` tire toujours les étiquettes et la valeur déclarée. Aucune règle
+ne signale un générateur entièrement fixé : les analyseurs ne peuvent pas savoir quelles classes de
+votre projet `any` a générées, ni quel `With…` fixe et lequel affine, puisque le fichier vous appartient
+et que vous pouvez le modifier.
+
 ### Où se trouve la base valide
 
 Dans le fichier généré, chaque paramètre dispose d'une fabrique nommée `AnyValid…()`. Le constructeur

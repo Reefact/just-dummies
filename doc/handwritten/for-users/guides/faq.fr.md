@@ -163,10 +163,10 @@ exécute les suites
 
 ### Dois-je installer les analyzers séparément ?
 
-Non. Les 38 règles sont embarquées dans le paquet `JustDummies` lui-même et se mettent à travailler
+Non. Les 39 règles sont embarquées dans le paquet `JustDummies` lui-même et se mettent à travailler
 dès la compilation suivante. Plusieurs sont des règles Info, que `dotnet build` garde hors de la console, si
 bien qu'une sortie de build propre ne prouve rien dans un sens ni dans l'autre : l'[index des
-règles](../analyzers/README.fr.md) dit comment les voir et comment vérifier que les 38 sont chargées. Le paquet distinct `JustDummies.DiagnosticCatalog` n'est nécessaire que
+règles](../analyzers/README.fr.md) dit comment les voir et comment vérifier que les 39 sont chargées. Le paquet distinct `JustDummies.DiagnosticCatalog` n'est nécessaire que
 pour nommer une règle dans un `[SuppressMessage]` sans littéral de chaîne — voir
 [sa page](../packages/justdummies-diagnosticcatalog.fr.md).
 

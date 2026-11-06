@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 38 règles Roslyn (`JD001`–`JD038`), sous
+Le package `JustDummies` embarque 39 règles Roslyn (`JD001`–`JD039`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -62,7 +62,7 @@ SARIF 2.1 :
 dotnet build -p:ErrorLog="jd.sarif%2Cversion=2.1"
 ```
 
-`jd.sarif` liste alors toutes les règles que le compilateur a chargées, dont les 38 identifiants `JD`. Le journal
+`jd.sarif` liste alors toutes les règles que le compilateur a chargées, dont les 39 identifiants `JD`. Le journal
 SARIF 1.0 par défaut ne liste que les règles qui ont signalé quelque chose : il ne distingue donc pas une règle
 silencieuse d'une règle absente.
 
@@ -98,6 +98,7 @@ Un générateur est une *recette* immuable, et `Generate()` est la seule chose q
 | [JD011 GeneratorWhereValueExpected](JD011.fr.md) | 🟠 Avertissement | opt-in | Un générateur atteint une position `object`, `dynamic` ou `params object[]` : c'est la recette qui est stockée, comparée ou assérée, pas la valeur. |
 | [JD012 GeneratorPooledAsValue](JD012.fr.md) | 🟠 Avertissement | on | `Any.OneOf` reçoit des générateurs et infère un ensemble de recettes ; y tirer produit une recette plutôt qu'une valeur. |
 | [JD013 HeldCollectionPassedToOneOf](JD013.fr.md) | 🟠 Avertissement | on | Une collection tenue passée à `Any.OneOf` lie `T` au type de la collection, formant un ensemble d'un seul élément ; `Any.ElementOf` tire parmi ses éléments. |
+| [JD039 GeneratorPassedForItsValue](JD039.fr.md) | 🟠 Avertissement | on | Un générateur passé à un paramètre du type qu'il tire ne compile pas (CS1503) ; la règle nomme la surcharge lambda quand la méthode en a une, comme un `With…` scaffoldé, et `Generate()` sinon. |
 
 ## Contraintes
 

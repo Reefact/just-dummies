@@ -48,6 +48,30 @@ internal static class AnalyzerTestHarness {
         return await withAnalyzers.GetAnalyzerDiagnosticsAsync();
     }
 
+    /// <summary>
+    ///     The same, over a snippet the compiler refuses on purpose: a rule that explains a compile error is tested on
+    ///     the code that raises it. The snippet must fail with exactly the error ids given, so a typo cannot pass for
+    ///     the error under test.
+    /// </summary>
+    public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsOfARefusedSnippetAsync(DiagnosticAnalyzer analyzer, string source, params string[] expectedCompilerErrorIds) {
+        SyntaxTree         syntaxTree  = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest));
+        CSharpCompilation  compilation = CSharpCompilation.Create(
+            assemblyName: "JustDummies.Analyzers.TestSnippet",
+            syntaxTrees: new[] { syntaxTree },
+            references: References,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        string[] errorIds = [.. compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error).Select(diagnostic => diagnostic.Id).Distinct().OrderBy(id => id, StringComparer.Ordinal)];
+        string[] expected = [.. expectedCompilerErrorIds.Distinct().OrderBy(id => id, StringComparer.Ordinal)];
+        if (!errorIds.SequenceEqual(expected)) {
+            throw new InvalidOperationException($"The test snippet was expected to fail with [{string.Join(", ", expected)}], and failed with [{string.Join(", ", errorIds)}].");
+        }
+
+        CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers(ImmutableArray.Create(analyzer));
+
+        return await withAnalyzers.GetAnalyzerDiagnosticsAsync();
+    }
+
     private static ImmutableArray<MetadataReference> BuildReferences() {
         List<MetadataReference> references = [];
 

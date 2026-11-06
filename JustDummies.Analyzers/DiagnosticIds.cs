@@ -29,6 +29,9 @@ internal static class DiagnosticIds {
     public const string GeneratorPooledAsValue = JustDummiesRule.JD012.Id;
     public const string HeldCollectionPassedToOneOf = JustDummiesRule.JD013.Id;
 
+    /// <summary>JD039 — a generator passed to a parameter of the type it draws, which does not compile.</summary>
+    public const string GeneratorPassedForItsValue = JustDummiesRule.JD039.Id;
+
     // Category: Constraints — decidable from compile-time constants
     public const string RejectedConstantArgument = JustDummiesRule.JD014.Id;
     public const string StringConstraintsAdmitNoValue = JustDummiesRule.JD015.Id;

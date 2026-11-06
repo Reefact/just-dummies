@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-The `JustDummies` package ships 38 Roslyn rules (`JD001`–`JD038`) inside itself, under
+The `JustDummies` package ships 39 Roslyn rules (`JD001`–`JD039`) inside itself, under
 `analyzers/dotnet/cs`. Any project that references the package picks them up automatically,
 with no extra install. They run while your project compiles, turning mistakes the run time
 would otherwise report late — or never — into build-time diagnostics.
@@ -58,7 +58,7 @@ does not turn on an opt-in rule either: JD011 and JD019 still need their own
 dotnet build -p:ErrorLog="jd.sarif%2Cversion=2.1"
 ```
 
-`jd.sarif` then lists every rule the compiler loaded, the 38 `JD` ids among them. The default SARIF 1.0
+`jd.sarif` then lists every rule the compiler loaded, the 39 `JD` ids among them. The default SARIF 1.0
 log lists only the rules that reported something, so it cannot tell a silent rule from a missing one.
 
 ## Reproducibility
@@ -93,6 +93,7 @@ A generator is an immutable *recipe*, and `Generate()` is the only thing that ma
 | [JD011 GeneratorWhereValueExpected](JD011.en.md) | 🟠 Warning | opt-in | A generator reaches an object, dynamic or params object[] position, so the recipe is stored, compared or asserted on instead of the value. |
 | [JD012 GeneratorPooledAsValue](JD012.en.md) | 🟠 Warning | on | Any.OneOf is given generators, inferring a pool of recipes; drawing from it yields a recipe rather than a value. |
 | [JD013 HeldCollectionPassedToOneOf](JD013.en.md) | 🟠 Warning | on | A held collection passed to Any.OneOf binds T to the collection type, making a pool of one; Any.ElementOf draws from its elements. |
+| [JD039 GeneratorPassedForItsValue](JD039.en.md) | 🟠 Warning | on | A generator passed to a parameter of the type it draws does not compile (CS1503); the rule names the lambda overload when the method has one, as a scaffolded With… does, and Generate() otherwise. |
 
 ## Constraints
 

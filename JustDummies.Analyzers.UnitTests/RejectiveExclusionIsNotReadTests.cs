@@ -46,7 +46,7 @@ public sealed class RejectiveExclusionIsNotReadTests {
 
         DiagnosticAnalyzer[] analyzers = AllAnalyzers().ToArray();
         // Every rule of the package, so a pass is never the empty loop's.
-        Check.That(analyzers.SelectMany(analyzer => analyzer.SupportedDiagnostics).Select(descriptor => descriptor.Id).Distinct().Count(id => id.StartsWith("JD", StringComparison.Ordinal))).IsEqualTo(38);
+        Check.That(analyzers.SelectMany(analyzer => analyzer.SupportedDiagnostics).Select(descriptor => descriptor.Id).Distinct().Count(id => id.StartsWith("JD", StringComparison.Ordinal))).IsEqualTo(39);
 
         foreach (DiagnosticAnalyzer analyzer in analyzers) {
             string[] ids = analyzer.SupportedDiagnostics.Select(descriptor => descriptor.Id).ToArray();

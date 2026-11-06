@@ -11,8 +11,10 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 ### Added
 
 - **The CLI page says what to write when every parameter is pinned.** A scaffolded generator whose every
-  `With…` received a value draws nothing: the page now shows the constructor call the test means, says
-  that leaving one parameter drawn or refined keeps the value arbitrary, and why no rule reports it
+  `With…` received a value draws nothing. The page asks which part the test is about: keep that part and
+  let the rest be drawn, or, when the whole value is what the test checks, write the constructor under a
+  name that does not start with `any`. It says that a value stays arbitrary only while a draw can still
+  vary — a lambda pinning every part of its parameter draws nothing either — and why no rule reports it
   (issue #507).
 - **Six more guard shapes are read, each exactly.** From the second UX trial's field report: the negation of a
   comparison (`!(x > 0)` → `.Positive()`); a `TimeSpan` bound written `TimeSpan.Zero`, `MinValue`, `MaxValue` or

@@ -391,29 +391,37 @@ elle enfreint une règle, le test échoue dès sa première exécution, puis à 
 ### Quand chaque paramètre est fixé
 
 Fixez un paramètre, et les autres sont toujours tirés. Fixez-les tous, et plus rien n'est tiré : la
-valeur est un littéral déguisé en tirage, et un nom en `any` affirmerait le contraire. Ce que le test
-veut dire, c'est cette valeur-là ; il le dit donc avec le constructeur :
+valeur est un littéral déguisé en tirage, et un nom en `any` affirmerait le contraire. Demandez-vous
+sur quelle partie de cette valeur porte le test.
+
+Le plus souvent, c'est une seule partie, et les autres valeurs fixées sont des valeurs dont le test se
+moque — précisément les dummies que cette bibliothèque existe pour laisser arbitraires. Gardez la partie
+sur laquelle porte le test, et laissez tirer le reste :
 
 ```csharp
 // Arrange
-Route lyonParis = new Route("Lyon", "Paris", 465, domestic: true);
-
-// Rather than Any.Shipment().WithRoute(lyonParis).WithParcels(3).WithLabels(fragile).WithDeclaredValue(200m).Generate():
-Shipment fragileShipment = new Shipment(lyonParis, parcels: 3, labels: new[] { "fragile" }, declaredValue: 200m);
+// Plutôt que Any.Shipment().WithRoute(new Route("Lyon", "Paris", 465, domestic: true)).WithParcels(3)
+//                          .WithLabels(new[] { "fragile" }).WithDeclaredValue(200m).Generate() :
+Shipment anyLongShipment = Any.Shipment().WithRoute(r => r.WithDistanceKm(465)).Generate();
 
 // Act
-bool needsRestStop = fragileShipment.NeedsRestStop;
+bool needsRestStop = anyLongShipment.NeedsRestStop;
 
 // Assert
 Assert.True(needsRestStop);
 ```
 
-C'est la forme composée d'une chaîne comme `Between(5, 5)`, que [JD038](../analyzers/JD038.fr.md)
-signale. Laissez un paramètre tiré, ou affinez-le par une lambda, et la valeur redevient arbitraire :
-`WithRoute(lyonParis).WithParcels(3)` tire toujours les étiquettes et la valeur déclarée. Aucune règle
-ne signale un générateur entièrement fixé : les analyseurs ne peuvent pas savoir quelles classes de
-votre projet `any` a générées, ni quel `With…` fixe et lequel affine, puisque le fichier vous appartient
-et que vous pouvez le modifier.
+Si le test porte vraiment sur chaque partie — c'est la valeur entière qu'il vérifie —, cette valeur
+n'est pas du tout un dummy : écrivez-la avec le constructeur, sous un nom qui ne commence pas par `any`.
+
+Ce qui garde une valeur arbitraire, c'est un tirage qui peut encore varier : un paramètre laissé tel
+quel, ou affiné en une recette qui admet encore plus d'une valeur. Une lambda ne suffit pas à elle
+seule — celle qui fixe chaque partie de son propre paramètre,
+`r => r.WithOrigin("Lyon").WithDestination("Paris").WithDistanceKm(465).WithDomestic(true)`, ne tire rien
+non plus. C'est la forme composée d'une chaîne comme `Between(5, 5)`, que
+[JD038](../analyzers/JD038.fr.md) signale. Aucune règle ne signale un générateur entièrement fixé : les
+analyseurs ne peuvent pas savoir quelles classes de votre projet `any` a générées, ni quel `With…` fixe
+et lequel affine, puisque le fichier vous appartient et que vous pouvez le modifier.
 
 ### Où se trouve la base valide
 

@@ -78,6 +78,7 @@ public class CodeFixTests {
     [InlineData("Any.Int32().GreaterThanOrEqualTo(bound).LessThanOrEqualTo(50)")]
     [InlineData("Any.DateTime().AfterOrEqualTo(DateTime.Now).BeforeOrEqualTo(DateTime.MaxValue)")]
     [InlineData("Any.Int32().GreaterThanOrEqualTo(bound + 1).LessThanOrEqualTo(50)")]
+    [InlineData("Any.DateTime().AfterOrEqualTo(new DateTime(bound, 1, 1)).BeforeOrEqualTo(DateTime.MaxValue)")]
     public async Task JD031_offers_nothing_where_an_argument_may_run_code(string chain) {
         // The rewrite carries the later bound's argument past the links written between the two, so an argument that
         // runs the developer's own code -- a call, a property of their own, a local or a parameter -- could run in

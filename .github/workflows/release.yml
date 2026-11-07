@@ -231,6 +231,7 @@ jobs:
       # verify provenance against the Release asset and the nuget.org signature via `dotnet nuget verify`.
       # Runs BEFORE both publications on purpose: only attested artifacts are ever released or pushed.
       - name: Attest build provenance
+        id: provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
@@ -282,18 +283,26 @@ jobs:
       # attested, so the release tag, source archive and attested packages all point at the same commit
       # even when dispatched from a hotfix branch or an older SHA. The `|| upload --clobber` fallback
       # keeps a re-run idempotent if the release already exists.
+      # The attestation travels with the packages it covers, in two shapes. `<tag>.sigstore.json` is the
+      # Sigstore bundle the attest step wrote, verifiable offline with `gh attestation verify --bundle`.
+      # `<tag>.intoto.jsonl` is that bundle's DSSE envelope alone, the SLSA provenance format. The attestation
+      # store already holds both; publishing them as assets is what lets a consumer, or OpenSSF Scorecard's
+      # Signed-Releases check, find them from the release itself.
       - name: Publish GitHub Release with attested packages
         if: github.event_name == 'push' || inputs.dry_run == false
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
           COMPONENT: ${{ steps.version.outputs.component }}
+          PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
         run: |
           # nullglob: a cli release ships no .snupkg (the tool has no symbol package), so the pattern
           # must expand to nothing rather than to a literal path gh would then fail to upload.
           shopt -s nullglob
           TAG="${COMPONENT}-v${VERSION}"
-          assets=(artifacts/*.nupkg artifacts/*.snupkg)
+          cp "$PROVENANCE_BUNDLE" "artifacts/${TAG}.sigstore.json"
+          jq -ce '.dsseEnvelope' "$PROVENANCE_BUNDLE" > "artifacts/${TAG}.intoto.jsonl"
+          assets=(artifacts/*.nupkg artifacts/*.snupkg "artifacts/${TAG}.sigstore.json" "artifacts/${TAG}.intoto.jsonl")
           # A SemVer pre-release label (anything after '-') marks the GitHub Release as a pre-release,
           # matching how NuGet lists it, so a preview never shows up as the repo's "Latest" release.
           # Build metadata '+...' is already rejected in "Resolve version", so a '-' here is

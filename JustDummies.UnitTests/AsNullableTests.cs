@@ -95,6 +95,14 @@ public sealed class AsNullableTests {
         Check.That(slots).Contains((Slot?)null);
     }
 
+    /// <summary>A value the wrapped generator draws, pinned, sits inside the lifted domain and extends nothing.</summary>
+    [Fact(DisplayName = "A drawable value pinned into a distinct collection sits inside the lifted domain.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
+    public void APinnedDrawableValueExtendsNothing() {
+        Check.ThatCode(() => Any.SetOf(Any.Enum<Slot>().AsNullable()).Containing(Slot.Morning).WithCount(4).Generate())
+             .Throws<ConflictingAnyConstraintException>();
+    }
+
     [Fact(DisplayName = "AsNullable refuses a null generator.")]
     public void AsNullableRefusesANullGenerator() {
         Check.ThatCode(() => ((IAny<int>)null!).AsNullable()).Throws<System.ArgumentNullException>();

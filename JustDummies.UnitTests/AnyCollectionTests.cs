@@ -527,6 +527,17 @@ public sealed class AnyCollectionTests {
         Check.That(first).ContainsExactly(second);
     }
 
+    [Fact(DisplayName = "SequenceOf: a comparer decides what distinct means, exactly as it does for a set.")]
+    public void SequenceOfHonoursAComparer() {
+        IEqualityComparer<int> modTen = new ModuloComparer(10);
+
+        for (int i = 0; i < SampleCount; i++) {
+            List<int> sequence = Any.SequenceOf(Any.Int32().Between(0, 999)).Distinct(modTen).WithCount(5).Generate().ToList();
+
+            Check.That(sequence.Select(value => value % 10).Distinct().Count()).IsEqualTo(5);
+        }
+    }
+
     [Fact(DisplayName = "DictionaryOf: builds unique-keyed dictionaries and gates the count by the key domain.")]
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]

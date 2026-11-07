@@ -55,9 +55,22 @@ public sealed class PermutationOfTests {
         Check.That(reads).IsEqualTo(3);
     }
 
+    [Fact(DisplayName = "The ambient entry point draws an order too, and replays it from the scope's seed.")]
+    public void TheAmbientEntryPointReplaysFromTheScopeSeed() {
+        Quarter[] all = [Quarter.FrontLeft, Quarter.FrontRight, Quarter.RearLeft, Quarter.RearRight];
+
+        Check.That(Drawn(17, all)).IsEquivalentTo(all).And.ContainsExactly(Drawn(17, all));
+    }
+
     [Fact(DisplayName = "A null sequence is refused as an argument.")]
     public void ANullSequenceIsRefused() {
         Check.ThatCode(() => Any.PermutationOf<int>(null!)).Throws<ArgumentNullException>();
+    }
+
+    private static List<Quarter> Drawn(int seed, Quarter[] items) {
+        using IDisposable scope = Any.UseSeed(seed);
+
+        return Any.PermutationOf(items).Generate();
     }
 
 }

@@ -298,8 +298,7 @@ jobs:
           # matching how NuGet lists it, so a preview never shows up as the repo's "Latest" release.
           # Build metadata '+...' is already rejected in "Resolve version", so a '-' here is
           # unambiguously the pre-release separator (-preview.1, -beta.1, -rc.1, ...).
-          PRERELEASE=false
-          case "$VERSION" in *-*) PRERELEASE=true ;; esac
+          case "$VERSION" in *-*) PRERELEASE=true ;; *) PRERELEASE=false ;; esac
           # Train-scoped notes (only this train's Conventional Commit scopes) instead of --generate-notes,
           # so a lib release never lists cli commits and vice versa. Pass $GITHUB_SHA — not $TAG — as the
           # range's upper bound: on a workflow_dispatch publish the tag does not exist yet (gh creates it

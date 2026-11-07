@@ -53,6 +53,9 @@ jobs:
                 echo "   skipped (Dependabot-authored)"
                 continue
                 ;;
+              *)
+                # Any other author is linted below.
+                ;;
             esac
             if git log -1 --format=%B "${sha}" | tools/commit-lint/lint-commit-message.sh --ci -; then
               echo "   ok"

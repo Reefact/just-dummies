@@ -257,4 +257,25 @@ public sealed class AnyPairTests {
         Check.ThatCode(() => ((AnyPairRelation<int>)null!).Item1LessThanItem2()).Throws<ArgumentNullException>();
     }
 
+    /// <summary>Every relation of every ordered type, by name, for the null-holder theory below.</summary>
+    public static TheoryData<string> Relations() {
+        TheoryData<string> relations = [];
+        foreach (MethodInfo relation in typeof(AnyPairRelations).GetMethods(BindingFlags.Public | BindingFlags.Static)) {
+            relations.Add(relation.ReturnType.GetGenericArguments()[0].Name + "." + relation.Name);
+        }
+
+        return relations;
+    }
+
+    [Theory(DisplayName = "Every relation of every ordered type refuses a null holder as an argument.")]
+    [MemberData(nameof(Relations))]
+    public void EveryRelationRefusesANullHolder(string relation) {
+        MethodInfo method = typeof(AnyPairRelations).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                                                    .Single(candidate => candidate.ReturnType.GetGenericArguments()[0].Name + "." + candidate.Name == relation);
+
+        TargetInvocationException thrown = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, [null]));
+
+        Check.That(thrown.InnerException).IsInstanceOf<ArgumentNullException>();
+    }
+
 }

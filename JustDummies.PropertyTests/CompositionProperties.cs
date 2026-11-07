@@ -1,6 +1,7 @@
 #region Usings declarations
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using JustDummies.Diagnostics;
 
 using FsCheck;
@@ -103,6 +104,50 @@ public sealed class CompositionProperties {
             return (strict ? below < above : below <= above)
                 && drawn.Item1 >= item1.Min && drawn.Item1 <= item1.Max
                 && drawn.Item2 >= item2.Min && drawn.Item2 <= item2.Max;
+        }
+    }
+
+    [Fact(DisplayName = "Pair: every relation of every ordered type holds on every seed, read by the type's own comparison.")]
+    public void EveryRelationOfEveryOrderedTypeHolds() {
+        // The order is built once and shared by every type (ADR-0131), but each type reaches it through its own entry:
+        // a Pair overload over its builder, and the four relations of its vocabulary. The int property above quantifies
+        // the ranges; this one quantifies the entries, over each type's whole default base.
+        MethodInfo[] relations = typeof(AnyPairRelations).GetMethods(BindingFlags.Public | BindingFlags.Static);
+
+        Prop.ForAll(Generators.Seed().ToArbitrary(),
+                    seed => relations.All(relation => HoldsOnEveryDraw(relation, Any.WithSeed(seed))))
+            .QuickCheckThrowOnFailure();
+
+        static bool HoldsOnEveryDraw(MethodInfo relation, AnyContext any) {
+            Type       item       = relation.ReturnType.GetGenericArguments()[0];
+            MethodInfo pairing    = typeof(Any).GetMethods().Single(method => method.Name == nameof(Any.Pair) && method.ReturnType == relation.ReturnType);
+            Type       builder    = pairing.GetParameters()[0].ParameterType;
+            MethodInfo factory    = typeof(AnyContext).GetMethods().Single(method => method.ReturnType == builder && method.GetParameters().Length == 0);
+            object     pair       = pairing.Invoke(null, [factory.Invoke(any, null), factory.Invoke(any, null)])!;
+            object     having     = relation.ReturnType.GetProperty(nameof(AnyPair<int>.Having))!.GetValue(pair)!;
+            object     ordered    = relation.Invoke(null, [having])!;
+            MethodInfo generate   = relation.ReturnType.GetMethod(nameof(AnyPair<int>.Generate))!;
+            Func<int, bool> holds = Holds(relation.Name);
+
+            for (int draw = 0; draw < 8; draw++) {
+                object  drawn = generate.Invoke(ordered, null)!;
+                object? item1 = drawn.GetType().GetField("Item1")!.GetValue(drawn);
+                object? item2 = drawn.GetType().GetField("Item2")!.GetValue(drawn);
+                int     order = ((System.Collections.IComparer)typeof(Comparer<>).MakeGenericType(item).GetProperty(nameof(Comparer<int>.Default))!.GetValue(null)!).Compare(item1, item2);
+                if (!holds(order)) { return false; }
+            }
+
+            return true;
+        }
+
+        static Func<int, bool> Holds(string relation) {
+            return relation switch {
+                "Item1LessThanItem2" or "Item1BeforeItem2"                       => order => order < 0,
+                "Item1LessThanOrEqualToItem2" or "Item1BeforeOrEqualToItem2"     => order => order <= 0,
+                "Item1GreaterThanItem2" or "Item1AfterItem2"                     => order => order > 0,
+                "Item1GreaterThanOrEqualToItem2" or "Item1AfterOrEqualToItem2"   => order => order >= 0,
+                _                                                                => throw new InvalidOperationException($"No reading for the relation {relation}.")
+            };
         }
     }
 

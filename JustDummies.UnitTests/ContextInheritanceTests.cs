@@ -1,6 +1,8 @@
 #region Usings declarations
 
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection;
 
 using NFluent;
 
@@ -95,6 +97,86 @@ public sealed class ContextInheritanceTests {
         // Over foreign keys the dictionary falls back to its value generator's source, so the count replays from the
         // context's seed whatever the ambient scope.
         Check.That(CountOverForeignKeys(1)).IsEqualTo(CountOverForeignKeys(2));
+    }
+
+    /// <summary>Every arity of <c>Any.Combine</c> paired with every operand position, for the theories below.</summary>
+    public static TheoryData<int, int> AritiesAndPositions() {
+        TheoryData<int, int> cases = [];
+        for (int arity = 2; arity <= 8; arity++) {
+            for (int position = 0; position < arity; position++) { cases.Add(arity, position); }
+        }
+
+        return cases;
+    }
+
+    [Theory(DisplayName = "Combine of every arity takes the source of the first operand that carries one, at every position.")]
+    [MemberData(nameof(AritiesAndPositions))]
+    public void CombineTakesTheFirstSourceAtEveryPosition(int arity, int position) {
+        // ADR-0102: the composition chooses no source of its own. Foreign operands before the one that carries a
+        // source must be passed over, and the ambient ones after it must not displace it.
+        AnyContext    context       = Any.WithSeed(Seed);
+        RandomSource? contextSource = SourceOf(context.Int32());
+        IAny<int>[]   operands      = [.. Enumerable.Range(0, arity).Select(index => OperandAt(index, position, context))];
+
+        Check.That(SourceOf(Combined(operands))).IsSameReferenceAs(contextSource);
+    }
+
+    [Theory(DisplayName = "Combine of every arity is fully replayable only when no operand at any position draws elsewhere.")]
+    [MemberData(nameof(AritiesAndPositions))]
+    public void CombineIsReplayableOnlyWithoutAForeignOperand(int arity, int position) {
+        AnyContext  context  = Any.WithSeed(Seed);
+        IAny<int>[] together = [.. Enumerable.Range(0, arity).Select(_ => (IAny<int>)context.Int32())];
+        IAny<int>[] foreign  = [.. Enumerable.Range(0, arity).Select(index => index == position ? new Counter() : (IAny<int>)context.Int32())];
+
+        Check.That(Combined(together) is IReproducibilityHint { DrawsOnlyFromSource: true }).IsTrue();
+        Check.That(Combined(foreign) is IReproducibilityHint { DrawsOnlyFromSource: false }).IsTrue();
+    }
+
+    [Theory(DisplayName = "Combine of every arity refuses a null operand at every position, naming it.")]
+    [MemberData(nameof(AritiesAndPositions))]
+    public void CombineRefusesANullOperandAtEveryPosition(int arity, int position) {
+        object?[]  arguments = [.. Enumerable.Range(0, arity).Select(index => index == position ? null : (object)Any.Int32()), Compose(arity)];
+        MethodInfo combine   = CombineOf(arity);
+
+        TargetInvocationException thrown = Assert.Throws<TargetInvocationException>(() => combine.Invoke(null, arguments));
+
+        Check.That(thrown.InnerException).IsInstanceOf<ArgumentNullException>();
+        Check.That(((ArgumentNullException)thrown.InnerException!).ParamName).IsEqualTo(combine.GetParameters()[position].Name);
+    }
+
+    [Theory(DisplayName = "Combine of every arity refuses a null composition.")]
+    [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
+    public void CombineRefusesANullComposition(int arity) {
+        object?[] arguments = [.. Enumerable.Range(0, arity).Select(_ => (object)Any.Int32()), null];
+
+        TargetInvocationException thrown = Assert.Throws<TargetInvocationException>(() => CombineOf(arity).Invoke(null, arguments));
+
+        Check.That(((ArgumentNullException)thrown.InnerException!).ParamName).IsEqualTo("compose");
+    }
+
+    // Foreign before the position, the context's at it, ambient after it.
+    private static IAny<int> OperandAt(int index, int position, AnyContext context) {
+        if (index < position) { return new Counter(); }
+
+        return index == position ? context.Int32() : Any.Int32();
+    }
+
+    private static IAny<int> Combined(IAny<int>[] operands) {
+        return (IAny<int>)CombineOf(operands.Length).Invoke(null, [.. operands, Compose(operands.Length)])!;
+    }
+
+    private static MethodInfo CombineOf(int arity) {
+        return typeof(Any).GetMethods()
+                          .Single(method => method.Name == nameof(Any.Combine) && method.GetGenericArguments().Length == arity + 1)
+                          .MakeGenericMethod([.. Enumerable.Repeat(typeof(int), arity + 1)]);
+    }
+
+    // A composition summing its operands, typed for the arity: what is composed does not matter here, only that it is.
+    private static Delegate Compose(int arity) {
+        ParameterExpression[] parameters = [.. Enumerable.Range(0, arity).Select(index => Expression.Parameter(typeof(int), "v" + index))];
+        Expression            sum        = parameters.Skip(1).Aggregate((Expression)parameters[0], Expression.Add);
+
+        return Expression.Lambda(sum, parameters).Compile();
     }
 
     private static RandomSource? SourceOf<T>(IAny<T> generator) {

@@ -362,7 +362,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 - **The strings page says no rule reports a split surrogate pair.** A quantifier or a class over half of an
   astral character draws what the .NET engine matches, and the analyzers do not read a pattern's
-  contents, so the page's group form, `(\U00020000){3}`, is where the shape is caught (issue #523).
+  contents, so the page documents the pitfall and its group form, `(\U00020000){3}` (issue #523).
 - **`BigInteger` has a recipe on the numbers page, and no factory.** Bytes read as an unsigned number
   draw a non-negative value below the width the caller writes, `Any.Int64().Between(min, max).As(...)` draws
   a closed range exactly, and a wider range folds as many bytes as its span needs onto it. A first-class

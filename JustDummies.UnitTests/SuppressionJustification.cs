@@ -122,7 +122,6 @@ internal static class SuppressionJustification {
 
     }
 
-    /// <summary>Justifications for JD025 — the pool-duplicate collapse diagnostic.</summary>
     /// <summary>Justifications for JD024 — "This constraint changes nothing".</summary>
     internal static class JD024 {
 
@@ -135,6 +134,7 @@ internal static class SuppressionJustification {
 
     }
 
+    /// <summary>Justifications for JD025 — the pool-duplicate collapse diagnostic.</summary>
     internal static class JD025 {
 
         /// <summary>

@@ -82,6 +82,7 @@ public sealed class DecimalMultipleOfTests {
 
     [Fact(DisplayName = "A step off the scale's grid conflicts, naming both, in either order.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void AStepOffTheScalesGridConflicts() {
         Check.ThatCode(() => Any.Decimal().MultipleOf(0.25m).WithScale(1))
              .Throws<ConflictingAnyConstraintException>()
@@ -94,6 +95,7 @@ public sealed class DecimalMultipleOfTests {
     [Fact(DisplayName = "A second, different step is refused naming both; the same step again is a repetition.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void TheStepIsDeclaredOnce() {
         Check.ThatCode(() => Any.Decimal().MultipleOf(0.25m).MultipleOf(0.5m))
              .Throws<ConflictingAnyConstraintException>()
@@ -105,6 +107,7 @@ public sealed class DecimalMultipleOfTests {
 
     [Fact(DisplayName = "A step that is not strictly positive is an argument error.")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void AStepThatIsNotStrictlyPositiveIsAnArgumentError() {
         Assert.Throws<ArgumentOutOfRangeException>(() => Any.Decimal().MultipleOf(0m));
         Assert.Throws<ArgumentOutOfRangeException>(() => Any.Decimal().MultipleOf(-0.25m));

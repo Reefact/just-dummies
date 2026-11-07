@@ -37,6 +37,7 @@ public sealed class WithoutCharsTests {
 
     [Fact(DisplayName = "A subtraction that empties the pool is refused, naming both constraints.")]
     [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ASubtractionThatEmptiesThePoolIsRefused() {
         Check.ThatCode(() => Any.String().WithChars("AB").WithoutChars("BA"))
              .Throws<ConflictingAnyConstraintException>()
@@ -45,11 +46,13 @@ public sealed class WithoutCharsTests {
     }
 
     [Fact(DisplayName = "An anchored literal is exempt, as for every subtraction.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void AnAnchoredLiteralIsExempt() {
         Check.That(Any.WithSeed(1).String().WithChars("AB").WithLength(4).StartingWith("N").WithoutChars("N").Generate()).StartsWith("N");
     }
 
     [Fact(DisplayName = "A null, empty or split-surrogate argument is refused as an argument.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void BadArgumentsAreRefused() {
         Check.ThatCode(() => Any.String().WithoutChars(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.String().WithoutChars("")).Throws<ArgumentException>();

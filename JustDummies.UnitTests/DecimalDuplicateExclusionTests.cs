@@ -21,6 +21,7 @@ public sealed class DecimalDuplicateExclusionTests {
     private const int SampleCount = 100;
 
     [Fact(DisplayName = "Restating an exclusion through a second constraint does not empty a satisfiable grid.")]
+    [SuppressMessage(JustDummiesRule.JD024.Category, JustDummiesRule.JD024.Id, Justification = SuppressionJustification.JD024.RestatedExclusionIsTheSubject)]
     public void RestatedExclusionWeighsOnce() {
         // Grid {0.00, 0.01}: excluding 0.01 leaves 0.00. Declaring the same exclusion again changes nothing.
         AnyDecimal generator = Any.Decimal().Between(0.00m, 0.01m).WithScale(2).Except(0.01m).DifferentFrom(0.01m);
@@ -43,6 +44,7 @@ public sealed class DecimalDuplicateExclusionTests {
     }
 
     [Fact(DisplayName = "Cardinality counts a duplicated exclusion once, so a distinct collection over the grid still fits.")]
+    [SuppressMessage(JustDummiesRule.JD024.Category, JustDummiesRule.JD024.Id, Justification = SuppressionJustification.JD024.RestatedExclusionIsTheSubject)]
     public void CardinalityCountsDistinctExclusionsOnly() {
         // Grid {0.00 .. 0.04}, 5 points; one value excluded twice leaves 4 — exactly what a distinct set of 4 needs.
         // Before the fix the inflated count (3) made the eager cardinality check refuse this satisfiable request.

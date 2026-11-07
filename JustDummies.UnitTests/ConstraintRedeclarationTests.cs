@@ -31,6 +31,7 @@ public sealed class ConstraintRedeclarationTests {
     /// <summary>Every once-only constraint, declared twice with identical arguments.</summary>
     [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     private static IEnumerable<(string Label, Func<object> Redeclare)> IdenticalRedeclarations() {
         yield return ("String().WithLength(3)", () => Any.String().WithLength(3).WithLength(3));
         yield return ("String().StartingWith(\"a\")", () => Any.String().StartingWith("a").StartingWith("a"));
@@ -79,6 +80,7 @@ public sealed class ConstraintRedeclarationTests {
     /// <summary>The same constraints declared twice with arguments that genuinely contradict.</summary>
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     private static IEnumerable<(string Label, Func<object> Contradict)> ContradictoryRedeclarations() {
         yield return ("String().WithLength(3).WithLength(5)", () => Any.String().WithLength(3).WithLength(5));
         yield return ("String().StartingWith(\"a\").StartingWith(\"b\")", () => Any.String().StartingWith("a").StartingWith("b"));

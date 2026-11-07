@@ -116,6 +116,7 @@ public sealed class AnyInt32Tests {
 
     [Fact(DisplayName = "OneOf then a bound excluding every allowed value conflicts.")]
     [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void OneOfEmptiedByABoundConflicts() {
         Check.ThatCode(() => Any.Int32().OneOf(1, 2).GreaterThan(5))
              .Throws<ConflictingAnyConstraintException>()
@@ -136,6 +137,7 @@ public sealed class AnyInt32Tests {
 
     [Fact(DisplayName = "Except exhausting the allow-list conflicts.")]
     [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void ExceptExhaustingTheAllowListConflicts() {
         Check.ThatCode(() => Any.Int32().OneOf(1, 2).Except(1).Except(2)).Throws<ConflictingAnyConstraintException>();
     }

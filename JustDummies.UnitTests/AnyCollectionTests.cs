@@ -57,6 +57,7 @@ public sealed class AnyCollectionTests {
     [Fact(DisplayName = "ListOf: contradictory count constraints fail eagerly naming both sides.")]
     [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD031.Category, JustDummiesRule.JD031.Id, Justification = SuppressionJustification.JD031.SeparateBoundsAreTheSubject)]
     public void ListOfCountConflicts() {
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(3).WithMinCount(5))
              .Throws<ConflictingAnyConstraintException>()

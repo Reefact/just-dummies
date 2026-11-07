@@ -179,6 +179,9 @@ public class CodeFixTests {
     [InlineData("Assert.NotNull(Any.String().NonEmpty());",          "Assert.NotNull(Any.String().NonEmpty().Generate());")]
     [InlineData("object boxed = Any.Int32().Positive();",            "object boxed = Any.Int32().Positive().Generate();")]
     [InlineData("_ = new object[] { Any.Int32().Positive(), 1 };",   "_ = new object[] { Any.Int32().Positive().Generate(), 1 };")]
+    // An operand Generate() could not bind to as written is parenthesized first.
+    [InlineData("Assert.NotNull(true ? Any.Int32() : Any.Int32().Positive());",  "Assert.NotNull((true ? Any.Int32() : Any.Int32().Positive()).Generate());")]
+    [InlineData("Assert.NotNull((IAny<int>)Any.Int32());",                       "Assert.NotNull(((IAny<int>)Any.Int32()).Generate());")]
     public async Task JD011_generates_the_value_where_an_object_was_expected(string statement, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new GeneratorWhereValueExpectedAnalyzer(), new GenerateTheValueCodeFix(), Statement(statement));
 
@@ -289,6 +292,9 @@ public class CodeFixTests {
     [InlineData("Any.UseSeed(/* the seed */ 1234); // pinned for the method",       "Hold the handle in a using declaration",          "using IDisposable seedScope = Any.UseSeed(/* the seed */ 1234); // pinned for the method")]
     [InlineData("Any.UseSeed(1234 /* the seed */);",                                "Draw from an isolated context with Any.WithSeed", "AnyContext context = Any.WithSeed(1234 /* the seed */);")]
     [InlineData("_ = /* discarded */ Any.WithSeed(1234); // isolated",              "Capture the context to draw from it",             "AnyContext context = Any.WithSeed(1234); // isolated")]
+    // A catch variable and a local function take a name as surely as a local does.
+    [InlineData("try { } catch (Exception seedScope) { _ = seedScope; }\n        Any.UseSeed(1234);",  "Hold the handle in a using declaration", "try { } catch (Exception seedScope) { _ = seedScope; }\n        using IDisposable seedScope1 = Any.UseSeed(1234);")]
+    [InlineData("Any.WithSeed(1234);\n        void context() { }",                                     "Capture the context to draw from it",    "AnyContext context1 = Any.WithSeed(1234);\n        void context() { }")]
     public async Task JD004_offers_the_two_readings_of_a_discarded_seeding(string statement, string title, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new DiscardedSeedingResultAnalyzer(), new DiscardedSeedingResultCodeFix(), Statement(statement), title);
 
@@ -312,6 +318,44 @@ public class CodeFixTests {
 
         Check.That(offered).ContainsExactly("Hold the handle in a using declaration");
         Check.That(rewritten).IsEqualTo(Statement("using System.IDisposable seedScope = Any.UseSeed(1234, \"[Reproducible(Seed = 1234)]\");", importsSystem: false));
+    }
+
+    [Fact]
+    public async Task JD013_renames_the_call_however_its_member_is_spelled() {
+        // OneOf under a static using is a bare identifier; the rename keeps that spelling.
+        const string before = """
+            using System.Collections.Generic;
+            using JustDummies;
+            using static JustDummies.Any;
+
+            public static class Sample {
+                public static object M(List<string> references) {
+                    return OneOf(references);
+                }
+            }
+            """;
+
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new HeldCollectionPassedToOneOfAnalyzer(), new HeldCollectionPassedToOneOfCodeFix(), before);
+
+        Check.That(rewritten).IsEqualTo(before.Replace("return OneOf(references);", "return ElementOf(references);"));
+    }
+
+    [Theory]
+    // The function that has to be async is the nearest one: an async local function or lambda inside a method that is not.
+    [InlineData("async Task Run() { Any.ReproduciblyAsync(async () => { await Task.Yield(); }); }",           "async Task Run() { await Any.ReproduciblyAsync(async () => { await Task.Yield(); }); }")]
+    [InlineData("Func<Task> run = async () => { Any.ReproduciblyAsync(async () => { await Task.Yield(); }); };", "Func<Task> run = async () => { await Any.ReproduciblyAsync(async () => { await Task.Yield(); }); };")]
+    public async Task JD002_awaits_inside_the_nearest_async_function(string statement, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new DiscardedReproduciblyAsyncResultAnalyzer(), new DiscardedReproduciblyAsyncResultCodeFix(), Statement(statement));
+
+        Check.That(rewritten).IsEqualTo(Statement(fixed_));
+    }
+
+    [Fact]
+    public async Task JD002_offers_nothing_in_a_local_function_that_is_not_async_inside_one_that_is() {
+        IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new DiscardedReproduciblyAsyncResultAnalyzer(), new DiscardedReproduciblyAsyncResultCodeFix(),
+                                                                             AsyncStatement("void Run() { Any.ReproduciblyAsync(async () => { await Task.Yield(); }); }"));
+
+        Check.That(offered).IsEmpty();
     }
 
     [Fact]

@@ -120,8 +120,7 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
             // Stopped first, and waited for: a report the cancellation is writing finishes before this one is decided.
             scope.StopListening();
 
-            string? report = scope.ReportOnOutcome(HasFailed());
-            if (report is not null && scope.TryClaimReport()) { TestContext.Current.TestOutputHelper?.WriteLine(report); }
+            scope.WriteOutcome(HasFailed(), TestContext.Current.TestOutputHelper);
         } finally {
             // Restoring the ambient context must happen even if reporting throws: a scope left open would pin
             // the seed for whatever runs next in this execution context.
@@ -222,6 +221,16 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
         /// <summary>What to tell the reader about this scope's seed once the outcome is known.</summary>
         internal string? ReportOnOutcome(bool failed) {
             return Superseded || !Handle.HasDrawn ? null : ReproducibleAttribute.ReportFor(failed, Seed);
+        }
+
+        /// <summary>
+        ///     Writes what to tell the reader once the outcome is known to <paramref name="output" />, unless the
+        ///     cancellation already did. Kept apart from reading the outcome, as <see cref="ReportFor" /> is, so the
+        ///     once-only rule is verifiable without a test that has to fail for real.
+        /// </summary>
+        internal void WriteOutcome(bool failed, ITestOutputHelper? output) {
+            string? report = ReportOnOutcome(failed);
+            if (report is not null && TryClaimReport()) { output?.WriteLine(report); }
         }
 
         /// <summary>Writes the failure report to <paramref name="output" /> if <paramref name="cancellation" /> fires.</summary>

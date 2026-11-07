@@ -467,6 +467,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **The JD010 fix keeps the member's indentation under a comment it keeps.** Removing a `[Reproducible]`
   written under a comment kept the comment, and the indentation that led to the attribute too, so the
   method printed one indentation too far to the right. Only the comment stays now (issue #504).
+- **The JD025 and JD035 fixes remove a `nameof` listed twice.** `Any.OneOf(nameof(Order), "USD", nameof(Order))`
+  was reported and offered no fix: a `nameof` is written as a call, and the fixes stopped at the first call they
+  met, the value itself included (issue #504).
 - **`Any.Reproducibly` no longer reports a seed for a body that drew nothing.** A body failing on a literal,
   or one whose draws all came from a nested `Any.Reproducibly`, was told a seed no value came from; it now
   reports only the seed it drew from (issue #440).

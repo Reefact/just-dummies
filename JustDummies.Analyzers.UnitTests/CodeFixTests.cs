@@ -278,6 +278,16 @@ public class CodeFixTests {
         Check.That(tested).IsEqualTo(Helper("[Reproducible]\n    [Xunit.Fact]", ""));
     }
 
+    [Theory]
+    // The comment stays where it was written, and the member keeps its own indentation.
+    [InlineData("// Arranges the order.\n    [Reproducible]",                "// Arranges the order.")]
+    [InlineData("[Obsolete]\n    // Arranges the order.\n    [Reproducible]", "[Obsolete]\n    // Arranges the order.")]
+    public async Task JD010_keeps_a_comment_written_before_the_attribute(string attributes, string kept) {
+        string removed = await CodeFixTestHarness.ApplyAsync(new ReproducibleOnNonTestMethodAnalyzer(), new ReproducibleOnNonTestMethodCodeFix(), Helper(attributes, "using Xunit;"), "Remove [Reproducible]");
+
+        Check.That(removed).IsEqualTo(Helper(kept, "using Xunit;"));
+    }
+
     [Fact]
     public async Task JD010_removes_only_the_attribute_where_it_shares_its_list() {
         string removed = await CodeFixTestHarness.ApplyAsync(new ReproducibleOnNonTestMethodAnalyzer(), new ReproducibleOnNonTestMethodCodeFix(), Helper("[Obsolete, Reproducible]", "using Xunit;"), "Remove [Reproducible]");

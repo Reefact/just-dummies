@@ -464,6 +464,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **The JD025 fix keeps the space before a closing brace.** Removing the value listed twice from
   `new[] { 1, 2, 1 }` printed `new[] { 1, 2}`: the space belonged to the removed element and went with it.
   The removed element's trailing trivia now stays (issue #504).
+- **The JD010 fix keeps the member's indentation under a comment it keeps.** Removing a `[Reproducible]`
+  written under a comment kept the comment, and the indentation that led to the attribute too, so the
+  method printed one indentation too far to the right. Only the comment stays now (issue #504).
 - **`Any.Reproducibly` no longer reports a seed for a body that drew nothing.** A body failing on a literal,
   or one whose draws all came from a nested `Any.Reproducibly`, was told a seed no value came from; it now
   reports only the seed it drew from (issue #440).

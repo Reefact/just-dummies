@@ -47,14 +47,27 @@ public sealed class ReproducibleOnNonTestMethodCodeFix : CodeFixProvider {
 
     /// <summary>
     ///     The method without the attribute — without its whole list, and the line it stood on, when it was the only
-    ///     one there. A comment or a directive written before the list is kept, ahead of the member.
+    ///     one there. A comment or a directive written before the list is kept, ahead of what followed the list.
     /// </summary>
+    /// <remarks>
+    ///     The indentation that led to the list goes with it: what followed the list carries its own, and keeping both
+    ///     printed the member one indentation too far to the right.
+    /// </remarks>
     private static SyntaxNode Without(SyntaxNode root, AttributeListSyntax list, AttributeSyntax attribute) {
         if (list.Attributes.Count > 1) { return root.ReplaceNode(list, list.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia)!); }
 
-        bool annotated = list.GetLeadingTrivia().Any(trivia => !trivia.IsKind(SyntaxKind.WhitespaceTrivia) && !trivia.IsKind(SyntaxKind.EndOfLineTrivia));
+        SyntaxTriviaList leading   = list.GetLeadingTrivia();
+        bool             annotated = leading.Any(trivia => !trivia.IsKind(SyntaxKind.WhitespaceTrivia) && !trivia.IsKind(SyntaxKind.EndOfLineTrivia));
+        if (!annotated) { return root.RemoveNode(list, SyntaxRemoveOptions.KeepNoTrivia)!; }
 
-        return root.RemoveNode(list, annotated ? SyntaxRemoveOptions.KeepLeadingTrivia : SyntaxRemoveOptions.KeepNoTrivia)!;
+        int kept = leading.Count;
+        while (leading[kept - 1].IsKind(SyntaxKind.WhitespaceTrivia)) { kept--; }
+
+        SyntaxNode  tracked = root.TrackNodes(list);
+        SyntaxToken next    = tracked.GetCurrentNode(list)!.GetLastToken().GetNextToken();
+        tracked = tracked.ReplaceToken(next, next.WithLeadingTrivia(leading.Take(kept).Concat(next.LeadingTrivia)));
+
+        return tracked.RemoveNode(tracked.GetCurrentNode(list)!, SyntaxRemoveOptions.KeepNoTrivia)!;
     }
 
     /// <summary>The method with <c>[Fact]</c> added after its attributes, spelled by its simple name where <c>Xunit</c> is imported.</summary>

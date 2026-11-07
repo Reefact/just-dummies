@@ -93,6 +93,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "NotBlank names both sides when the declared family leaves only whitespace to draw.")]
     [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void NotBlankConflictsWithTheWhitespacesFamily() {
         Check.ThatCode(() => Any.String().Whitespaces().NotBlank().Generate())
              .Throws<ConflictingAnyConstraintException>()
@@ -119,6 +120,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A contradiction is answered for once, whichever order the same constraints were written in.")]
     [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void NotBlankRefusesAnEmptyAlphabetInEveryOrder() {
         // The diagnosis belongs to the constraint set, so the sentence has to be the same sentence every time --
         // not one message when the family came first and another when it came second.
@@ -502,6 +504,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A minimum length above the maximum conflicts.")]
     [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD031.Category, JustDummiesRule.JD031.Id, Justification = SuppressionJustification.JD031.SeparateBoundsAreTheSubject)]
     public void MinAboveMaxConflicts() {
         Check.ThatCode(() => Any.String().WithMinLength(10).WithMaxLength(3))
              .Throws<ConflictingAnyConstraintException>()
@@ -516,6 +519,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "InLowerCase then InUpperCase conflicts: one casing per generator.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void LowerThenUpperCaseConflicts() {
         Check.ThatCode(() => Any.String().InLowerCase().InUpperCase())
              .Throws<ConflictingAnyConstraintException>()
@@ -524,6 +528,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "Alpha then Numeric conflicts: one character family per generator.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void AlphaThenNumericConflicts() {
         Check.ThatCode(() => Any.String().Alpha().Numeric()).Throws<ConflictingAnyConstraintException>();
     }
@@ -539,6 +544,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A second StartingWith conflicts: the prefix is declared once.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void SecondStartingWithConflicts() {
         Check.ThatCode(() => Any.String().StartingWith("A").StartingWith("B")).Throws<ConflictingAnyConstraintException>();
     }
@@ -600,6 +606,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "Fragment arguments are validated as arguments, not as conflicts.")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void FragmentArgumentsAreValidated() {
         Check.ThatCode(() => Any.String().StartingWith(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.String().StartingWith("")).Throws<ArgumentException>();
@@ -684,6 +691,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "Exclusion arguments are validated as arguments, not as conflicts.")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ExclusionArgumentsAreValidated() {
         Check.ThatCode(() => Any.String().DifferentFrom(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.String().Except((string[])null!)).Throws<ArgumentNullException>();
@@ -751,6 +759,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A subtraction that empties a WithChars pool is refused at declaration, naming both sides.")]
     [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ASubtractionThatEmptiesAWithCharsPoolIsRefused() {
         // Issue #210: accepted, then drawn from the untouched pool forever.
         Check.ThatCode(() => Any.String().WithChars("123").WithoutNumeric())
@@ -760,6 +769,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A family declared after the subtraction that empties it is refused, naming the subtraction.")]
     [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void AFamilyDeclaredAfterTheSubtractionThatEmptiesItNamesTheSubtraction() {
         // Issue #211: the family was claimed as a phrase, which is never recognised as the constraint being applied,
         // so the message blamed the family on itself and never named the subtraction.
@@ -773,6 +783,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A family emptied by several subtractions names every one that removes a character it offers.")]
     [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void AFamilyEmptiedBySeveralSubtractionsNamesEveryOneThatRemovesACharacterItOffers() {
         // Neither subtraction empties WithChars("a1") on its own, so naming only the last would blame one whose
         // removal leaves the chain just as refused. One that removes nothing the family offers takes no part.
@@ -786,6 +797,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "NotBlank blames the subtraction that left a WithChars pool with only whitespace.")]
     [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void NotBlankBlamesTheSubtractionThatLeftOnlyWhitespace() {
         // Issue #210: the guaranteed non-blank position was drawn from the unsubtracted pool. WithChars(" 1") alone
         // would satisfy NotBlank(), so the message names what removed the "1".
@@ -807,6 +819,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "WithChars then a named charset conflicts: one character family per generator.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void WithCharsThenNamedCharsetConflicts() {
         Check.ThatCode(() => Any.String().WithChars("abc").Numeric())
              .Throws<ConflictingAnyConstraintException>()
@@ -815,6 +828,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A named charset then WithChars conflicts: order does not matter.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void NamedCharsetThenWithCharsConflicts() {
         Check.ThatCode(() => Any.String().Alpha().WithChars("абвгд"))
              .Throws<ConflictingAnyConstraintException>()
@@ -823,6 +837,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "WithChars then a casing conflicts: the pool is the whole character definition.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void WithCharsThenCasingConflicts() {
         Check.ThatCode(() => Any.String().WithChars("abc").InLowerCase())
              .Throws<ConflictingAnyConstraintException>()
@@ -831,6 +846,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A casing then WithChars conflicts: order does not matter.")]
     [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void CasingThenWithCharsConflicts() {
         Check.ThatCode(() => Any.String().InUpperCase().WithChars("abc"))
              .Throws<ConflictingAnyConstraintException>()
@@ -857,6 +873,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "WithChars arguments are validated as arguments, not as conflicts.")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void WithCharsArgumentsAreValidated() {
         Check.ThatCode(() => Any.String().WithChars(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.String().WithChars("")).Throws<ArgumentException>();
@@ -864,6 +881,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "WithChars rejects a pool with an astral code point and points to OneOf.")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void WithCharsRejectsAstralPool() {
         ArgumentException error = Assert.Throws<ArgumentException>(() => Any.String().WithChars("😀🎉"));
 

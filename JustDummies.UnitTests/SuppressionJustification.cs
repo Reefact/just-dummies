@@ -123,6 +123,18 @@ internal static class SuppressionJustification {
     }
 
     /// <summary>Justifications for JD025 — the pool-duplicate collapse diagnostic.</summary>
+    /// <summary>Justifications for JD024 — "This constraint changes nothing".</summary>
+    internal static class JD024 {
+
+        /// <summary>
+        ///     The restated exclusion IS the subject. These tests pin that a value excluded by <c>Except</c> and named again by
+        ///     <c>DifferentFrom</c> weighs once — in the draw and in the cardinality a distinct collection reads — so the
+        ///     second constraint, which the rule rightly finds inert, has to be written.
+        /// </summary>
+        internal const string RestatedExclusionIsTheSubject = "The restated exclusion IS the subject: the test pins that a value excluded twice weighs once, so the second exclusion has to be written. See the constant's summary.";
+
+    }
+
     internal static class JD025 {
 
         /// <summary>

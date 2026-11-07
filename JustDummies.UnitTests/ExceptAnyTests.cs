@@ -80,6 +80,7 @@ public sealed class ExceptAnyTests {
 
     [Fact(DisplayName = "The static type picks the guarantee: a typed builder refuses at declaration, IAny refuses at generation.")]
     [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void TheStaticTypePicksTheGuarantee() {
         Check.ThatCode(() => Any.Int32().OneOf(5).Except(5)).Throws<ConflictingAnyConstraintException>();
 

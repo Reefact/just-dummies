@@ -16,6 +16,13 @@
     <!-- XML documentation -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
+    <!-- Production code, for SonarQube. The scanner for .NET classifies a project that references a test
+         framework as a test project, and this one references xunit.v3.extensibility.core because it extends
+         xUnit, not because it holds tests. Classified as a test project, its code was analysed as test code:
+         SonarQube Cloud reported no lines of code and no coverage for it, although its suite measures it
+         locally (issue #504). -->
+    <SonarQubeTestProject>false</SonarQubeTestProject>
+
     <!-- Version. Local/dev fallback only: release.yml overrides it with -p:Version from the Git tag of the
          xunit release train (xunit-v*, see tools/packaging/pack.sh). This adapter used to ride the dum-v*
          train together with JustDummies; it now versions independently, so a change to the xUnit binding

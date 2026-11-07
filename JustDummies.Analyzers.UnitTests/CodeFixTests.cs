@@ -109,6 +109,8 @@ public class CodeFixTests {
     // The value listed twice in an array initializer rather than in the argument list.
     [InlineData("Any.OneOf(new[] { 1, 2, 1 })",              "Any.OneOf(new[] { 1, 2 })")]
     [InlineData("Any.Int32().OneOf(new[] { 3, 4, 3 })",      "Any.Int32().OneOf(new[] { 3, 4 })")]
+    // A nameof is written as a call, and is a value all the same.
+    [InlineData("Any.OneOf(nameof(Bounds), \"USD\", nameof(Bounds))", "Any.OneOf(nameof(Bounds), \"USD\")")]
     public async Task JD025_removes_the_value_listed_twice(string chain, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new DuplicatePoolValueAnalyzer(), new DuplicatePoolValueCodeFix(), Source(chain));
 
@@ -160,7 +162,10 @@ public class CodeFixTests {
     [InlineData("Any.Int32().Even().MultipleOf(2)",                             "Any.Int32().Even()")]
     [InlineData("Any.String().OneOf(\"a\", \"b\").OneOf(\"b\", \"a\", \"a\")", "Any.String().OneOf(\"a\", \"b\")")]
     [InlineData("Any.String().Alpha().Alpha().Generate()",                      "Any.String().Alpha().Generate()")]
-    public async Task JD035_removes_the_call_that_repeats_an_earlier_declaration(string chain, string fixed_) {
+    // A value written twice in one list: only the second goes. A nameof is written as a call, and is a value all the same.
+    [InlineData("Any.Int32().Except(3, 3)",                             "Any.Int32().Except(3)")]
+    [InlineData("Any.String().Except(nameof(Bounds), nameof(Bounds))", "Any.String().Except(nameof(Bounds))")]
+    public async Task JD035_removes_what_repeats_an_earlier_declaration(string chain, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new ConstraintRepeatedAnalyzer(), new ConstraintRepeatedCodeFix(), Source(chain));
 
         Check.That(rewritten).IsEqualTo(Source(fixed_));
@@ -405,13 +410,6 @@ public class CodeFixTests {
         IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new DiscardedReproduciblyAsyncResultAnalyzer(), new DiscardedReproduciblyAsyncResultCodeFix(), source);
 
         Check.That(offered).IsEmpty();
-    }
-
-    [Fact]
-    public async Task JD035_removes_a_value_written_twice_in_one_list() {
-        string rewritten = await CodeFixTestHarness.ApplyAsync(new ConstraintRepeatedAnalyzer(), new ConstraintRepeatedCodeFix(), Source("Any.Int32().Except(3, 3)"));
-
-        Check.That(rewritten).IsEqualTo(Source("Any.Int32().Except(3)"));
     }
 
     [Fact]

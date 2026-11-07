@@ -38,6 +38,10 @@ internal static class ChainEdits {
     /// <remarks>
     ///     The element's trailing trivia stays: in <c>new[] { 1, 2, 1 }</c> the space before the closing brace belongs
     ///     to the last element, and removing it with the element printed <c>{ 1, 2}</c>.
+    ///     <para>
+    ///         An enclosing call ends the search, but the node itself may be one: <c>nameof(Order)</c> is written as a
+    ///         call and is a value all the same.
+    ///     </para>
     /// </remarks>
     public static SyntaxNode? WithoutElement(SyntaxNode root, SyntaxNode node) {
         for (SyntaxNode? current = node; current is not null; current = current.Parent) {
@@ -48,7 +52,7 @@ internal static class ChainEdits {
                     return root.ReplaceNode(collection, collection.RemoveNode(element, SyntaxRemoveOptions.KeepTrailingTrivia)!);
                 case ExpressionSyntax expression when expression.Parent is InitializerExpressionSyntax initializer:
                     return root.ReplaceNode(initializer, initializer.RemoveNode(expression, SyntaxRemoveOptions.KeepTrailingTrivia)!);
-                case InvocationExpressionSyntax or StatementSyntax or MemberDeclarationSyntax:
+                case InvocationExpressionSyntax or StatementSyntax or MemberDeclarationSyntax when current != node:
                     return null;
             }
         }

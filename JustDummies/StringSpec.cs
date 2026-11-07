@@ -370,6 +370,7 @@ internal sealed class StringSpec {
     }
 
     /// <summary>Removes the characters of <paramref name="removed" /> from whatever the generator would otherwise draw.</summary>
+    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = SuppressionJustification.CA2249.NoContainsCharDownlevel)]
     internal StringSpec WithSubtraction(string removed, ConstraintCall applying) {
         if (removed is null) { throw new ArgumentNullException(nameof(removed)); }
 

@@ -46,7 +46,7 @@ public class RefusalAssertionReportingTests {
     };
 
     public static TheoryData<string, string> Shapes() {
-        TheoryData<string, string> shapes = new();
+        TheoryData<string, string> shapes = [];
         foreach ((string rule, Case @case) in Cases) {
             shapes.Add(rule, "parameterless lambda");
             shapes.Add(rule, "lambda taking a parameter");

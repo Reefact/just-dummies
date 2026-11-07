@@ -19,6 +19,16 @@ public class Jd025DuplicatePoolValueTests {
     // A WithChars pool is deduplicated the same way, character by character.
     [InlineData("Any.String().WithChars(\"aab\").WithLength(4)")]
     [InlineData("Any.String().WithChars(\"a\\tb\\t\").WithLength(4)")]
+    // Every integral builder's value set, read as its own element type.
+    [InlineData("Any.SByte().OneOf(-1, -1)")]
+    [InlineData("Any.Int16().OneOf(7, 7)")]
+    [InlineData("Any.UInt16().OneOf(7, 7)")]
+    [InlineData("Any.UInt32().OneOf(7u, 7u)")]
+    [InlineData("Any.Int64().OneOf(7L, 7)")]
+    [InlineData("Any.UInt64().OneOf(7ul, 7ul)")]
+    [InlineData("Any.Byte().OneOf(new byte[] { 1, 2, 1 })")]
+    // A value set taken as a sequence, written inline: ElementOf reads its element type from IReadOnlyList<T>.
+    [InlineData("Any.ElementOf(new[] { 1L, 2L, 1L })")]
     public async Task Reports_a_value_listed_twice(string expression) {
         string source = $$"""
             using JustDummies;

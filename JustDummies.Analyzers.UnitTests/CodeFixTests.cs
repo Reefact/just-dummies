@@ -1,5 +1,7 @@
 using JustDummies.Analyzers.CodeFixes;
 
+using Microsoft.CodeAnalysis.CodeFixes;
+
 using NFluent;
 
 namespace JustDummies.Analyzers.UnitTests;
@@ -59,6 +61,9 @@ public class CodeFixTests {
     [InlineData("Any.Int32().GreaterThanOrEqualTo(-(5)).LessThanOrEqualTo((int)50L)",                      "Any.Int32().Between(-(5), (int)50L)")]
     [InlineData("Any.TimeSpan().GreaterThanOrEqualTo(TimeSpan.Zero).LessThanOrEqualTo(new TimeSpan(1, 0, 0))", "Any.TimeSpan().Between(TimeSpan.Zero, new TimeSpan(1, 0, 0))")]
     [InlineData("Any.DateOnly().AfterOrEqualTo(DateOnly.MinValue).BeforeOrEqualTo(DateOnly.FromDayNumber(7))", "Any.DateOnly().Between(DateOnly.MinValue, DateOnly.FromDayNumber(7))")]
+    // Parentheses, a cast or a minus over a pure operand that is not itself a constant.
+    [InlineData("Any.DateTime().AfterOrEqualTo((DateTime.MinValue)).BeforeOrEqualTo((DateTime)DateTime.MaxValue)", "Any.DateTime().Between((DateTime.MinValue), (DateTime)DateTime.MaxValue)")]
+    [InlineData("Any.TimeSpan().GreaterThanOrEqualTo(-TimeSpan.FromHours(2)).LessThanOrEqualTo(TimeSpan.Zero)",      "Any.TimeSpan().Between(-TimeSpan.FromHours(2), TimeSpan.Zero)")]
     public async Task JD031_writes_the_pair_as_the_range(string chain, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new PairedBoundsHaveARangeFormAnalyzer(), new PairedBoundsHaveARangeFormCodeFix(), Source(chain));
 
@@ -72,6 +77,7 @@ public class CodeFixTests {
     [InlineData("Any.Int32().GreaterThanOrEqualTo(Bounds.Low).LessThanOrEqualTo(50)")]
     [InlineData("Any.Int32().GreaterThanOrEqualTo(bound).LessThanOrEqualTo(50)")]
     [InlineData("Any.DateTime().AfterOrEqualTo(DateTime.Now).BeforeOrEqualTo(DateTime.MaxValue)")]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(bound + 1).LessThanOrEqualTo(50)")]
     public async Task JD031_offers_nothing_where_an_argument_may_run_code(string chain) {
         // The rewrite carries the later bound's argument past the links written between the two, so an argument that
         // runs the developer's own code -- a call, a property of their own, a local or a parameter -- could run in
@@ -359,6 +365,38 @@ public class CodeFixTests {
                                                                              AsyncStatement("void Run() { Any.ReproduciblyAsync(async () => { await Task.Yield(); }); }"));
 
         Check.That(offered).IsEmpty();
+    }
+
+    [Fact]
+    public async Task JD035_removes_a_value_written_twice_in_one_list() {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new ConstraintRepeatedAnalyzer(), new ConstraintRepeatedCodeFix(), Source("Any.Int32().Except(3, 3)"));
+
+        Check.That(rewritten).IsEqualTo(Source("Any.Int32().Except(3)"));
+    }
+
+    [Fact]
+    public async Task JD027_reads_a_composer_written_in_parentheses() {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new UnusedCombineOperandAnalyzer(), new UnusedCombineOperandCodeFix(), Statement("_ = Any.Combine(Any.Int32(), Any.String(), ((number, text) => number));"));
+
+        Check.That(rewritten).IsEqualTo(Statement("_ = Any.Combine(Any.Int32(), Any.String(), ((number, _) => number));"));
+    }
+
+    [Fact]
+    public async Task JD027_offers_nothing_on_an_anonymous_method() {
+        // A parameter of `delegate (int number, string text) { ... }` cannot be renamed to a discard pair the same way.
+        IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new UnusedCombineOperandAnalyzer(), new UnusedCombineOperandCodeFix(), Statement("_ = Any.Combine(Any.Int32(), Any.String(), delegate (int number, string text) { return number; });"));
+
+        Check.That(offered).IsEmpty();
+    }
+
+    [Fact]
+    public void Every_fix_offers_to_fix_all_in_one_batch() {
+        // A fix reached through the IDE's Fix All has to declare it; every rewrite here is local, so the batch fixer fits.
+        IEnumerable<CodeFixProvider> fixes = typeof(ConstraintRepeatedCodeFix).Assembly.GetTypes()
+                                                                              .Where(type => typeof(CodeFixProvider).IsAssignableFrom(type) && !type.IsAbstract)
+                                                                              .Select(type => (CodeFixProvider)Activator.CreateInstance(type)!);
+
+        Check.That(fixes.Select(fix => fix.GetFixAllProvider()).Distinct()).ContainsExactly(WellKnownFixAllProviders.BatchFixer);
     }
 
     [Fact]

@@ -35,15 +35,19 @@ internal static class ChainEdits {
     ///     The list with the element the diagnostic points at taken out: an argument of a call, an element of a
     ///     collection expression or of an array initializer. <c>null</c> when the node is none of these.
     /// </summary>
+    /// <remarks>
+    ///     The element's trailing trivia stays: in <c>new[] { 1, 2, 1 }</c> the space before the closing brace belongs
+    ///     to the last element, and removing it with the element printed <c>{ 1, 2}</c>.
+    /// </remarks>
     public static SyntaxNode? WithoutElement(SyntaxNode root, SyntaxNode node) {
         for (SyntaxNode? current = node; current is not null; current = current.Parent) {
             switch (current) {
                 case ArgumentSyntax argument when argument.Parent is ArgumentListSyntax arguments:
-                    return root.ReplaceNode(arguments, arguments.RemoveNode(argument, SyntaxRemoveOptions.KeepNoTrivia)!);
+                    return root.ReplaceNode(arguments, arguments.RemoveNode(argument, SyntaxRemoveOptions.KeepTrailingTrivia)!);
                 case ExpressionElementSyntax element when element.Parent is CollectionExpressionSyntax collection:
-                    return root.ReplaceNode(collection, collection.RemoveNode(element, SyntaxRemoveOptions.KeepNoTrivia)!);
+                    return root.ReplaceNode(collection, collection.RemoveNode(element, SyntaxRemoveOptions.KeepTrailingTrivia)!);
                 case ExpressionSyntax expression when expression.Parent is InitializerExpressionSyntax initializer:
-                    return root.ReplaceNode(initializer, initializer.RemoveNode(expression, SyntaxRemoveOptions.KeepNoTrivia)!);
+                    return root.ReplaceNode(initializer, initializer.RemoveNode(expression, SyntaxRemoveOptions.KeepTrailingTrivia)!);
                 case InvocationExpressionSyntax or StatementSyntax or MemberDeclarationSyntax:
                     return null;
             }

@@ -99,6 +99,9 @@ public class CodeFixTests {
     [InlineData("Any.String().OneOf([\"a\", \"b\", \"a\"])",         "Any.String().OneOf([\"a\", \"b\"])")]
     [InlineData("Any.String().WithChars(\"abca\").WithLength(4)",    "Any.String().WithChars(\"abc\").WithLength(4)")]
     [InlineData("Any.String().WithChars(\"aab\").WithLength(4)",     "Any.String().WithChars(\"ab\").WithLength(4)")]
+    // The value listed twice in an array initializer rather than in the argument list.
+    [InlineData("Any.OneOf(new[] { 1, 2, 1 })",              "Any.OneOf(new[] { 1, 2 })")]
+    [InlineData("Any.Int32().OneOf(new[] { 3, 4, 3 })",      "Any.Int32().OneOf(new[] { 3, 4 })")]
     public async Task JD025_removes_the_value_listed_twice(string chain, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new DuplicatePoolValueAnalyzer(), new DuplicatePoolValueCodeFix(), Source(chain));
 

@@ -304,6 +304,8 @@ public class CodeFixTests {
     // A catch variable and a local function take a name as surely as a local does.
     [InlineData("try { } catch (Exception seedScope) { _ = seedScope; }\n        Any.UseSeed(1234);",  "Hold the handle in a using declaration", "try { } catch (Exception seedScope) { _ = seedScope; }\n        using IDisposable seedScope1 = Any.UseSeed(1234);")]
     [InlineData("Any.WithSeed(1234);\n        void context() { }",                                     "Capture the context to draw from it",    "AnyContext context1 = Any.WithSeed(1234);\n        void context() { }")]
+    // So does a pattern's designation.
+    [InlineData("Any.UseSeed(1234);\n        _ = references.Select(item => item is { } seedScope);",   "Hold the handle in a using declaration", "using IDisposable seedScope1 = Any.UseSeed(1234);\n        _ = references.Select(item => item is { } seedScope);")]
     public async Task JD004_offers_the_two_readings_of_a_discarded_seeding(string statement, string title, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new DiscardedSeedingResultAnalyzer(), new DiscardedSeedingResultCodeFix(), Statement(statement), title);
 
@@ -349,6 +351,14 @@ public class CodeFixTests {
         Check.That(rewritten).IsEqualTo(before.Replace("return OneOf(references);", "return ElementOf(references);"));
     }
 
+    [Fact]
+    public async Task JD013_renames_a_conditional_call_on_a_context() {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new HeldCollectionPassedToOneOfAnalyzer(), new HeldCollectionPassedToOneOfCodeFix(),
+                                                               Parameters("AnyContext? context, List<string> references", "_ = context?.OneOf(references);"));
+
+        Check.That(rewritten).IsEqualTo(Parameters("AnyContext? context, List<string> references", "_ = context?.ElementOf(references);"));
+    }
+
     [Theory]
     // The function that has to be async is the nearest one: an async local function or lambda inside a method that is not.
     [InlineData("async Task Run() { Any.ReproduciblyAsync(async () => { await Task.Yield(); }); }",           "async Task Run() { await Any.ReproduciblyAsync(async () => { await Task.Yield(); }); }")]
@@ -363,6 +373,25 @@ public class CodeFixTests {
     public async Task JD002_offers_nothing_in_a_local_function_that_is_not_async_inside_one_that_is() {
         IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new DiscardedReproduciblyAsyncResultAnalyzer(), new DiscardedReproduciblyAsyncResultCodeFix(),
                                                                              AsyncStatement("void Run() { Any.ReproduciblyAsync(async () => { await Task.Yield(); }); }"));
+
+        Check.That(offered).IsEmpty();
+    }
+
+    [Fact]
+    public async Task JD002_offers_nothing_in_a_constructor() {
+        // A constructor cannot be made async: there is no reading of the task the fix could write.
+        const string source = """
+            using System.Threading.Tasks;
+            using JustDummies;
+
+            public sealed class Sample {
+                public Sample() {
+                    Any.ReproduciblyAsync(async () => { await Task.Yield(); });
+                }
+            }
+            """;
+
+        IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new DiscardedReproduciblyAsyncResultAnalyzer(), new DiscardedReproduciblyAsyncResultCodeFix(), source);
 
         Check.That(offered).IsEmpty();
     }

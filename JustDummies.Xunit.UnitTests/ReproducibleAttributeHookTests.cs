@@ -285,6 +285,60 @@ public sealed class ReproducibleAttributeHookTests {
         Check.That(scope.TryClaimReport()).IsTrue();
     }
 
+    [Fact(DisplayName = "A failed test the cancellation did not report is told its seed by the after-hook, once.")]
+    public void AFailedTestIsToldItsSeedByTheAfterHook() {
+        RecordingOutput output = new();
+        ReproducibleAttribute.Scope scope = new(DrawnScope(), 1234, null);
+        scope.Activate();
+
+        scope.WriteOutcome(failed: true, output);
+
+        Check.That(output.Lines).ContainsExactly("[JustDummies] These arbitrary values were seeded with 1234. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 1234)].");
+        Check.That(scope.TryClaimReport()).IsFalse();
+    }
+
+    [Fact(DisplayName = "A failed test the cancellation already reported is not told its seed a second time.")]
+    public void ACancelledTestIsNotToldItsSeedTwice() {
+        // Issue #230 from the other side: the timeout wrote the seed, and the after-hook, seeing the failure too, stays silent.
+        RecordingOutput output = new();
+        using CancellationTokenSource cancellation = new();
+        ReproducibleAttribute.Scope scope = new(DrawnScope(), 1234, null);
+
+        scope.ReportOnCancellation(cancellation.Token, output);
+        scope.Activate();
+        cancellation.Cancel();
+        scope.StopListening();
+        scope.WriteOutcome(failed: true, output);
+
+        Check.That(output.Lines).CountIs(1);
+    }
+
+    [Fact(DisplayName = "A passing test is told nothing, and leaves the report unclaimed.")]
+    public void APassingTestIsToldNothing() {
+        RecordingOutput output = new();
+        ReproducibleAttribute.Scope scope = new(DrawnScope(), 1234, null);
+        scope.Activate();
+
+        scope.WriteOutcome(failed: false, output);
+
+        Check.That(output.Lines).IsEmpty();
+        Check.That(scope.TryClaimReport()).IsTrue();
+    }
+
+    [Fact(DisplayName = "A test with no output to write to is told nothing, on either path, and nothing throws.")]
+    public void ATestWithNoOutputIsToldNothing() {
+        using CancellationTokenSource cancellation = new();
+        ReproducibleAttribute.Scope cancelled = new(DrawnScope(), 1234, null);
+        ReproducibleAttribute.Scope failed    = new(DrawnScope(), 1234, null);
+
+        cancelled.ReportOnCancellation(cancellation.Token, null);
+        cancelled.Activate();
+        failed.Activate();
+
+        Check.ThatCode(() => cancellation.Cancel()).DoesNotThrow();
+        Check.ThatCode(() => failed.WriteOutcome(failed: true, null)).DoesNotThrow();
+    }
+
     [Fact(DisplayName = "A superseded level stays silent on a cancellation too.")]
     public void ASupersededLevelStaysSilentOnACancellation() {
         // Both reporting paths answer to the same rule: an outer level's seed pinned nothing the test drew, so a

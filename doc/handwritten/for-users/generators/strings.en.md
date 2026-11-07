@@ -350,7 +350,8 @@ string anyIdeograph  = Any.StringMatching("(\U00020000|\U00020001)").Generate();
 ```
 
 No rule reports the first two shapes at compile time: the analyzers do not read a pattern's
-contents, and both draw what the engine matches. The page is where they are caught.
+contents, and both draw what the engine matches. The examples above document these pitfalls and how
+to avoid them.
 
 ### What you can still constrain
 

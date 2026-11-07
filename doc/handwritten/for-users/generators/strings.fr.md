@@ -360,8 +360,8 @@ string anyIdeograph  = Any.StringMatching("(\U00020000|\U00020001)").Generate();
 ```
 
 Aucune règle ne signale les deux premières formes à la compilation : les analyseurs ne lisent pas le
-contenu d'un motif, et toutes deux tirent ce que le moteur fait correspondre. C'est cette page qui les
-signale.
+contenu d'un motif, et toutes deux tirent ce que le moteur fait correspondre. Les exemples ci-dessus
+décrivent ces pièges et la façon de les éviter.
 
 ### Ce que l'on peut encore contraindre
 

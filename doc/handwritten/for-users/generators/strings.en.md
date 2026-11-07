@@ -349,6 +349,9 @@ string anyIdeographs = Any.StringMatching("(\U00020000){3}").Generate();
 string anyIdeograph  = Any.StringMatching("(\U00020000|\U00020001)").Generate();
 ```
 
+No rule reports the first two shapes at compile time: the analyzers do not read a pattern's
+contents, and both draw what the engine matches. The page is where they are caught.
+
 ### What you can still constrain
 
 An `AnyPattern` carries the type-agnostic trio — `OneOf`, `Except` and `DifferentFrom` — offered

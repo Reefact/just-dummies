@@ -359,6 +359,10 @@ string anyIdeographs = Any.StringMatching("(\U00020000){3}").Generate();
 string anyIdeograph  = Any.StringMatching("(\U00020000|\U00020001)").Generate();
 ```
 
+Aucune règle ne signale les deux premières formes à la compilation : les analyseurs ne lisent pas le
+contenu d'un motif, et toutes deux tirent ce que le moteur fait correspondre. C'est cette page qui les
+signale.
+
 ### Ce que l'on peut encore contraindre
 
 Un `AnyPattern` porte le trio agnostique du type — `OneOf`, `Except` et `DifferentFrom` — offert

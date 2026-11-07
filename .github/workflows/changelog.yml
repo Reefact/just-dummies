@@ -200,11 +200,10 @@ jobs:
           # branch is the feature's intended review flow, so refuse to refresh a
           # draft that already carries manual work — merge or close that PR (or
           # delete the branch) first.
-          if git fetch origin "$BRANCH" 2>/dev/null; then
-            if git log origin/main..FETCH_HEAD --format='%an' | grep -qv '^github-actions\[bot\]$'; then
-              echo "::error::origin/$BRANCH has commits not made by this workflow; merge or close the open draft PR (or delete the branch) before re-dispatching."
-              exit 1
-            fi
+          if git fetch origin "$BRANCH" 2>/dev/null \
+             && git log origin/main..FETCH_HEAD --format='%an' | grep -qv '^github-actions\[bot\]$'; then
+            echo "::error::origin/$BRANCH has commits not made by this workflow; merge or close the open draft PR (or delete the branch) before re-dispatching."
+            exit 1
           fi
 
           git checkout -B "$BRANCH"

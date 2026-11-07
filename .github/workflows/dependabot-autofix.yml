@@ -234,6 +234,7 @@ jobs:
           case "$(jq -r '.stop_reason // empty' response.json)" in
             refusal)    echo "::warning::Model refused; skipping the triage.";             exit 0 ;;
             max_tokens) echo "::warning::Model output was truncated (max_tokens); skipping."; exit 0 ;;
+            *)          ;; # end_turn, or any other reason: the output is validated below.
           esac
 
           # One JSON object as text; strip any stray code fence, then validate.

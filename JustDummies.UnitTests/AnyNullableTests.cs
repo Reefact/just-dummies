@@ -146,7 +146,62 @@ public sealed class AnyNullableTests {
         Check.ThatCode(() => ((IAny<string>)null!).OrNull()).Throws<ArgumentNullException>();
     }
 
+    /// <summary>
+    ///     A distinct collection with a comparer of its own asks the bound under that comparer, and each nullable wrapper
+    ///     must pass the question on: an operand whose values a finer comparer splits answers for itself.
+    /// </summary>
+    /// <remarks>
+    ///     The operand below is one value by default and five under any custom comparer — the shape of a
+    ///     <c>DateTimeOffset</c> range spelling one instant at several offsets (ADR-0069). A wrapper answering the
+    ///     default bound instead would refuse, as exceeding one, a collection the comparer lets it build.
+    /// </remarks>
+    [Fact(DisplayName = "Under a custom comparer, each nullable wrapper asks a comparer-sensitive operand for its own bound.")]
+    public void NullableWrappersAskASensitiveOperandUnderACustomComparer() {
+        Check.That(UnderACustomComparer(new SplittingAny<int>(1, 2, 3, 4, 5).AsNullable())).IsEqualTo(5);
+        Check.That(UnderACustomComparer(new SplittingAny<int>(1, 2, 3, 4, 5).OrNull())).IsEqualTo(6);
+        Check.That(UnderACustomComparer(new SplittingAny<string>("a", "b", "c", "d", "e").OrNull())).IsEqualTo(6);
+    }
+
+    [Fact(DisplayName = "Under a custom comparer, each nullable wrapper gives the plain bound of an operand that is not comparer-sensitive.")]
+    public void NullableWrappersGiveThePlainBoundOfAnInsensitiveOperand() {
+        IAny<string> optional = (IAny<string>)Any.String().OneOf("EUR", "USD").OrNull();
+
+        Check.That(UnderACustomComparer(Any.Enum<Slot>().AsNullable())).IsEqualTo(3);
+        Check.That(UnderACustomComparer(Any.Enum<Slot>().OrNull())).IsEqualTo(4);
+        Check.That(UnderACustomComparer(Any.String().OneOf("EUR", "USD").OrNull())).IsEqualTo(3);
+        // A domain that holds null already is not given a second one.
+        Check.That(UnderACustomComparer(optional.OrNull())).IsEqualTo(3);
+    }
+
+    // The question a distinct collection asks when it was given a comparer: only the comparer's presence is read.
+    private static long? UnderACustomComparer<T>(IAny<T> generator) {
+        return AnyDerivation.CardinalityOf(generator, EqualityComparer<T>.Default);
+    }
+
     #region Nested types
+
+    // One value under the default equality, every spelling apart under a comparer of the collection's own.
+    private sealed class SplittingAny<T> : IAny<T>, IComparerSensitiveCardinality<T> {
+
+        private readonly T[] _spellings;
+
+        public SplittingAny(params T[] spellings) {
+            _spellings = spellings;
+        }
+
+        long? ICardinalityHint<T>.DistinctCardinality => 1;
+
+        long? IComparerSensitiveCardinality<T>.CardinalityUnderACustomComparer => _spellings.Length;
+
+        bool ICardinalityHint<T>.Contains(T value) {
+            return Array.IndexOf(_spellings, value) >= 0;
+        }
+
+        public T Generate() {
+            return _spellings[0];
+        }
+
+    }
 
     // A generator that forwards another one's draws and its whole cardinality hint, adding nothing: the shape of any
     // wrapper that preserves a domain without being the generator that built it.

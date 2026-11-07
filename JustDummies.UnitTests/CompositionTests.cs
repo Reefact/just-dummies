@@ -181,6 +181,20 @@ public sealed class CompositionTests {
              .That(caught.Message).Contains("replay from this seed only if it draws");
     }
 
+    [Fact(DisplayName = "A composer failure over foreign operands only names no seed: nothing the library drew can replay it.")]
+    public void CombineOverForeignOperandsOnlyNamesNoSeed() {
+        IAny<string> generator = Any.Combine<int, int, string>(
+            new ForeignInt(),
+            new ForeignInt(),
+            (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
+
+        Check.ThatCode(() => Any.Reproducibly(31415, () => generator.Generate(), _ => { }))
+             .Throws<AnyGenerationException>()
+             .WithProperty(caught => caught.Seed, null)
+             .And.WhichMember(caught => caught.Message)
+             .IsEqualTo("Generation failed: the composer passed to Combine(...) threw for the generated values (0, 0) (InvalidOperationException: rejected 0/0).");
+    }
+
     [Fact(DisplayName = "Combine composes four through eight parts, passing every constrained part to the lambda.")]
     public void CombineSupportsHigherArities() {
         IAny<int> part = Any.Int32().Between(1, 9);

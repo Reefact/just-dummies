@@ -20,6 +20,8 @@ public sealed class AnySetTypeTests {
 
     }
 
+    private enum Unpopulated { }
+
     [Fact(DisplayName = "Boolean: unconstrained draws hit both values; pins pin; contradictory pins conflict.")]
     public void BooleanBehaves() {
         HashSet<bool> seen = [];
@@ -152,6 +154,13 @@ public sealed class AnySetTypeTests {
         Check.That(rejected.Message).Contains("OrderStatus");
 
         Check.ThatCode(() => Any.Enum<OrderStatus>().OneOf(OrderStatus.Draft, (OrderStatus)42)).Throws<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "Enum: a type declaring no member is refused at once, by name — nothing was constrained, there is nothing to draw.")]
+    public void EnumWithoutMembersIsRefused() {
+        Check.ThatCode(() => Any.Enum<Unpopulated>())
+             .Throws<AnyGenerationException>()
+             .WithMessage("Cannot generate an arbitrary Unpopulated value because the enum declares no members.");
     }
 
     [Fact(DisplayName = "Char: the default pool is the whole of ASCII; families narrow it.")]

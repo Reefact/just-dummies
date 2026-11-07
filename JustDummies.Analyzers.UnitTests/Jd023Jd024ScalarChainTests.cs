@@ -46,21 +46,26 @@ public class Jd023ScalarChainAdmitsNoValueTests {
     }
 
     // Each chain beside the expression the analyzer reads, so the message is checked against the exception the
-    // chain really throws rather than against a copy of its wording (issue #322).
-    public static TheoryData<string, Action> BoundConflicts => new() {
-        { "Any.Int32().Between(1, 6).GreaterThan(10)", () => Any.Int32().Between(1, 6).GreaterThan(10) },
-        { "Any.Int32().GreaterThan(10).LessThan(3)", () => Any.Int32().GreaterThan(10).LessThan(3) },
-        { "Any.Int32().Positive().Negative()", () => Any.Int32().Positive().Negative() },
-        { "Any.Int32().Positive().Zero()", () => Any.Int32().Positive().Zero() },
-        { "Any.Int32().Between(1, 10).Between(20, 30)", () => Any.Int32().Between(1, 10).Between(20, 30) },
-        { "Any.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9)", () => Any.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9) },
-        { "Any.UInt32().LessThan(3u).GreaterThan(5u)", () => Any.UInt32().LessThan(3u).GreaterThan(5u) },
-        { "Any.Int32().GreaterThan(int.MaxValue)", () => Any.Int32().GreaterThan(int.MaxValue) }
+    // chain really throws rather than against a copy of its wording (issue #322). The chain is looked up by its
+    // expression rather than carried through the theory data: an Action is not serializable, and one that is not makes
+    // Test Explorer collapse every case into a single row (xUnit1044).
+    public static TheoryData<string> BoundConflicts => [.. BoundConflictsChains.Keys];
+
+    private static readonly Dictionary<string, Action> BoundConflictsChains = new() {
+        ["Any.Int32().Between(1, 6).GreaterThan(10)"] = () => Any.Int32().Between(1, 6).GreaterThan(10),
+        ["Any.Int32().GreaterThan(10).LessThan(3)"] = () => Any.Int32().GreaterThan(10).LessThan(3),
+        ["Any.Int32().Positive().Negative()"] = () => Any.Int32().Positive().Negative(),
+        ["Any.Int32().Positive().Zero()"] = () => Any.Int32().Positive().Zero(),
+        ["Any.Int32().Between(1, 10).Between(20, 30)"] = () => Any.Int32().Between(1, 10).Between(20, 30),
+        ["Any.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9)"] = () => Any.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9),
+        ["Any.UInt32().LessThan(3u).GreaterThan(5u)"] = () => Any.UInt32().LessThan(3u).GreaterThan(5u),
+        ["Any.Int32().GreaterThan(int.MaxValue)"] = () => Any.Int32().GreaterThan(int.MaxValue)
     };
 
     [Theory]
     [MemberData(nameof(BoundConflicts))]
-    public async Task Words_a_bound_conflict_as_the_run_time_does(string expression, Action declare) {
+    public async Task Words_a_bound_conflict_as_the_run_time_does(string expression) {
+        Action declare = BoundConflictsChains[expression];
         string source = $$"""
             using JustDummies;
 
@@ -189,29 +194,32 @@ public class Jd023ScalarChainAdmitsNoValueTests {
 
     // The exact types, each beside the chain the run time throws on, so the wording is checked against the exception
     // rather than against a copy of it: a strict decimal bound, a temporal bound rendered as the run time renders it,
-    // and the type's own edge when no declared bound is the other side.
-    public static TheoryData<string, Action> ExactTypeBoundConflicts => new() {
-        { "Any.Decimal().GreaterThan(100m).LessThan(10m)", () => Any.Decimal().GreaterThan(100m).LessThan(10m) },
-        { "Any.Decimal().GreaterThan(1m).LessThanOrEqualTo(1m)", () => Any.Decimal().GreaterThan(1m).LessThanOrEqualTo(1m) },
-        { "Any.Decimal().Between(1.50m, 5m).GreaterThan(10m)", () => Any.Decimal().Between(1.50m, 5m).GreaterThan(10m) },
-        { "Any.Decimal().Positive().Negative()", () => Any.Decimal().Positive().Negative() },
-        { "Any.Decimal().Positive().GreaterThan(decimal.MaxValue)", () => Any.Decimal().Positive().GreaterThan(decimal.MaxValue) },
-        { "Any.Int32().Positive().GreaterThan(int.MaxValue)", () => Any.Int32().Positive().GreaterThan(int.MaxValue) },
-        { "Any.DateOnly().After(new DateOnly(2027, 1, 1)).Before(new DateOnly(2026, 1, 1))", () => Any.DateOnly().After(new DateOnly(2027, 1, 1)).Before(new DateOnly(2026, 1, 1)) },
-        { "Any.DateTime().After(new DateTime(2026, 1, 2)).BeforeOrEqualTo(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc))", () => Any.DateTime().After(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Unspecified)).BeforeOrEqualTo(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)) },
-        { "Any.DateTimeOffset().Before(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(2))).After(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))", () => Any.DateTimeOffset().Before(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(2))).After(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) },
-        { "Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).GreaterThanOrEqualTo(TimeSpan.FromHours(2))", () => Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).GreaterThanOrEqualTo(TimeSpan.FromHours(2)) },
-        { "Any.TimeSpan().GreaterThan(TimeSpan.MaxValue)", () => Any.TimeSpan().GreaterThan(TimeSpan.MaxValue) },
-        { "Any.TimeOnly().After(new TimeOnly(10, 0)).Before(new TimeOnly(9, 30))", () => Any.TimeOnly().After(new TimeOnly(10, 0)).Before(new TimeOnly(9, 30)) },
-        { "Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(12, 0))", () => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(12, 0)) },
-        { "Any.TimeOnly().Before(new TimeOnly(12, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))", () => Any.TimeOnly().Before(new TimeOnly(12, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0)) },
-        { "Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Between(new TimeOnly(1, 0), new TimeOnly(23, 0))", () => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Between(new TimeOnly(1, 0), new TimeOnly(23, 0)) },
-        { "Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))", () => Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0)) }
+    // and the type's own edge when no declared bound is the other side. Looked up by expression, as above (xUnit1044).
+    public static TheoryData<string> ExactTypeBoundConflicts => [.. ExactTypeBoundConflictsChains.Keys];
+
+    private static readonly Dictionary<string, Action> ExactTypeBoundConflictsChains = new() {
+        ["Any.Decimal().GreaterThan(100m).LessThan(10m)"] = () => Any.Decimal().GreaterThan(100m).LessThan(10m),
+        ["Any.Decimal().GreaterThan(1m).LessThanOrEqualTo(1m)"] = () => Any.Decimal().GreaterThan(1m).LessThanOrEqualTo(1m),
+        ["Any.Decimal().Between(1.50m, 5m).GreaterThan(10m)"] = () => Any.Decimal().Between(1.50m, 5m).GreaterThan(10m),
+        ["Any.Decimal().Positive().Negative()"] = () => Any.Decimal().Positive().Negative(),
+        ["Any.Decimal().Positive().GreaterThan(decimal.MaxValue)"] = () => Any.Decimal().Positive().GreaterThan(decimal.MaxValue),
+        ["Any.Int32().Positive().GreaterThan(int.MaxValue)"] = () => Any.Int32().Positive().GreaterThan(int.MaxValue),
+        ["Any.DateOnly().After(new DateOnly(2027, 1, 1)).Before(new DateOnly(2026, 1, 1))"] = () => Any.DateOnly().After(new DateOnly(2027, 1, 1)).Before(new DateOnly(2026, 1, 1)),
+        ["Any.DateTime().After(new DateTime(2026, 1, 2)).BeforeOrEqualTo(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc))"] = () => Any.DateTime().After(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Unspecified)).BeforeOrEqualTo(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+        ["Any.DateTimeOffset().Before(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(2))).After(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))"] = () => Any.DateTimeOffset().Before(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(2))).After(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)),
+        ["Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).GreaterThanOrEqualTo(TimeSpan.FromHours(2))"] = () => Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).GreaterThanOrEqualTo(TimeSpan.FromHours(2)),
+        ["Any.TimeSpan().GreaterThan(TimeSpan.MaxValue)"] = () => Any.TimeSpan().GreaterThan(TimeSpan.MaxValue),
+        ["Any.TimeOnly().After(new TimeOnly(10, 0)).Before(new TimeOnly(9, 30))"] = () => Any.TimeOnly().After(new TimeOnly(10, 0)).Before(new TimeOnly(9, 30)),
+        ["Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(12, 0))"] = () => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(12, 0)),
+        ["Any.TimeOnly().Before(new TimeOnly(12, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))"] = () => Any.TimeOnly().Before(new TimeOnly(12, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0)),
+        ["Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Between(new TimeOnly(1, 0), new TimeOnly(23, 0))"] = () => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Between(new TimeOnly(1, 0), new TimeOnly(23, 0)),
+        ["Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))"] = () => Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))
     };
 
     [Theory]
     [MemberData(nameof(ExactTypeBoundConflicts))]
-    public async Task Words_an_exact_type_bound_conflict_as_the_run_time_does(string expression, Action declare) {
+    public async Task Words_an_exact_type_bound_conflict_as_the_run_time_does(string expression) {
+        Action declare = ExactTypeBoundConflictsChains[expression];
         string source = $$"""
             using System;
             using JustDummies;

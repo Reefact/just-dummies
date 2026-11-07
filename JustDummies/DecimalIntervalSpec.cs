@@ -766,7 +766,7 @@ internal sealed class DecimalIntervalSpec {
     ///     points the earlier constraints did not reach, in ascending order.
     /// </summary>
     private List<decimal> PointsOnlyTheAppliedConstraintForbids(ConstraintCall applying) {
-        HashSet<decimal> forbiddenEarlier = new(_exclusions.Where(entry => entry.Constraint != applying).SelectMany(entry => entry.Ordinals));
+        HashSet<decimal> forbiddenEarlier = [.. _exclusions.Where(entry => entry.Constraint != applying).SelectMany(entry => entry.Ordinals)];
 
         return _exclusions.Where(entry => entry.Constraint == applying)
                           .SelectMany(entry => entry.Ordinals)

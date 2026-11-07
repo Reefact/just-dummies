@@ -17,6 +17,7 @@ public sealed class WithoutCharsTests {
     private const int SampleCount = 300;
 
     [Fact(DisplayName = "The removed characters are never drawn, from a declared pool or from the default one.")]
+    [SuppressMessage(NetAnalyzersRule.CA1870.Category, NetAnalyzersRule.CA1870.Id, Justification = SuppressionJustification.CA1870.NoSearchValuesDownlevel)]
     public void TheRemovedCharactersAreNeverDrawn() {
         AnyContext any = Any.WithSeed(20261101);
         for (int i = 0; i < SampleCount; i++) {

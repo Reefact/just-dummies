@@ -370,6 +370,7 @@ public sealed class AnyContext {
     /// <typeparam name="T">The type of the value.</typeparam>
     /// <returns>A generator returning <paramref name="value" />.</returns>
     [SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = "An instance member on purpose: AnyContext mirrors every scalar factory of Any, and a fixed value is reached the same way on both (SurfaceParityTests).")]
+    [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = "The context's spelling of Any.Fixed, called on the context like every other factory of it; a static member could not be called as any.Fixed(value), and the public surface would change.")]
     public IAny<T> Fixed<T>(T value) {
         return new FixedAny<T>(value);
     }

@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "mode": "enforce",
+  "formatSeverity": "error",
+  "activation": { "activatedAt": "2026-11-09T00:00:00Z" }
+}

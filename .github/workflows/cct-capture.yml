@@ -1,0 +1,36 @@
+# Temporary, test branch only: publishes a check run named like the
+# Conventional Comments Toolkit verifier (spec §A.8), so that where GitHub
+# renders its cc/1 title can be measured. Never merged.
+name: cct-capture
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish a conventional-comments check run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state="$(curl -fsS -H "Authorization: Bearer ${GH_TOKEN}" \
+            "https://raw.githubusercontent.com/${REPO}/${HEAD_SHA}/cct-captures/verifier-state" | tr -d '[:space:]')"
+          case "${state}" in success|failure) ;; *) echo "unknown state: ${state}"; exit 1 ;; esac
+          title="cc/1 state=${state} draft=0 exempt=0 mode=warn activated=- core=1.0.0 cfg=deadbeef t=2 c=1 w=0"
+          payload="$(jq -n --arg sha "${HEAD_SHA}" --arg c "${state}" --arg t "${title}" \
+            '{name: "conventional-comments", head_sha: $sha, status: "completed", conclusion: $c,
+              output: {title: $t, summary: "Temporary check published to measure where GitHub renders a cc/1 title."}}')"
+          curl -fsS -X POST -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/check-runs" -d "${payload}" > /dev/null
+          echo "published: ${title}"

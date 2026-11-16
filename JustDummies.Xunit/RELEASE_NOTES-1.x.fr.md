@@ -2,6 +2,23 @@
 
 Ce qui a changé pour vous, version par version, sur le train `xunit`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Xunit/CHANGELOG.md).
 
+## 1.0.0-rc.1 — 16 novembre 2026
+
+_La release candidate de la 1.0 : un test en échec rapporte désormais exactement une graine, celle qui le rejoue — ou aucune, s'il n'a rien tiré. Requiert `JustDummies` 1.0.0-rc.1, qui porte le `SeedScope.HasDrawn` que l'adaptateur lit._
+
+### 🙌 Améliorations
+
+- **Le plancher `xunit.v3` est affiché : 4.0.2 ou plus.** Le README du paquet et la [page de l'adaptateur](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-xunit.fr.md) le nomment désormais et disent ce que fait une version inférieure — un avertissement `NU1608`, puis un processus de test qui plante.
+- **Exécuter les tests sur le SDK .NET 10 est documenté.** Le README et la page de l'adaptateur donnent l'activation par `global.json` de Microsoft.Testing.Platform, et les deux alternatives, pour l'erreur sur laquelle `dotnet test` s'arrête une fois `xunit.v3` relevé au plancher.
+- **La page de l'adaptateur explique comment conserver une graine.** Une graine de rejeu fonctionne à tout niveau, et une graine qui a révélé un défaut reste exécutable à la demande avec `[Fact(Explicit = true)]` et `--explicit only`.
+
+### 🐛 Corrections
+
+- **`[Reproducible]` ne rapporte plus de graine pour un test en échec qui n'a rien tiré.** Un test qui échoue sur un littéral n'envoie plus chercher une valeur tirée qui n'existait pas.
+- **Des niveaux `[Reproducible]` imbriqués rapportent une seule graine, celle qui rejoue l'échec.** Quand l'assembly, la classe et le test sont tous marqués, seule la graine la plus interne est affichée.
+- **Un test qui expire reçoit sa graine.** `[Fact(Timeout = ...)]` perdait la ligne de graine ; elle est désormais écrite quand xUnit annule le test, tant que la sortie l'accepte encore.
+- **La ligne de rejeu qu'imprime un test en échec compile là où on la colle.** Elle est désormais pleinement qualifiée, `[JustDummies.Xunit.Reproducible(Seed = N)]`, et n'exige plus `using JustDummies.Xunit;`.
+
 ## 1.0.0-preview.2 — 2 septembre 2026
 
 _Un changement de licence que chaque consommateur devrait lire._

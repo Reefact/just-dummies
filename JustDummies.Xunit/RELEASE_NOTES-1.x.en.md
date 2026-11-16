@@ -2,6 +2,23 @@
 
 What changed for you, release by release, in the `xunit` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Xunit/CHANGELOG.md).
 
+## 1.0.0-rc.1 — November 16, 2026
+
+_The release candidate for 1.0: a failing test now reports exactly one seed, the one that replays it — or none, when it drew nothing. Requires `JustDummies` 1.0.0-rc.1, which carries the `SeedScope.HasDrawn` it reads._
+
+### 🙌 Improvements
+
+- **The `xunit.v3` floor is stated: 4.0.2 or later.** The package README and the [adapter page](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-xunit.en.md) now name it and say what a lower version does — a `NU1608` warning, then a test process that crashes.
+- **Running the tests on the .NET 10 SDK is documented.** The README and the adapter page give the `global.json` opt-in for Microsoft.Testing.Platform, and the two alternatives, for the error `dotnet test` stops with once `xunit.v3` is raised to the floor.
+- **The adapter page covers keeping a seed.** A replay seed works at any level, and a seed that revealed a defect stays runnable on demand with `[Fact(Explicit = true)]` and `--explicit only`.
+
+### 🐛 Bug Fixes
+
+- **`[Reproducible]` no longer reports a seed for a failing test that drew nothing.** A test failing on a literal is no longer sent looking for a drawn value that did not exist.
+- **Nested `[Reproducible]` levels report one seed, the one that replays the failure.** With an assembly, a class and a test level all marked, only the innermost seed is printed.
+- **A test that times out is told its seed.** `[Fact(Timeout = ...)]` used to lose the seed line; it is now written when xUnit cancels the test, while the output still accepts it.
+- **The replay line a failing test prints compiles where it is pasted.** It is now fully qualified, `[JustDummies.Xunit.Reproducible(Seed = N)]`, so it no longer needs `using JustDummies.Xunit;`.
+
 ## 1.0.0-preview.2 — September 2, 2026
 
 _A license change every consumer should read._

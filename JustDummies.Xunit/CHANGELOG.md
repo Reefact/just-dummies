@@ -8,6 +8,8 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2026-11-16
+
 ### Changed
 
 - **The package README and the documentation state the `xunit.v3` floor: 4.0.2 or later.** The
@@ -117,6 +119,7 @@ Also developed inside [`Reefact/first-class-errors`](https://github.com/Reefact/
 and [extracted into this repository](../doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md)
 with its history on 2026-07-31.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/xunit-v1.0.0-preview.2...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/xunit-v1.0.0-rc.1...HEAD
+[1.0.0-rc.1]: https://github.com/Reefact/just-dummies/compare/xunit-v1.0.0-preview.2...xunit-v1.0.0-rc.1
 [1.0.0-preview.2]: https://github.com/Reefact/just-dummies/compare/xunit-v1.0.0-preview.1...xunit-v1.0.0-preview.2
 [1.0.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/xunit-v1.0.0-preview.1

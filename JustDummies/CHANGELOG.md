@@ -8,6 +8,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2026-11-16
+
 ### Added
 
 - **Any `IAny<T>` takes an `Except` over a set of values.** `pitch.Except(alreadyUsed)`, or
@@ -16,7 +18,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   same rejective guarantee, the same definite refusal for a generator known to yield one excluded value, and
   a typed builder keeps its own constructive `Except`, which the receiver's static type picks. An empty set
   excludes nothing (issue #433, ADR-0133).
-- **Ten more rules come with a code fix**, thirteen in all. JD032 removes the looser of two bounds, JD035
+- **Eleven more rules come with a code fix**, fourteen in all. JD032 removes the looser of two bounds, JD035
   the declaration that repeats an earlier one, JD025 the value a pool lists twice or the character a
   `WithChars` pool repeats; JD013 draws from a held collection with `ElementOf`; JD005 and JD011 call
   `Generate()` where the recipe reached a text or an object; JD001 and JD002 hand the body to
@@ -1325,7 +1327,8 @@ in [ADR-0045](../doc/handwritten/for-maintainers/adr/0045-renumber-the-decision-
 migration record is under
 [`doc/handwritten/for-maintainers/migration/`](../doc/handwritten/for-maintainers/migration/).
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.6...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-rc.1...HEAD
+[1.0.0-rc.1]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.6...lib-v1.0.0-rc.1
 [1.0.0-preview.6]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.5...lib-v1.0.0-preview.6
 [1.0.0-preview.5]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.4...lib-v1.0.0-preview.5
 [1.0.0-preview.4]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.3...lib-v1.0.0-preview.4

@@ -2,6 +2,55 @@
 
 What changed for you, release by release, in the `lib` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Earlier: [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.en.md).
 
+## 1.0.0-rc.1 — November 16, 2026
+
+_The release candidate for 1.0: new ways to declare what a value must satisfy, a floating-point draw that now reaches its type's limits, code fixes for the analyzers, and messages that name both sides of a conflict._
+
+### ⚠️ Breaking changes
+
+- **A seed now draws differently for three kinds of chain.** A floating-point range bounded on both sides is drawn whole, where every interval used to be narrowed to ±1 000 000; an open floating-point draw reaches the type's limits one draw in ten; and `OrNull()` yields `null` one draw in ten instead of one in two. A test that now fails on a limit value has either found code that does care about the magnitude, or was asserting on a value that was never a dummy ([ADR-0117](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)).
+- **`Any.UseSeed` returns a `SeedScope`**, whose `HasDrawn` says whether the seed served a draw. Source written against the `IDisposable` return still compiles; code compiled against a preview has to be recompiled ([ADR-0134](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0134-tell-the-opener-of-a-seed-scope-whether-it-was-drawn-from.md)).
+- **`Any.DateTime()` refuses a `Local` bound**, naming the two ways out: `ToUniversalTime()`, or `Any.DateTimeOffset()` when the instant is what matters. A chain that passed `DateTime.Now` or `DateTime.Today` as a bound now throws ([ADR-0114](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0114-refuse-a-local-datetime-bound.md)).
+- **No rule recognises a negative test any more.** A chain inside a lambda, such as `Check.ThatCode(() => Any.Int32().Between(10, 5))`, is now reported like any other code. A test whose subject is the refusal says so with a justified `[SuppressMessage]`; under warnings-as-errors, a build holding such tests turns red on upgrade until they do ([ADR-0112](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0112-report-a-test-asserting-a-refusal-like-any-other-code.md)).
+- **Several refusal messages now read differently**: a date or a time prints in the round-trip `"O"` format, and a second `OneOf` ends with `; to narrow the first set, use Except(...)`. A script matching the old text needs the new wording.
+
+### ✨ New
+
+- **`Any.Pair(item1, item2)` draws two values of one ordered type**, each from a base of its own, and `Having` declares the order between them — `Having.Item1LessThanItem2()`, `Having.Item1BeforeItem2()` and their siblings. The order holds by construction, never by redraw ([ADR-0131](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0131-draw-a-pair-from-two-bases-and-an-optional-order.md)).
+- **`.Then(...)` draws a value that depends on another draw**, such as a grid's cells inside its drawn dimensions, and the whole chain replays from one seed ([ADR-0119](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0119-draw-a-value-that-depends-on-another-draw.md)).
+- **`Any.Fixed(value)` hands a value you chose to anything that takes a generator**: an operand of `Any.Combine` the test is about, a parameter pinned to its absent case. It consumes no draw, so the values around it replay unchanged ([ADR-0118](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0118-return-a-literal-through-any-fixed.md)).
+- **Any `IAny<T>` takes `DifferentFrom(value)` and an `Except` over a set of values**, so a generator built by `As` or `Combine`, scaffolded, or your own can exclude values too, by a bounded redraw that fails with its seed ([ADR-0133](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0133-exclude-a-set-of-values-from-any-generator-by-redrawing.md)).
+- **`Any.TimeOnly().Between(start, end)` crosses midnight when the start is after the end**: `Between(22:00, 06:00)` is the night, drawn uniformly over its two segments ([ADR-0125](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0125-let-a-time-of-day-window-cross-midnight.md)).
+- **`Ordered()` and `OrderedBy(key)` arrange a list or an array in ascending order**, keeping the count, the contained values and distinctness.
+- **`Any.PermutationOf(items)` draws a random order of exactly the items given**, duplicates included.
+- **`DistinctBy(key)` on lists, arrays and sequences.**
+- **`Any.Decimal().MultipleOf(step)` draws on a step's grid**, such as a tick size of `0.25`.
+- **`Odd()` and `Even()` on every integer builder.**
+- **`WithoutChars(chars)` narrows a string's alphabet at the call site**, so a scaffolded `WithChars("ACGTN")` becomes `WithoutChars("N")` where a test wants no unknown base.
+- **Every `OneOf` and every `Except` accept a sequence as well as a list of values**, so a set you already hold passes as it is: `Any.Int32().OneOf(allowedPorts)`.
+- **`Any.StringMatching(...)` accepts a value set**: the pattern becomes the test each supplied value passes or fails.
+- **Rules come with a code fix**, offered by an IDE or `dotnet format` and shipped beside the analyzers: JD001, JD002, JD004, JD005, JD010, JD011, JD013, JD014, JD024, JD025, JD027, JD031, JD032 and JD035. A rule gets a fix only where exactly one rewrite keeps what you meant ([ADR-0130](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0130-ship-code-fixes-beside-the-analyzers.md)).
+- **Six new rules.** JD034 reports a once-per-generator constraint redeclared with a different call, JD035 a constraint repeated identically, JD036 a `double`, `float` or `decimal` dummy that declares no range, JD037 a `Generate()` inside a lambda passed to `As` or `Combine`, JD038 a chain whose constraints admit exactly one value, and JD039 a generator passed to a parameter of the type it draws.
+
+### 🙌 Improvements
+
+- **An `Except` given an empty list excludes nothing** instead of throwing, so a fixture's set of values already used passes straight through on its first use.
+- **A refused regex construct says what to do instead**, with the way out for its own family, and says so when no equivalent rewrite exists.
+- **A conflict names both of its sides.** An allow-list, a character family or a `Char` pool emptied by what was declared before it now names the constraint that emptied it, and JD023 names both sides of the conflict as the run time writes them.
+- **`Any.StringMatching(...)` accepts the whole-string anchors `\A`, `\z` and `\Z` at the pattern's edges**, so a production validator written with them can be reused through `StringMatching(Regex)`.
+- **The analyzers read more of what throws on every run**: JD023 and JD024 now read `decimal` and the temporal generators, JD014 reads more guards and every numeric overload, JD015 more string chains, JD016 a typed generator's own value set, and JD007 and JD009 a `Generate()` on any `IAny<T>`.
+
+### 🐛 Bug Fixes
+
+- **Several declarations that are satisfiable no longer fail at random**: a distinct collection over an `OrNull()` element, a distinct collection with a comparer and a pinned value, a `decimal` interval within a unit of the type's own domain, and an exclusion sitting on a `decimal` interval's own boundary. The `decimal` fix shifts the last digits of some same-sign draws under a pinned seed.
+- **A floating-point interval only a few values wide reaches every value in it.** This changes what a seed draws within such a span, and nowhere else.
+- **A subtraction now narrows a `WithChars` pool**, where `WithChars("abc123").WithoutNumeric()` still drew digits.
+- **Re-declaring the same value set no longer conflicts with itself**, whatever the order or the duplicates it was written with.
+- **An IPv6 host without its brackets is refused when it is pinned**, instead of a raw `UriFormatException` at every `Generate()`.
+- **`Any.Reproducibly` no longer reports a seed for a body that drew nothing.**
+- **Failure messages no longer print control characters**, nor quote a floating-point strict bound in the engine's neighbouring value rather than as you wrote it.
+- **Several rules no longer report correct code**: JD007 on a type xUnit does not instantiate, JD007 to JD009 on a lambda that is provably kept rather than run, JD012 on a pool that `Then` flattens into values, JD016 on a pinned value outside the element domain, JD017 on an excluded value the enum does not define, and JD011 beside JD005 on the same concatenation.
+
 ## 1.0.0-preview.6 — September 2, 2026
 
 _A license change every consumer should read, a nullable-widening generator, and a fairer draw for `Half`._

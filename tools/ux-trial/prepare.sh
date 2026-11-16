@@ -20,7 +20,9 @@ dotnet pack "$root/JustDummies.Xunit/JustDummies.Xunit.csproj" -c Release -p:Ver
   -p:JustDummiesDependencyVersion="$version" -o "$here/local-feed"
 dotnet pack "$root/JustDummies.Cli/JustDummies.Cli.csproj" -c Release -p:Version="$version" -o "$here/local-feed"
 
+# No --add-source: nuget.config already declares local-feed and maps the JustDummies ids to it, and
+# from the .NET 10.0.4xx SDK on, `dotnet tool install` refuses --add-source beside a source mapping.
 dotnet tool install JustDummies.Cli --version "$version" --tool-path "$here/.tools" \
-  --add-source "$here/local-feed" --configfile "$here/nuget.config"
+  --configfile "$here/nuget.config"
 
 echo "Ready: $here/.tools/any, packages $version in $here/local-feed"

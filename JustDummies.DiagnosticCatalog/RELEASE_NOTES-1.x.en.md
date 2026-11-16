@@ -2,6 +2,19 @@
 
 What changed for you, release by release, in the `catalog` train. A catalogue's version is its own — it does not describe `JustDummies` at the same number. For the full technical record, see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.DiagnosticCatalog/CHANGELOG.md).
 
+## 1.0.0-rc.1 — November 16, 2026
+
+_The release candidate for 1.0. The catalogue catches up with the rule set `JustDummies 1.0.0-rc.1` ships: six rules join the constants, `JD034` to `JD039`, taking it from 33 identifiers to 39._
+
+### ✨ New
+
+- **`JustDummiesRule.JD034`** — *A once-per-generator constraint redeclared with a different call*, category `JustDummies.Constraints`.
+- **`JustDummiesRule.JD035`** — *A constraint repeated identically, which changes nothing*, category `JustDummies.Constraints`.
+- **`JustDummiesRule.JD036`** — *A double, float or decimal dummy that declares no range*, category `JustDummies.Constraints`.
+- **`JustDummiesRule.JD037`** — *A draw made inside the lambda of As or Combine*, category `JustDummies.Reproducibility`.
+- **`JustDummiesRule.JD038`** — *A chain whose constraints admit exactly one value*, category `JustDummies.Constraints`.
+- **`JustDummiesRule.JD039`** — *A generator passed to a parameter of the type it draws*, category `JustDummies.Usage`.
+
 ## 1.0.0-preview.5 — September 2, 2026
 
 _A license change every consumer should read._
